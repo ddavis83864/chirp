@@ -68,7 +68,7 @@ class BuildCandidatesDispatchTest(unittest.TestCase):
         self.assertEqual(9, len(candidates))  # 7 weather + 2 aviation
         self.assertEqual([], skipped)
 
-    def test_network_disabled_still_gives_calling_freqs_for_ham(self):
+    def test_remote_disabled_still_gives_calling_freqs_for_ham(self):
         req = models.ProgrammingRequest(requested_services=(
             models.SERVICE_HAM,))
         candidates, warnings, skipped = sources.build_candidates(
@@ -77,7 +77,7 @@ class BuildCandidatesDispatchTest(unittest.TestCase):
         self.assertTrue(any('Network sources disabled' in w.message
                             for w in warnings))
 
-    def test_gmrs_skipped_without_network(self):
+    def test_gmrs_skipped_when_remote_queries_disallowed(self):
         req = models.ProgrammingRequest(requested_services=(
             models.SERVICE_GMRS,))
         candidates, warnings, skipped = sources.build_candidates(
@@ -111,7 +111,7 @@ class BuildCandidatesDispatchTest(unittest.TestCase):
         self.assertEqual([], candidates)
         self.assertIn('Radio Amateur Satellites', skipped)
 
-    def test_no_network_call_when_network_disallowed(self):
+    def test_no_remote_call_when_remote_queries_disallowed(self):
         req = models.ProgrammingRequest(
             requested_services=(models.SERVICE_HAM, models.SERVICE_GMRS,
                                 models.SERVICE_SATELLITE))

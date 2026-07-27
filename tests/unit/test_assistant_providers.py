@@ -13,8 +13,8 @@ class DisabledProviderTest(unittest.TestCase):
         with self.assertRaises(providers.ProviderError):
             p.extract_intent('anything')
 
-    def test_import_or_instantiate_never_calls_network(self):
-        # Constructing a provider must never make a network call by
+    def test_import_or_instantiate_makes_no_remote_call(self):
+        # Constructing a provider must never make a remote call by
         # itself -- only extract_intent() may.
         with mock.patch('requests.post') as post:
             providers.DisabledProvider()
@@ -159,7 +159,7 @@ class HTTPProviderTest(unittest.TestCase):
             with self.assertRaises(providers.ProviderError):
                 provider.extract_intent('text')
 
-    def test_input_too_long_rejected_before_network_call(self):
+    def test_input_too_long_rejected_before_remote_call(self):
         provider = providers.OpenAICompatibleProvider(
             'https://example.invalid', 'model')
         huge_text = 'x' * (providers.MAX_INPUT_CHARS + 1)
