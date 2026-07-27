@@ -13,6 +13,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 # Other test modules (e.g. test_wxui_memquery.py) mock sys.modules['wx']
 # at import time to test wx.* code without a real wx runtime. Since
@@ -349,6 +350,61 @@ class ResultPageApplyTest(ProgrammingAssistantWxTestBase):
         self.assertEqual(1, len(self.editor._undo_queue))
         self.editor._undo(None)
         self.assertTrue(self.radio.get_memory(first_number).empty)
+
+
+class DoProgrammingAssistantTest(ProgrammingAssistantWxTestBase):
+    """Regression coverage for a Windows validation finding: selecting
+    Radio > Programming Assistant with no radio image open at all (no
+    ChirpEditorSet tab exists yet, so ChirpMain.current_editorset is
+    None) raised 'NoneType' object has no attribute 'current_editor'
+    from AssistantContext.__init__ -> _find_memedit(), instead of the
+    friendly "No memory editor is available" dialog that
+    do_programming_assistant() already intended to show for this exact
+    situation. common.error_proof() caught the AttributeError and
+    displayed it verbatim as a raw exception dialog rather than letting
+    it crash the app outright, which is why the report described a
+    Python exception dialog rather than a hard crash.
+    """
+
+    def test_no_editor_open_shows_friendly_message_not_a_crash(self):
+        # Simulate CHIRP freshly launched: no ChirpEditorSet tab exists
+        # yet, so current_editorset is None -- distinct from "a tab is
+        # open but it's Settings/Banks, not Memories", which was
+        # already handled correctly before this fix.
+        self.frame.current_editorset = None
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls, \
+                mock.patch(
+                    'chirp.wxui.common.error_proof.show_error'
+                    ) as mock_show_error:
+            mock_dialog_cls.return_value.ShowModal.return_value = wx.ID_OK
+            programming_assistant.do_programming_assistant(
+                self.frame, None)
+
+        # The intended friendly message fired exactly once...
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('No memory editor',
+                      mock_dialog_cls.call_args[0][1])
+        # ...and error_proof() never had to catch an unhandled
+        # exception to get there.
+        mock_show_error.assert_not_called()
+
+    def test_active_editor_reaches_wizard_run(self):
+        self.frame.current_editorset = _FakeEditorSet(
+            self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True) as run, \
+                mock.patch(
+                    'chirp.wxui.common.error_proof.show_error'
+                    ) as mock_show_error:
+            programming_assistant.do_programming_assistant(
+                self.frame, None)
+
+        run.assert_called_once()
+        mock_show_error.assert_not_called()
 
 
 class MenuIntegrationTest(unittest.TestCase):

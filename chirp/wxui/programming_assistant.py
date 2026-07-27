@@ -91,7 +91,12 @@ _DISCLAIMER = _(
 
 def _find_memedit(editorset):
     """The Programming Assistant always targets the memory editor, even
-    if the user currently has a Banks/Settings tab selected."""
+    if the user currently has a Banks/Settings tab selected. @editorset
+    is None when no radio image is open at all (e.g. launched fresh,
+    nothing loaded/created yet) -- treat that the same as "no memory
+    editor available" rather than crashing."""
+    if editorset is None:
+        return None
     current = editorset.current_editor
     if isinstance(current, memedit.ChirpMemEdit):
         return current
@@ -115,8 +120,13 @@ class AssistantContext:
         self.chirpmain = chirpmain
         self.editorset = chirpmain.current_editorset
         self.memedit = _find_memedit(self.editorset)
-        self.radio = self.editorset.radio
-        self.service = service_mod.AssistantService(self.radio)
+        # self.editorset is None when no radio image is open at all;
+        # do_programming_assistant() checks self.memedit before this
+        # context is used any further, so radio/service just need to
+        # not crash the constructor in that case.
+        self.radio = self.editorset.radio if self.editorset else None
+        self.service = (service_mod.AssistantService(self.radio)
+                        if self.radio else None)
         self.request = models.ProgrammingRequest()
         self.plan = None
         self.apply_result = None
