@@ -9,7 +9,7 @@ bug was purely nominal, but CI never ran them as a result.
 This test statically inspects every chirp.assistant/programming_assistant
 test module for method names containing a keyword substring that would
 collide with pytest -k filters known to be used by CI or documented
-here, so a future test addition can't reintroduce the same silent gap.
+here, so a later test addition can't reintroduce the same silent gap.
 """
 
 import importlib
