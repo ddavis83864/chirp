@@ -260,9 +260,21 @@ class ResultPageApplyTest(ProgrammingAssistantWxTestBase):
 
 
 class MenuIntegrationTest(unittest.TestCase):
-    def test_assistant_enabled_default(self):
+    def test_assistant_disabled_by_default(self):
+        # Conservative default: the experimental assistant must be
+        # opt-in, not opt-out, until it has more field validation.
         config._CONFIG = config.ChirpConfig(tempfile.mkdtemp())
+        self.assertFalse(programming_assistant.assistant_enabled())
+
+    def test_set_assistant_enabled_persists(self):
+        config._CONFIG = config.ChirpConfig(tempfile.mkdtemp())
+        self.assertFalse(programming_assistant.assistant_enabled())
+
+        programming_assistant.set_assistant_enabled(True)
         self.assertTrue(programming_assistant.assistant_enabled())
+
+        programming_assistant.set_assistant_enabled(False)
+        self.assertFalse(programming_assistant.assistant_enabled())
 
 
 if __name__ == '__main__':

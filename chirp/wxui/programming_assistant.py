@@ -102,7 +102,11 @@ def _find_memedit(editorset):
 
 
 def assistant_enabled():
-    return CONF.get_bool('enabled', default=True)
+    return CONF.get_bool('enabled', default=False)
+
+
+def set_assistant_enabled(enabled):
+    CONF.set_bool('enabled', enabled)
 
 
 class AssistantContext:
