@@ -176,7 +176,9 @@ verifying your own frequencies and operating privileges.
 
 ### Programming Assistant (Experimental)
 
-Radio > Programming Assistant... turns a description of what you want
+Disabled by default — enable it from Help > Enable Programming
+Assistant (Experimental) and restart CHIRP, then use Radio > Programming
+Assistant... Turns a description of what you want
 programmed — structured fields, or an optional AI-interpreted plain-text
 description like "I live near Coeur d'Alene, I fly GA, I camp, I have a
 GMRS license and a Technician license" — into a previewed, editable batch

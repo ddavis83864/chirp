@@ -16,16 +16,18 @@ downloadable `CHIRP-*-x86_64.AppImage` asset, built automatically by
 
 ### Added
 
-- Programming Assistant (Experimental): Radio > Programming Assistant...
-  turns a description of what you want programmed (structured fields,
-  or an optional AI-interpreted plain-text description) into a
-  previewed, editable batch of proposed memories, converted and
-  validated through CHIRP's own import/validation logic and applied as
-  one undoable action on the open image only -- it never uploads to a
-  radio. AI, when configured, only extracts structured request fields;
-  it never supplies frequencies, tones, or other technical data.
-  Aviation, weather, marine, public safety, business, and railroad
-  channels are always receive-only. See
+- Programming Assistant (Experimental), disabled by default -- enable it
+  from Help > Enable Programming Assistant (Experimental) and restart
+  CHIRP, then use Radio > Programming Assistant... It turns a
+  description of what you want programmed (structured fields, or an
+  optional AI-interpreted plain-text description) into a previewed,
+  editable batch of proposed memories, converted and validated through
+  CHIRP's own import/validation logic and applied as one undoable
+  action on the open image only -- it never uploads to a radio. AI,
+  when configured, only extracts structured request fields; it never
+  supplies frequencies, tones, or other technical data. Aviation,
+  weather, marine, public safety, business, and railroad channels are
+  always receive-only. See
   [docs/programming_assistant.md](docs/programming_assistant.md).
 
 ## [1.10.0] - 2026-07-27

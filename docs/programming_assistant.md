@@ -143,13 +143,35 @@ replacing a conflicting existing memory requires explicitly enabling
 "allow duplicate replacement," and even then it's shown in the preview
 before you approve it.
 
+Apply is **not** an atomic all-or-nothing write: if one entry in a
+batch unexpectedly fails to write, entries already applied before it
+are not automatically rolled back. What Apply does guarantee, and what
+has regression test coverage
+(`test_partial_apply_failure_reports_and_undo_still_works` in
+`tests/unit/test_wxui_programming_assistant.py`), is that the whole
+batch — including any partial success — is still exactly one Undo
+entry, so a single Undo always fully reverts everything Apply did,
+whether it fully succeeded or not. The Result page's failure count
+tells you if anything didn't apply.
+
+A candidate targeting an immutable or special destination memory is
+already blocked during preview/validation, before Apply runs at all —
+converting a candidate goes through CHIRP's own `import_logic`, which
+calls the destination radio's `check_set_memory_immutable_policy()`
+and refuses the candidate rather than let Apply attempt an invalid
+write (`test_immutable_memory_blocked_before_apply_not_silently_written`
+in the same file).
+
 ## Enabling/disabling
 
-The menu item is visible whenever `[assistant] enabled` is true in
-CHIRP's config (default: true) — see `chirp.wxui.programming_assistant.
-assistant_enabled()`. There is currently no in-app toggle for this
-since the fork has no general Preferences dialog; set it via the config
-file directly if you want to hide the menu item.
+The Programming Assistant is **disabled by default** (`[assistant]
+enabled` is false unless you turn it on) — see
+`chirp.wxui.programming_assistant.assistant_enabled()`. Enable it from
+**Help > Enable Programming Assistant (Experimental)**, next to the
+existing Developer Mode and Reporting toggles; enabling shows a short
+disclosure you must accept. Like Developer Mode, CHIRP must be
+restarted after toggling this for the Radio menu item to appear or
+disappear.
 
 ## Known limitations
 
@@ -167,10 +189,9 @@ file directly if you want to hide the menu item.
   `chirp_common.Memory` has no field to carry the source coordinates
   back out) — see `chirp.assistant.sources.memory_to_candidate`'s
   docstring.
-- "Allow reordering" is accepted as a request field but does not
-  currently reflow/renumber existing occupied memories — it only
-  affects whether the planner will consider replacing conflicting slots
-  (via "allow duplicate replacement").
+- Apply is one undoable action but is not atomic (see "Undo and apply"
+  above): a mid-batch failure does not roll back entries already
+  written, though a single Undo still reverts the whole batch.
 
 ## Developer architecture
 
