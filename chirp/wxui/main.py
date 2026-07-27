@@ -48,6 +48,7 @@ from chirp.wxui import developer
 from chirp.wxui import memedit
 from chirp.wxui import menucustomize
 from chirp.wxui import printing
+from chirp.wxui import programming_assistant
 from chirp.wxui import query_sources
 from chirp.wxui import radioinfo
 from chirp.wxui import radiothread
@@ -974,6 +975,15 @@ class ChirpMain(wx.Frame):
         tag(select_bandplan, 'radio.select_bandplan')
         self.Bind(wx.EVT_MENU, self._menu_select_bandplan, select_bandplan)
         radio_menu.Append(select_bandplan)
+
+        if programming_assistant.assistant_enabled():
+            prog_assistant = wx.MenuItem(
+                radio_menu, wx.NewId(),
+                _('Programming Assistant... (Experimental)'))
+            tag(prog_assistant, 'radio.programming_assistant')
+            self.Bind(wx.EVT_MENU, self._menu_programming_assistant,
+                      prog_assistant)
+            radio_menu.Append(prog_assistant)
 
         if developer.developer_mode():
             radio_menu.Append(wx.MenuItem(file_menu, wx.ID_SEPARATOR))
@@ -2209,6 +2219,9 @@ GNU General Public License for more details."""
             LOG.info('Selected bandplan: %s' % selected)
             for shortname, name in plans:
                 CONF.set_bool(shortname, shortname == selected, 'bandplan')
+
+    def _menu_programming_assistant(self, event):
+        programming_assistant.do_programming_assistant(self, event)
 
     @common.error_proof()
     def _do_network_query(self, query_cls):
