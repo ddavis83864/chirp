@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: CHIRP\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-27 10:15-0700\n"
+"POT-Creation-Date: 2026-07-27 11:43-0700\n"
 "PO-Revision-Date: 2026-04-08 20:20+0300\n"
 "Last-Translator: Abdullah YILMAZ (TA1AUB) <h.abdullahyilmaz@hotmail.com>\n"
 "Language-Team: TURKISH\n"
@@ -50,7 +50,12 @@ msgstr[1] "%i Kaydı ve bloğu yukarı kaydır"
 msgid "%i memories failed validation for this radio (see details below). Add them anyway?"
 msgstr ""
 
-#: ../wxui/main.py:1644
+#: ../wxui/programming_assistant.py:669
+#, python-format
+msgid "%i total, %i included: "
+msgstr ""
+
+#: ../wxui/main.py:1654
 #, python-format
 msgid "%s has not been saved. Save before closing?"
 msgstr "%s kaydedilmedi. Kapanmadan önce kaydedilsin mi?"
@@ -1039,25 +1044,46 @@ msgstr ""
 "\n"
 "Kablo takılıyken telsizi açarsanız çalışmayabilir"
 
-#: ../wxui/main.py:2283
+#: ../wxui/main.py:2296
 msgid "A new CHIRP version is available. Please visit the website as soon as possible to download it!"
 msgstr "Yeni bir CHIRP sürümü mevcut. İndirmek için lütfen en kısa zamanda web sitesini ziyaret edin!"
+
+#: ../wxui/programming_assistant.py:430
+msgid "AI Provider Configuration"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:436
+msgid "AI is used ONLY to turn your typed description into the structured fields above -- it never supplies frequencies, tones, or any other technical channel data, and no call is made until you click \"Interpret with AI\"."
+msgstr ""
 
 #: ../drivers/ga510.py:1090
 msgid "AM mode does not allow duplex or tone"
 msgstr "AM modu, çift yönlü veya tonlu sese izin vermez"
 
+#: ../wxui/programming_assistant.py:475
+msgid "API key (session/optional):"
+msgstr ""
+
 #: ../wxui/memcolorlegend.py:74
 msgid "APRS or other amateur data frequency."
 msgstr ""
 
-#: ../wxui/main.py:1020
+#: ../wxui/main.py:1030
 msgid "About"
 msgstr "Hakkında"
 
-#: ../wxui/main.py:2020
+#: ../wxui/main.py:2030
 msgid "About CHIRP"
 msgstr "CHIRP Hakkında"
+
+#: ../wxui/programming_assistant.py:250
+msgid "Activities (comma-separated):"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:546
+#, python-format
+msgid "Activities: %s"
+msgstr ""
 
 #: ../wxui/memcolordialog.py:380 ../wxui/memcolordialog.py:388
 #: ../wxui/memcolordialog.py:398
@@ -1088,7 +1114,12 @@ msgstr ""
 msgid "Add..."
 msgstr ""
 
-#: ../wxui/main.py:2075
+#: ../wxui/programming_assistant.py:780
+#, python-format
+msgid "Adjusted for this radio: %i"
+msgstr ""
+
+#: ../wxui/main.py:2085
 msgid "Agree"
 msgstr "Kabul ediyorum"
 
@@ -1100,13 +1131,26 @@ msgstr "Havacılık frekansları 25kHz veya 8.33kHz'e hizalanmış ya da geçerl
 msgid "All"
 msgstr "Tümü"
 
-#: ../wxui/main.py:1438
+#: ../wxui/main.py:1448
 msgid "All Files"
 msgstr "Tüm Dosyalar"
 
-#: ../wxui/main.py:1449
+#: ../wxui/main.py:1459
 msgid "All supported formats"
 msgstr "Desteklenen tüm biçimler"
+
+#: ../wxui/programming_assistant.py:551
+#, python-format
+msgid "Allow duplicate replacement: %s"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:531
+msgid "Allow network source queries (RepeaterBook, satellites)"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:281
+msgid "Allow replacing conflicting existing memories"
+msgstr ""
 
 #: ../wxui/clone.py:626
 msgid "Always start with recent list"
@@ -1118,6 +1162,15 @@ msgstr "Amatör"
 
 #: ../wxui/memcolorlegend.py:81
 msgid "Amateur allocation, no specific subtype."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:239
+msgid "Amateur license class:"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:544
+#, python-format
+msgid "Amateur license: %s"
 msgstr ""
 
 #: ../wxui/memcolorlegend.py:79
@@ -1140,6 +1193,11 @@ msgstr ""
 msgid "An error has occurred"
 msgstr "Bir hata oluştu"
 
+#: ../wxui/programming_assistant.py:777
+#, python-format
+msgid "Applied: %i"
+msgstr ""
+
 #: ../wxui/memcolordialog.py:728
 msgid "Apply"
 msgstr ""
@@ -1156,7 +1214,7 @@ msgstr ""
 msgid "Applying settings"
 msgstr "Ayarlar uygulanıyor"
 
-#: ../wxui/main.py:1741
+#: ../wxui/main.py:1751
 msgid "Automatic from system"
 msgstr "Sistemden otomatik"
 
@@ -1176,7 +1234,7 @@ msgstr ""
 msgid "Background:"
 msgstr ""
 
-#: ../wxui/main.py:2200
+#: ../wxui/main.py:2210
 msgid "Bandplan"
 msgstr "Bant planı"
 
@@ -1185,13 +1243,18 @@ msgstr "Bant planı"
 msgid "Bands"
 msgstr "Bantlar"
 
-#: ../wxui/main.py:212
+#: ../wxui/main.py:213
 msgid "Banks"
 msgstr "Bankalar"
 
 #: ../wxui/developer.py:282
 msgid "Bin"
 msgstr "Bin"
+
+#: ../wxui/programming_assistant.py:779
+#, python-format
+msgid "Blocked by validation: %i"
+msgstr ""
 
 #: ../wxui/memcolordialog.py:334
 msgid "Bold"
@@ -1205,7 +1268,7 @@ msgstr ""
 msgid "Bold:"
 msgstr ""
 
-#: ../wxui/main.py:223
+#: ../wxui/main.py:224
 msgid "Browser"
 msgstr "Tarayıcı"
 
@@ -1230,6 +1293,10 @@ msgstr "Hata konusu:"
 msgid "Building Radio Browser"
 msgstr "Telsiz Tarayıcısı oluşturuluyor"
 
+#: ../wxui/programming_assistant.py:568
+msgid "Building plan..."
+msgstr ""
+
 #: ../wxui/memcolordialog.py:291
 msgid "Built-in classification"
 msgstr ""
@@ -1242,7 +1309,7 @@ msgstr ""
 msgid "Business/industrial land-mobile band."
 msgstr ""
 
-#: ../wxui/main.py:1770
+#: ../wxui/main.py:1780
 msgid "CHIRP must be restarted for the new selection to take effect"
 msgstr "Yeni seçimin etkili olması için CHIRP'in yeniden başlatılması gerekir"
 
@@ -1271,16 +1338,21 @@ msgstr ""
 msgid "Changing this setting requires refreshing the settings from the image, which will happen now."
 msgstr "Bu ayarın değiştirilmesi, imajdaki ayarların yenilenmesini gerektirir, bu işlem şimdi gerçekleşecektir."
 
+#: ../wxui/programming_assistant.py:548
+#, python-format
+msgid "Channel limit: %i"
+msgstr ""
+
 #: ../wxui/memedit.py:2538
 #, python-format
 msgid "Channels with equivalent TX and RX %s are represented by tone mode of \"%s\""
 msgstr "Eşdeğer TX ve RX %s'ye sahip kanallar, \"%s\" ton modu ile temsil edilir"
 
-#: ../wxui/main.py:1032
+#: ../wxui/main.py:1042
 msgid "Check for Updates..."
 msgstr ""
 
-#: ../wxui/main.py:1437
+#: ../wxui/main.py:1447
 msgid "Chirp Image Files"
 msgstr "Chirp İmaj Dosyaları"
 
@@ -1310,7 +1382,7 @@ msgstr ""
 msgid "Choose Cross Mode"
 msgstr "Çapraz Modu Seç"
 
-#: ../wxui/main.py:1269
+#: ../wxui/main.py:1279
 msgid "Choose Diff Target"
 msgstr "Farklı Hedef Seçin"
 
@@ -1355,11 +1427,11 @@ msgstr[1] ""
 msgid "Clear Column"
 msgstr ""
 
-#: ../wxui/main.py:2061
+#: ../wxui/main.py:2071
 msgid "Click here for full license text"
 msgstr "Tam lisans metni için buraya tıklayın"
 
-#: ../wxui/main.py:2040
+#: ../wxui/main.py:2050
 msgid "Click here for online documentation"
 msgstr "Çevrimiçi belgeler için buraya tıklayın"
 
@@ -1397,7 +1469,7 @@ msgstr "Telsizden klonlanıyor"
 msgid "Cloning to radio"
 msgstr "Telsize klonlanıyor"
 
-#: ../wxui/main.py:1146 ../wxui/main.py:2076
+#: ../wxui/main.py:1156 ../wxui/main.py:2086
 msgid "Close"
 msgstr "Kapat"
 
@@ -1405,7 +1477,7 @@ msgstr "Kapat"
 msgid "Close String"
 msgstr "Dizeyi Kapat"
 
-#: ../wxui/main.py:1147
+#: ../wxui/main.py:1157
 msgid "Close file"
 msgstr "Dosyayı kapat"
 
@@ -1446,6 +1518,14 @@ msgstr "Karmaşık veya standart olmayan ton susturucu modu (ton modu seçim sih
 
 #: ../wxui/memcolordialog.py:457
 msgid "Conditions"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:214
+msgid "Configure AI Provider..."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:509
+msgid "Confirm your request"
 msgstr ""
 
 #: ../drivers/tmd710.py:184 ../drivers/tmd710.py:187
@@ -1514,7 +1594,7 @@ msgstr ""
 msgid "Customize Menus"
 msgstr ""
 
-#: ../wxui/main.py:1027
+#: ../wxui/main.py:1037
 msgid "Customize Menus..."
 msgstr ""
 
@@ -1551,7 +1631,7 @@ msgstr "DTMF kod çöz"
 msgid "DV Memory"
 msgstr "DV Kaydı"
 
-#: ../wxui/main.py:2113
+#: ../wxui/main.py:2123
 msgid "Danger Ahead"
 msgstr "İleride Tehlike"
 
@@ -1589,15 +1669,27 @@ msgstr "Kayıtları sil"
 msgid "Delete rule \"%s\"?"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:196
+msgid "Describe what you want programmed"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:198
+msgid "Describe your request in plain language, or just fill in the fields below directly -- AI is entirely optional and nothing here requires it."
+msgstr ""
+
 #: ../wxui/bugreport.py:568
 msgid "Detailed information"
 msgstr "Detaylı bilgi"
 
-#: ../wxui/main.py:1038
+#: ../wxui/programming_assistant.py:618
+msgid "Details"
+msgstr ""
+
+#: ../wxui/main.py:1048
 msgid "Developer Mode"
 msgstr "Geliştirici Modu"
 
-#: ../wxui/main.py:2119
+#: ../wxui/main.py:2129
 #, python-format
 msgid "Developer state is now %s. CHIRP must be restarted to take effect"
 msgstr "Geliştirici durumu artık %s. Etkili olması için CHIRP yeniden başlatılmalıdır"
@@ -1618,11 +1710,11 @@ msgstr "Dijital Kod"
 msgid "Digital Modes"
 msgstr "Dijital Modlar"
 
-#: ../wxui/main.py:2131
+#: ../wxui/main.py:2141
 msgid "Disable reporting"
 msgstr "Raporlamayı devre dışı bırak"
 
-#: ../wxui/memedit.py:594
+#: ../wxui/memedit.py:594 ../wxui/programming_assistant.py:446
 msgid "Disabled"
 msgstr "Devre dışı"
 
@@ -1652,15 +1744,15 @@ msgstr "Riski kabul ediyor musun?"
 msgid "Double-click to change bank name"
 msgstr "Banka adını değiştirmek için çift tıklayın"
 
-#: ../wxui/main.py:1148
+#: ../wxui/main.py:1158
 msgid "Download"
 msgstr "İndir"
 
-#: ../wxui/main.py:1149
+#: ../wxui/main.py:1159
 msgid "Download from radio"
 msgstr "Telsizden indir"
 
-#: ../wxui/main.py:895
+#: ../wxui/main.py:896
 msgid "Download from radio..."
 msgstr "Telsizden indir..."
 
@@ -1676,7 +1768,7 @@ msgstr "Sürücü"
 msgid "Driver information"
 msgstr "Sürücü bilgileri"
 
-#: ../wxui/main.py:573
+#: ../wxui/main.py:574
 msgid "Driver messages"
 msgstr "Sürücü mesajları"
 
@@ -1719,7 +1811,7 @@ msgstr ""
 msgid "Empty or skipped memory slot."
 msgstr ""
 
-#: ../wxui/main.py:965
+#: ../wxui/main.py:966
 msgid "Enable Automatic Edits"
 msgstr "Otomatik Düzenlemeleri Etkinleştir"
 
@@ -1741,6 +1833,10 @@ msgstr "Etkin"
 msgid "Enabled:"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:457
+msgid "Endpoint URL:"
+msgstr ""
+
 #: ../wxui/memedit.py:402
 msgid "Enter Frequency"
 msgstr "Frekans Gir"
@@ -1752,6 +1848,10 @@ msgstr "Ofset girin (MHz)"
 #: ../wxui/memedit.py:2557
 msgid "Enter TX Frequency (MHz)"
 msgstr "TX Frekansını girin (MHz)"
+
+#: ../wxui/programming_assistant.py:324
+msgid "Enter a description first."
+msgstr ""
 
 #: ../wxui/memedit.py:1566
 msgid "Enter a name for the new column. This column is for your own use (e.g. notes or sorting); it is not saved and will be lost when this tab is closed."
@@ -1818,6 +1918,11 @@ msgstr "Ayarlar uygulanırken hata oluştu"
 msgid "Error communicating with radio"
 msgstr "Telsizle iletişim hatası"
 
+#: ../wxui/programming_assistant.py:349 ../wxui/programming_assistant.py:592
+#, python-format
+msgid "Error: %s"
+msgstr ""
+
 #: ../wxui/memquery.py:236
 msgid "Example: \"foo\""
 msgstr "Örnek: \"foo\""
@@ -1854,6 +1959,11 @@ msgstr "Örnek: name~\"myrepea\""
 msgid "Exclude private and closed repeaters"
 msgstr "Özel ve kapalı röleleri hariç tut"
 
+#: ../wxui/programming_assistant.py:781
+#, python-format
+msgid "Existing memories replaced: %i"
+msgstr ""
+
 #: ../wxui/clone.py:750
 msgid "Experimental driver"
 msgstr "Deneysel sürücü"
@@ -1870,11 +1980,11 @@ msgstr ""
 msgid "Export can only write CSV files"
 msgstr "Dışa aktarma yalnızca CSV dosyalarını yazabilir"
 
-#: ../wxui/main.py:1629
+#: ../wxui/main.py:1639
 msgid "Export to CSV"
 msgstr "CSV'ye aktar"
 
-#: ../wxui/main.py:750
+#: ../wxui/main.py:751
 msgid "Export to CSV..."
 msgstr "CSV'ye aktar..."
 
@@ -1906,6 +2016,11 @@ msgstr ""
 
 #: ../wxui/memcolorlegend.py:50
 msgid "FRS"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:784
+#, python-format
+msgid "Failed to apply: %i"
 msgstr ""
 
 #: ../wxui/memedit.py:3651
@@ -1954,14 +2069,14 @@ msgstr ""
 msgid "File a new bug"
 msgstr "Yeni bir hata bildirin"
 
-#: ../wxui/main.py:580
+#: ../wxui/main.py:581
 #, python-format
 msgid "File does not exist: %s"
 msgstr "Dosya mevcut değil: %s"
 
-#: ../wxui/main.py:1441 ../wxui/main.py:1524 ../wxui/main.py:1534
-#: ../wxui/main.py:1567 ../wxui/main.py:1625 ../wxui/main.py:1990
-#: ../wxui/main.py:1991
+#: ../wxui/main.py:1451 ../wxui/main.py:1534 ../wxui/main.py:1544
+#: ../wxui/main.py:1577 ../wxui/main.py:1635 ../wxui/main.py:2000
+#: ../wxui/main.py:2001
 msgid "Files"
 msgstr "Dosyalar"
 
@@ -1981,7 +2096,7 @@ msgstr "Bu dizeyle eşleşen konuma sahip sonuçları filtrele"
 msgid "Filter..."
 msgstr "Filtre..."
 
-#: ../wxui/main.py:1699
+#: ../wxui/main.py:1709
 msgid "Find"
 msgstr "Bul"
 
@@ -1994,11 +2109,11 @@ msgstr ""
 msgid "Find Duplicate Memories..."
 msgstr ""
 
-#: ../wxui/main.py:830
+#: ../wxui/main.py:831
 msgid "Find Next"
 msgstr "Sonraki Bul"
 
-#: ../wxui/main.py:816
+#: ../wxui/main.py:817
 msgid "Find..."
 msgstr "Bul..."
 
@@ -2334,6 +2449,11 @@ msgstr "TX bantları dışındaki frekanslar dupleks=kapalı olmalıdır"
 msgid "GMRS"
 msgstr "GMRS"
 
+#: ../wxui/programming_assistant.py:545
+#, python-format
+msgid "GMRS license declared: %s"
+msgstr ""
+
 #: ../wxui/memcolorlegend.py:85
 msgid "General Mobile Radio Service."
 msgstr ""
@@ -2353,6 +2473,10 @@ msgstr "Kayda Git:"
 #: ../wxui/memedit.py:1738
 msgid "Goto..."
 msgstr "Git..."
+
+#: ../wxui/programming_assistant.py:615
+msgid "Group"
+msgstr ""
 
 #: ../wxui/memcolorlegend.py:42
 msgid "Ham: APRS/Data"
@@ -2390,7 +2514,7 @@ msgstr ""
 msgid "Ham: Simplex"
 msgstr ""
 
-#: ../wxui/main.py:1107
+#: ../wxui/main.py:1117
 msgid "Help"
 msgstr "Yardım"
 
@@ -2427,13 +2551,17 @@ msgstr "İnsan tarafından okunabilen yorum (telsizde saklanmaz)"
 msgid "I have"
 msgstr "Şunu yaptım:"
 
+#: ../wxui/programming_assistant.py:244
+msgid "I have a GMRS license"
+msgstr ""
+
 #: ../wxui/query_sources.py:366 ../wxui/query_sources.py:372
 #: ../wxui/query_sources.py:666 ../wxui/query_sources.py:672
 #: ../wxui/query_sources.py:818 ../wxui/query_sources.py:824
 msgid "If set, sort results by distance from these coordinates"
 msgstr "Ayarlanırsa, sonuçları bu koordinatlardan uzaklığa göre sırala"
 
-#: ../wxui/main.py:1611
+#: ../wxui/main.py:1621
 msgid "Import"
 msgstr "İçe Aktar"
 
@@ -2455,15 +2583,15 @@ msgstr ""
 msgid "Import color profile \"%s\"?"
 msgstr ""
 
-#: ../wxui/main.py:743
+#: ../wxui/main.py:744
 msgid "Import from file..."
 msgstr "Dosyadan İçe Aktar..."
 
-#: ../wxui/main.py:1615
+#: ../wxui/main.py:1625
 msgid "Import messages"
 msgstr "Mesajları içe aktar"
 
-#: ../wxui/main.py:1609
+#: ../wxui/main.py:1619
 msgid "Import not recommended"
 msgstr "İçe aktarma önerilmez"
 
@@ -2475,7 +2603,7 @@ msgstr "Önbelleği dahil et"
 msgid "Index"
 msgstr "Dizin"
 
-#: ../wxui/main.py:225
+#: ../wxui/main.py:226
 msgid "Info"
 msgstr "Bilgi"
 
@@ -2495,7 +2623,7 @@ msgstr ""
 msgid "Install desktop icon?"
 msgstr "Masaüstü simgesi yüklensin mi?"
 
-#: ../wxui/main.py:1008
+#: ../wxui/main.py:1018
 msgid "Interact with driver"
 msgstr "Sürücü ile etkileşim"
 
@@ -2506,6 +2634,18 @@ msgstr "Dahili sürücü hatası"
 #: ../chirp_common.py:741
 msgid "Internal driver error: Attempt to modify frozen memory; Please report this as a bug using \"Report or update a bug\" in the Help menu"
 msgstr "Dahili sürücü hatası: Dondurulmuş kaydı değiştirme girişimi; Lütfen bunu Yardım menüsündeki \"Hata bildir veya güncelle\" seçeneğini kullanarak bildirin"
+
+#: ../wxui/programming_assistant.py:211
+msgid "Interpret with AI"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:352
+msgid "Interpreted -- review the fields below before continuing."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:328
+msgid "Interpreting..."
+msgstr ""
 
 #: ../wxui/memcolorlegend.py:33
 msgid "Invalid"
@@ -2534,9 +2674,13 @@ msgstr "Geçersiz düzenleme: %s"
 msgid "Invalid locator"
 msgstr "Geçersiz konum belirleyici"
 
-#: ../wxui/main.py:1987
+#: ../wxui/main.py:1997
 msgid "Invalid or unsupported module file"
 msgstr "Geçersiz veya desteklenmeyen modül dosyası"
+
+#: ../wxui/programming_assistant.py:403
+msgid "Invalid request"
+msgstr ""
 
 #: ../wxui/memedit.py:294 ../wxui/memedit.py:300 ../wxui/memedit.py:733
 #, python-format
@@ -2560,11 +2704,11 @@ msgstr ""
 msgid "Known emergency/distress frequency."
 msgstr ""
 
-#: ../wxui/main.py:351
+#: ../wxui/main.py:352
 msgid "LIVE"
 msgstr "CANLI"
 
-#: ../drivers/radtel_rt490.py:1028 ../wxui/main.py:880 ../wxui/main.py:1755
+#: ../drivers/radtel_rt490.py:1028 ../wxui/main.py:881 ../wxui/main.py:1765
 msgid "Language"
 msgstr "Dil"
 
@@ -2607,15 +2751,19 @@ msgstr "Sonuçları koordinatlardan bu mesafeye (km) sınırla"
 msgid "Limit results to this distance (mi) from coordinates"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:292
+msgid "Limit to memory range:"
+msgstr ""
+
 #: ../wxui/query_sources.py:405
 msgid "Limit use"
 msgstr "Kullanım sınırlaması"
 
-#: ../wxui/main.py:1842
+#: ../wxui/main.py:1852
 msgid "Live Radio"
 msgstr "Canlı Radyo"
 
-#: ../wxui/main.py:757
+#: ../wxui/main.py:758
 msgid "Load Module..."
 msgstr "Modül Yükle..."
 
@@ -2623,21 +2771,34 @@ msgstr "Modül Yükle..."
 msgid "Load module from issue"
 msgstr "Kayıttan modül yükle"
 
-#: ../wxui/main.py:1080
+#: ../wxui/main.py:1090
 msgid "Load module from issue..."
 msgstr "Kayıttan modül yükle..."
 
-#: ../wxui/main.py:2167
+#: ../wxui/main.py:2177
 msgid "Loading a module will not affect open tabs. It is recommended (unless instructed otherwise) to close all tabs before loading a module."
 msgstr "Bir modülün yüklenmesi açık sekmeleri etkilemeyecektir. Bir modülü yüklemeden önce (aksi belirtilmediği sürece) tüm sekmeleri kapatmanız önerilir."
 
-#: ../wxui/main.py:1994
+#: ../wxui/main.py:2004
 msgid "Loading modules can be extremely dangerous, leading to damage to your computer, radio, or both. NEVER load a module from a source you do not trust, and especially not from anywhere other than the main CHIRP website (chirpmyradio.com). Loading a module from another source is akin to giving them direct access to your computer and everything on it! Proceed despite this risk?"
 msgstr "Modülleri yüklemek son derece tehlikeli olabilir ve bilgisayarınıza, telsizinize veya her ikisine birden zarar verebilir. ASLA güvenmediğiniz bir kaynaktan ve özellikle ana CHIRP web sitesi (chirpmyradio.com) dışında herhangi bir yerden modül yüklemeyin. Başka bir kaynaktan bir modül yüklemek, kaynak sahiplerinin bilgisayarınıza ve üzerindeki her şeye doğrudan erişim sağlamasına olanak sağlayabilir! Bu riske rağmen devam edilsin mi?"
 
 #: ../wxui/clone.py:147
 msgid "Loading settings"
 msgstr "Ayarlar yükleniyor"
+
+#: ../wxui/programming_assistant.py:615
+msgid "Loc"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:226
+msgid "Location:"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:542
+#, python-format
+msgid "Location: %s"
+msgstr ""
 
 #: ../wxui/query_sources.py:110
 msgid "Locator"
@@ -2681,7 +2842,11 @@ msgstr ""
 msgid "Match ALL of these conditions:"
 msgstr ""
 
-#: ../wxui/main.py:204
+#: ../wxui/programming_assistant.py:263
+msgid "Maximum channels:"
+msgstr ""
+
+#: ../wxui/main.py:205
 msgid "Memories"
 msgstr "Kayıtlar"
 
@@ -2720,8 +2885,9 @@ msgstr "Hafızanın düzenlenebilmesi için bir bankada olması gerekir"
 msgid "Memory {num} not in bank {bank}"
 msgstr "{num} kaydı {bank} bankasında değil"
 
-#: ../wxui/memedit.py:673 ../wxui/memcolordialog.py:285
-#: ../wxui/query_sources.py:626 ../wxui/query_sources.py:779
+#: ../wxui/memedit.py:673 ../wxui/programming_assistant.py:617
+#: ../wxui/memcolordialog.py:285 ../wxui/query_sources.py:626
+#: ../wxui/query_sources.py:779
 msgid "Mode"
 msgstr "Mod"
 
@@ -2729,19 +2895,23 @@ msgstr "Mod"
 msgid "Model"
 msgstr "Model"
 
+#: ../wxui/programming_assistant.py:462
+msgid "Model name:"
+msgstr ""
+
 #: ../wxui/query_sources.py:502 ../wxui/query_sources.py:1300
 msgid "Modes"
 msgstr "Modlar"
 
-#: ../wxui/main.py:1991
+#: ../wxui/main.py:2001
 msgid "Module"
 msgstr "Modül"
 
-#: ../wxui/main.py:1963
+#: ../wxui/main.py:1973
 msgid "Module Loaded"
 msgstr "Modül Yüklendi"
 
-#: ../wxui/main.py:2178
+#: ../wxui/main.py:2188
 msgid "Module loaded successfully"
 msgstr "Modül başarıyla yüklendi"
 
@@ -2787,7 +2957,8 @@ msgstr ""
 msgid "NOAA/Weather"
 msgstr ""
 
-#: ../wxui/memcolordialog.py:287 ../wxui/memcolordialog.py:455
+#: ../wxui/programming_assistant.py:615 ../wxui/memcolordialog.py:287
+#: ../wxui/memcolordialog.py:455
 msgid "Name"
 msgstr ""
 
@@ -2795,16 +2966,29 @@ msgstr ""
 msgid "Name:"
 msgstr ""
 
-#: ../wxui/main.py:694
+#: ../wxui/programming_assistant.py:270
+msgid "Naming style:"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:549
+#, python-format
+msgid "Naming style: %s"
+msgstr ""
+
+#: ../wxui/main.py:695
 msgid "New Window"
 msgstr "Yeni Pencere"
 
-#: ../wxui/main.py:2285
+#: ../wxui/main.py:2298
 msgid "New version available"
 msgstr "Yeni sürüm mevcut"
 
 #: ../wxui/memcolordialog.py:242 ../wxui/memcolordialog.py:487
 msgid "No"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:310
+msgid "No AI provider configured -- fill in the fields below directly, or configure a provider above."
 msgstr ""
 
 #: ../wxui/memedit.py:1933
@@ -2819,6 +3003,14 @@ msgstr "Aşağıda boş satır yok!"
 #, python-format
 msgid "No example for %s"
 msgstr "%s için örnek yok"
+
+#: ../wxui/programming_assistant.py:816
+msgid "No memory editor is available for the current tab."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:743
+msgid "No memory editor tab is available for this radio; nothing was applied."
+msgstr ""
 
 #: ../wxui/developer.py:706
 msgid "No modules found"
@@ -2842,7 +3034,7 @@ msgstr "Sonuç yok"
 msgid "No results!"
 msgstr "Sonuç yok!"
 
-#: ../wxui/main.py:2188
+#: ../wxui/main.py:2198
 msgid "No traces stored"
 msgstr "Kayıtlı iz yok"
 
@@ -2850,7 +3042,7 @@ msgstr "Kayıtlı iz yok"
 msgid "No transmit frequency configured."
 msgstr ""
 
-#: ../wxui/main.py:2279
+#: ../wxui/main.py:2292
 msgid "No update available"
 msgstr ""
 
@@ -2883,6 +3075,10 @@ msgstr ""
 "Ofset/\n"
 "TX Frekansı"
 
+#: ../wxui/programming_assistant.py:446
+msgid "Ollama (local)"
+msgstr ""
+
 #: ../wxui/memquery.py:252
 #, python-format
 msgid "One of: %s"
@@ -2901,7 +3097,7 @@ msgstr "Yalnızca belirli modlar"
 msgid "Only certain prefixes"
 msgstr "Sadece belirli ön ekler"
 
-#: ../wxui/main.py:332
+#: ../wxui/main.py:333
 msgid "Only memory tabs may be exported"
 msgstr "Yalnızca kayıt sekmeleri dışa aktarılabilir"
 
@@ -2909,35 +3105,35 @@ msgstr "Yalnızca kayıt sekmeleri dışa aktarılabilir"
 msgid "Only working repeaters"
 msgstr "Yalnızca çalışan tekrarlayıcılar (röleler)"
 
-#: ../wxui/main.py:1142 ../wxui/main.py:1611
+#: ../wxui/main.py:1152 ../wxui/main.py:1621
 msgid "Open"
 msgstr "Aç"
 
-#: ../wxui/main.py:727
+#: ../wxui/main.py:728
 msgid "Open Recent"
 msgstr "Son Kullanılanları Aç"
 
-#: ../wxui/main.py:707
+#: ../wxui/main.py:708
 msgid "Open Stock Config"
 msgstr "Hazır Yapılandırma Aç"
 
-#: ../wxui/main.py:1143 ../wxui/main.py:1452
+#: ../wxui/main.py:1153 ../wxui/main.py:1462
 msgid "Open a file"
 msgstr "Bir dosya aç"
 
-#: ../wxui/main.py:2009
+#: ../wxui/main.py:2019
 msgid "Open a module"
 msgstr "Bir modül aç"
 
-#: ../wxui/main.py:1061
+#: ../wxui/main.py:1071
 msgid "Open debug log"
 msgstr "Hata ayıklama günlüğünü aç"
 
-#: ../wxui/main.py:543
+#: ../wxui/main.py:544
 msgid "Open in new window"
 msgstr "Yeni pencerede aç"
 
-#: ../wxui/main.py:1097
+#: ../wxui/main.py:1107
 msgid "Open last serial trace"
 msgstr "Son seri portu izini aç"
 
@@ -2945,9 +3141,13 @@ msgstr "Son seri portu izini aç"
 msgid "Open repeaters only"
 msgstr "Yalnızca açık röleler"
 
-#: ../wxui/main.py:649
+#: ../wxui/main.py:650
 msgid "Open stock config directory"
 msgstr "Hazır yapılandırma dizinini aç"
+
+#: ../wxui/programming_assistant.py:446
+msgid "OpenAI-compatible"
+msgstr ""
 
 #: ../wxui/memquery.py:143 ../wxui/memcolordialog.py:346
 msgid "Operator"
@@ -3044,7 +3244,12 @@ msgstr "Yapıştırılan kayıtlar, %s kaydının üzerine yazılacak"
 msgid "Pasted memory will overwrite memory %s"
 msgstr "Yapıştırılan kayıt, %s kaydının üzerine yazacak"
 
-#: ../wxui/main.py:2289
+#: ../wxui/programming_assistant.py:598
+#, python-format
+msgid "Plan built: %i candidate(s) ready to review."
+msgstr ""
+
+#: ../wxui/main.py:2302
 msgid "Please be sure to quit CHIRP before installing the new version!"
 msgstr "Lütfen yeni sürümü yüklemeden önce CHIRP'den çıktığınızdan emin olun!"
 
@@ -3052,7 +3257,7 @@ msgstr "Lütfen yeni sürümü yüklemeden önce CHIRP'den çıktığınızdan e
 msgid "Please check the bug number and try again. If you do actually want to report against this bug, please comment on it via the website and ask for it to be re-opened."
 msgstr "Lütfen hata numarasını kontrol edip tekrar deneyin. Bu hataya karşı gerçekten bildirimde bulunmak istiyorsanız, lütfen web sitesi üzerinden yorum yapıp yeniden açılmasını isteyin."
 
-#: ../wxui/main.py:2107
+#: ../wxui/main.py:2117
 msgid "Please note that developer mode is intended for use by developers of the CHIRP project, or under the direction of a developer. It enables behaviors and functions that can damage your computer and your radio if not used with EXTREME care. You have been warned! Proceed anyway?"
 msgstr "Lütfen geliştirici modunun CHIRP projesinin geliştiricileri tarafından veya bir geliştiricinin yönetimi altında kullanılması için tasarlandığını unutmayın. ÇOK DİKKATLİ kullanılmadığı takdirde bilgisayarınıza ve telsizinize zarar verebilecek davranış ve işlevleri mümkün kılar. Uyarıldın! Yine de devam edilsin mi?"
 
@@ -3080,17 +3285,38 @@ msgstr "Güç"
 msgid "Prefixes"
 msgstr "Ön ekler"
 
+#: ../wxui/programming_assistant.py:275
+msgid "Preserve existing memories (recommended)"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:550
+#, python-format
+msgid "Preserve existing memories: %s"
+msgstr ""
+
 #: ../wxui/developer.py:158
 msgid "Press enter to set this in memory"
 msgstr "Bu kayda almak için enter tuşuna basın"
 
-#: ../wxui/main.py:770
+#: ../wxui/main.py:771
 msgid "Print Preview"
 msgstr "Baskı Önizleme"
 
 #: ../wxui/printing.py:29
 msgid "Printing"
 msgstr "Baskı"
+
+#: ../wxui/programming_assistant.py:817
+msgid "Programming Assistant"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:750
+msgid "Programming Assistant plan"
+msgstr ""
+
+#: ../wxui/main.py:982
+msgid "Programming Assistant... (Experimental)"
+msgstr ""
 
 #: ../wxui/clone.py:526
 msgid "Prolific USB device"
@@ -3112,6 +3338,14 @@ msgstr "Özellik Adı"
 msgid "Property Value"
 msgstr "Özellik Değeri"
 
+#: ../wxui/programming_assistant.py:298
+msgid "Protected ranges (e.g. 0-9, 90-99):"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:452
+msgid "Provider:"
+msgstr ""
+
 #: ../wxui/memcolorlegend.py:54
 msgid "Public Safety"
 msgstr ""
@@ -3124,12 +3358,12 @@ msgstr ""
 msgid "QTH Locator"
 msgstr "QTH Bulucu"
 
-#: ../wxui/main.py:2216
+#: ../wxui/main.py:2229
 #, python-format
 msgid "Query %s"
 msgstr "%s sorgusu"
 
-#: ../wxui/main.py:912
+#: ../wxui/main.py:913
 msgid "Query Source"
 msgstr "Kaynaktan Sorgula"
 
@@ -3154,7 +3388,11 @@ msgstr "Sorgulama"
 msgid "RX DTCS"
 msgstr "RX DTCS"
 
-#: ../wxui/main.py:1106
+#: ../wxui/programming_assistant.py:616
+msgid "RX Freq"
+msgstr ""
+
+#: ../wxui/main.py:1116
 msgid "Radio"
 msgstr "Telsiz"
 
@@ -3190,6 +3428,15 @@ msgstr ""
 "telsiz iletişim veri sağlayıcısıdır\n"
 "<small>Premium hesap gereklidir</small>"
 
+#: ../wxui/programming_assistant.py:232
+msgid "Radius (miles):"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:543
+#, python-format
+msgid "Radius: %s miles"
+msgstr ""
+
 #: ../wxui/memcolorlegend.py:53
 msgid "Railroad"
 msgstr ""
@@ -3206,7 +3453,8 @@ msgstr "DTCS kodu al"
 msgid "Receive frequency"
 msgstr "Alım frekansı"
 
-#: ../wxui/memcolorlegend.py:37 ../wxui/memcolordialog.py:290
+#: ../wxui/memcolorlegend.py:37 ../wxui/programming_assistant.py:682
+#: ../wxui/memcolordialog.py:290
 msgid "Receive-only"
 msgstr ""
 
@@ -3235,17 +3483,29 @@ msgstr "Yenileme Gerekli"
 msgid "Refreshed memory %s"
 msgstr "Yenilenmiş %s kaydı"
 
-#: ../wxui/main.py:984
+#: ../wxui/programming_assistant.py:648
+msgid "Regulatory & Privacy Details"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:640
+msgid "Regulatory && Privacy Details..."
+msgstr ""
+
+#: ../wxui/main.py:994
 msgid "Reload Driver"
 msgstr "Sürücüyü Yeniden Yükle"
 
-#: ../wxui/main.py:994
+#: ../wxui/main.py:1004
 msgid "Reload Driver and File"
 msgstr "Sürücüyü ve Dosyayı Yeniden Yükle"
 
 #: ../wxui/memedit.py:1846
 msgid "Reload required"
 msgstr "Yeniden yükleme gerekli"
+
+#: ../wxui/programming_assistant.py:480
+msgid "Remember API key on this computer (obfuscated, NOT securely encrypted -- no OS keyring is available)"
+msgstr ""
 
 #: ../wxui/clone.py:628
 msgid "Remove"
@@ -3280,7 +3540,7 @@ msgstr ""
 msgid "Replace ALL current color settings (including custom rules) with the built-in default profile?"
 msgstr ""
 
-#: ../wxui/main.py:1087
+#: ../wxui/main.py:1097
 msgid "Report or update a bug..."
 msgstr "Bir hatayı bildirin veya güncelleyin..."
 
@@ -3289,13 +3549,22 @@ msgstr "Bir hatayı bildirin veya güncelleyin..."
 msgid "Reporting a new bug: %r"
 msgstr "Yeni hata bildiriliyor: %r"
 
-#: ../wxui/main.py:1048
+#: ../wxui/main.py:1058
 msgid "Reporting enabled"
 msgstr "Raporlama etkinleştirildi"
 
-#: ../wxui/main.py:2127
+#: ../wxui/main.py:2137
 msgid "Reporting helps the CHIRP project know which radio models and OS platforms to spend our limited efforts on. We would really appreciate if you left it enabled. Really disable reporting?"
 msgstr "Raporlama, CHIRP projesinin sınırlı çabalarımızı hangi telsiz modellerine ve işletim sistemi platformlarına harcayacağını bilmesine yardımcı olur. Etkin bırakırsanız gerçekten minnettar oluruz. Raporlama gerçekten devre dışı bırakılsın mı?"
+
+#: ../wxui/programming_assistant.py:256
+msgid "Requested services:"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:547
+#, python-format
+msgid "Requested services: %s"
+msgstr ""
 
 #: ../wxui/memcolordialog.py:269
 msgid "Reset All Colors"
@@ -3313,20 +3582,24 @@ msgstr ""
 msgid "Reset all built-in category colors to their defaults? Custom rules are not affected."
 msgstr ""
 
-#: ../wxui/main.py:1772 ../wxui/main.py:2121
+#: ../wxui/main.py:1782 ../wxui/main.py:2131
 msgid "Restart Required"
 msgstr "Yeniden Başlatma Gerekiyor"
 
-#: ../wxui/main.py:720
+#: ../wxui/main.py:721
 #, python-format
 msgid "Restore %i tab"
 msgid_plural "Restore %i tabs"
 msgstr[0] "%i sekmeyi geri yükle"
 msgstr[1] "%i sekmeyi geri yükle"
 
-#: ../wxui/main.py:872
+#: ../wxui/main.py:873
 msgid "Restore tabs on start"
 msgstr "Başlangıçta sekmeleri geri yükle"
+
+#: ../wxui/programming_assistant.py:724
+msgid "Result"
+msgstr ""
 
 #: ../wxui/query_sources.py:415
 msgid "Results from other areas"
@@ -3335,6 +3608,14 @@ msgstr "Diğer bölgelerden sonuçlar"
 #: ../wxui/common.py:338
 msgid "Retrieved settings"
 msgstr "Alınan ayarlar"
+
+#: ../wxui/programming_assistant.py:511
+msgid "Review the interpreted request below. Nothing is queried or built until you continue -- go back to correct anything."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:623
+msgid "Review the proposed plan"
+msgstr ""
 
 #: ../wxui/memedit.py:3181
 msgid "Rows"
@@ -3369,15 +3650,15 @@ msgstr ""
 "güncel verici verilerini doğrudan SatNOGS API'sinden\n"
 "sorgular."
 
-#: ../wxui/main.py:1144
+#: ../wxui/main.py:1154
 msgid "Save"
 msgstr "Kaydet"
 
-#: ../wxui/main.py:1646
+#: ../wxui/main.py:1656
 msgid "Save before closing?"
 msgstr "Kapanmadan önce kaydedilsin mi?"
 
-#: ../wxui/main.py:1145 ../wxui/main.py:1538 ../wxui/main.py:1565
+#: ../wxui/main.py:1155 ../wxui/main.py:1548 ../wxui/main.py:1575
 msgid "Save file"
 msgstr "Dosyayı kaydet"
 
@@ -3401,7 +3682,7 @@ msgstr "Karıştırıcı"
 msgid "Security Risk"
 msgstr "Güvenlik Riski"
 
-#: ../wxui/main.py:973
+#: ../wxui/main.py:974
 msgid "Select Bandplan..."
 msgstr "Bant Planı Seç..."
 
@@ -3410,7 +3691,7 @@ msgstr "Bant Planı Seç..."
 msgid "Select Bands"
 msgstr "Bantları Seç"
 
-#: ../wxui/main.py:1755
+#: ../wxui/main.py:1765
 msgid "Select Language"
 msgstr "Dil Seçin"
 
@@ -3422,11 +3703,11 @@ msgstr "Modları Seç"
 msgid "Select Modes to Import"
 msgstr "İçe Aktarılacak Modları Seçin"
 
-#: ../wxui/main.py:2199
+#: ../wxui/main.py:2209
 msgid "Select a bandplan"
 msgstr "Bir bant planı seçin"
 
-#: ../wxui/main.py:1273
+#: ../wxui/main.py:1283
 msgid "Select a tab and memory to diff"
 msgstr "Farklılaştırmak için bir sekme ve kayıt seçin"
 
@@ -3465,13 +3746,17 @@ msgstr ""
 msgid "Set Column Value..."
 msgstr ""
 
-#: ../wxui/main.py:217
+#: ../wxui/main.py:218
 msgid "Settings"
 msgstr "Ayarlar"
 
 #: ../drivers/uvk5.py:2092
 msgid "Settings are read-only due to unsupported firmware version"
 msgstr "Desteklenmeyen aygıt yazılımı sürümü nedeniyle ayarlar salt okunurdur"
+
+#: ../wxui/programming_assistant.py:525
+msgid "Share precise coordinates with network sources (off = distance sorting is skipped; only your entered state/location text is used)"
+msgstr ""
 
 #: ../wxui/memedit.py:159
 msgid "Shift amount (or transmit frequency) controlled by duplex"
@@ -3497,7 +3782,7 @@ msgstr "Ham Kaydı Göster"
 msgid "Show color legend"
 msgstr ""
 
-#: ../wxui/main.py:1068
+#: ../wxui/main.py:1078
 msgid "Show debug log location"
 msgstr "Hata ayıklama günlüğü konumunu göster"
 
@@ -3505,9 +3790,13 @@ msgstr "Hata ayıklama günlüğü konumunu göster"
 msgid "Show extra fields"
 msgstr "Ekstra alanları göster"
 
-#: ../wxui/main.py:1074
+#: ../wxui/main.py:1084
 msgid "Show image backup location"
 msgstr "İmaj yedekleme konumunu göster"
+
+#: ../wxui/programming_assistant.py:686
+msgid "Simplex"
+msgstr ""
 
 #: ../wxui/memedit.py:695
 msgid "Skip"
@@ -3515,6 +3804,11 @@ msgstr "Atla"
 
 #: ../wxui/memcolordialog.py:289
 msgid "Skip state"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:778
+#, python-format
+msgid "Skipped (not included or invalid): %i"
 msgstr ""
 
 #: ../wxui/memedit.py:3455
@@ -3576,6 +3870,15 @@ msgstr "Kayıtları sırala"
 msgid "Sorting"
 msgstr "Sıralama"
 
+#: ../wxui/programming_assistant.py:618
+msgid "Source"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:788
+#, python-format
+msgid "Sources with no data: %s"
+msgstr ""
+
 #: ../wxui/query_sources.py:566
 msgid "State"
 msgstr "Eyalet"
@@ -3584,13 +3887,21 @@ msgstr "Eyalet"
 msgid "State/Province"
 msgstr "Eyalet/İl"
 
-#: ../wxui/main.py:2179
+#: ../wxui/programming_assistant.py:617
+msgid "Status"
+msgstr "Durum"
+
+#: ../wxui/main.py:2189
 msgid "Success"
 msgstr "Başarılı"
 
 #: ../wxui/bugreport.py:732
 msgid "Successfully sent bug report:"
 msgstr "Hata raporu başarıyla gönderildi:"
+
+#: ../wxui/programming_assistant.py:616
+msgid "TX Freq / RX-only"
+msgstr ""
 
 #: ../wxui/memedit.py:346
 msgid "TX Frequency"
@@ -3656,6 +3967,10 @@ msgstr ""
 "temsil etmek için 'DIG' modunu ve USER-U, USER-L ve RTTY\n"
 "seçimi için yeni bir 'DATA MODE' sütununu kullanır.\n"
 
+#: ../wxui/programming_assistant.py:80
+msgid "The Programming Assistant organizes publicly available and curated frequency information into a proposed set of radio memories. It does not verify your license or authorization to transmit, and a radio's technical ability to transmit on a frequency does not establish legal authorization or equipment certification for that service. You remain responsible for operating lawfully. Aviation, weather, marine, public safety, business, and railroad channels are always programmed as receive-only in this release."
+msgstr ""
+
 #: ../drivers/boblov_x3plus.py:119
 msgid ""
 "The X3Plus driver is currently experimental.\n"
@@ -3688,7 +4003,11 @@ msgstr ""
 msgid "The memory editor requires a reload in order to change the workflow. That will happen now. Any other open tabs will be updated the next time they are loaded."
 msgstr "Bellek düzenleyicisi, iş akışını değiştirmek için yeniden yükleme gerektirir. Bu şimdi gerçekleşecek. Diğer açık sekmeler bir sonraki yüklenmeleri sırasında güncellenecektir."
 
-#: ../wxui/main.py:1602
+#: ../wxui/programming_assistant.py:792
+msgid "The open image has been updated. Nothing has been uploaded to a radio -- use Radio > Upload to Radio when you are ready."
+msgstr ""
+
+#: ../wxui/main.py:1612
 #, python-format
 msgid "The recommended procedure for importing memories is to open the source file and copy/paste memories from it into your target image. If you continue with this import function, CHIRP will replace all memories in your currently-open file with those in %(file)s. Would you like to open this file to copy/paste memories across, or proceed with the import?"
 msgstr "Kayıtları içe aktarmak için önerilen prosedür, kaynak dosyayı açmak ve kayıtları bu dosyadan hedef görüntünüze kopyalamak/yapıştırmaktır. Bu içe aktarma işlevine devam ederseniz CHIRP, şu anda açık olan dosyanızdaki tüm kayıtları %(file)s içindekilerle değiştirecektir. Kayıtları kopyalamak/yapıştırmak için bu dosyayı açmak mı yoksa içe aktarma işlemine devam etmek mi istiyorsunuz?"
@@ -3722,11 +4041,11 @@ msgstr "Bu imajda donanım yazılımı bilgileri eksik. CHIRP'in eski veya deği
 msgid "This image is read-only due to being from a radio with unsupported firmware"
 msgstr "Bu imaj, desteklenmeyen donanım yazılımına sahip bir telsizden olduğu için salt okunurdur"
 
-#: ../wxui/main.py:1839
+#: ../wxui/main.py:1849
 msgid "This is a live-mode radio, which means changes are sent to the radio in real-time as you make them. Upload is not necessary!"
 msgstr "Bu, canlı modlu bir telsizdir; bu, değişiklik yaptığınızda gerçek zamanlı olarak telsize gönderildiği anlamına gelir. Yükleme gerekli değildir!"
 
-#: ../wxui/main.py:1845
+#: ../wxui/main.py:1855
 msgid "This is a radio-independent file and cannot be uploaded directly to a radio. Open a radio image (or download one from a radio) and then copy/paste items from this tab into that one in order to upload"
 msgstr "Bu, telsizden bağımsız bir dosyadır ve doğrudan bir telsize yüklenemez. Bir telsiz imajı açın (veya bir telsizden indirin) ve ardından yüklemek için öğeleri bu sekmeden diğerine kopyalayıp yapıştırın"
 
@@ -3816,7 +4135,7 @@ msgstr "Bu araç, sisteminiz hakkındaki ayrıntıları CHIRP izleyicisindeki me
 msgid "This will load a module from a website issue"
 msgstr "Bu, bir web sitesi kaydından bir modül yükleyecektir"
 
-#: ../wxui/memedit.py:523
+#: ../wxui/memedit.py:523 ../wxui/programming_assistant.py:617
 msgid "Tone"
 msgstr "Ton"
 
@@ -3881,7 +4200,7 @@ msgstr "Kablonuz için bağlantı noktası belirlenemiyor. Sürücülerinizi ve 
 msgid "Unable to edit memory before radio is loaded"
 msgstr "Telsiz yüklenmeden önce kayıt düzenlenemiyor"
 
-#: ../wxui/main.py:1493
+#: ../wxui/main.py:1503
 #, python-format
 msgid "Unable to find stock config %r"
 msgstr "%r stok yapılandırması bulunamadı"
@@ -3913,7 +4232,7 @@ msgstr "%s bu sistemde gösterilemiyor"
 msgid "Unable to set %s on this memory"
 msgstr "Bu kayıtta %s ayarlanamıyor"
 
-#: ../wxui/main.py:1849
+#: ../wxui/main.py:1859
 msgid "Unable to upload this file"
 msgstr "Bu dosya yüklenemiyor"
 
@@ -3959,11 +4278,11 @@ msgstr "Yükleme talimatları"
 msgid "Upload is disabled due to unsupported firmware version"
 msgstr "Desteklenmeyen aygıt yazılımı sürümü nedeniyle yükleme devre dışı bırakıldı"
 
-#: ../wxui/main.py:1151
+#: ../wxui/main.py:1161
 msgid "Upload to radio"
 msgstr "Telsize yükle"
 
-#: ../wxui/main.py:904
+#: ../wxui/main.py:905
 msgid "Upload to radio..."
 msgstr "Telsize yükle..."
 
@@ -3980,17 +4299,21 @@ msgstr ""
 msgid "Use TX Frequency Workflow"
 msgstr "TX Frekansı İş Akışını Kullan"
 
-#: ../wxui/main.py:855
+#: ../wxui/main.py:856
 msgid "Use fixed-width font"
 msgstr "Sabit genişlikte yazı tipi kullan"
 
-#: ../wxui/main.py:864
+#: ../wxui/main.py:865
 msgid "Use larger font"
 msgstr "Daha büyük yazı tipi kullan"
 
 #: ../wxui/bugreport.py:265
 msgid "Username"
 msgstr "Kullanıcı adı"
+
+#: ../wxui/programming_assistant.py:469
+msgid "Using CHIRP_ASSISTANT_API_KEY environment variable"
+msgstr ""
 
 #: ../wxui/memcolorlegend.py:88
 msgid "VHF marine band."
@@ -4044,7 +4367,7 @@ msgstr "Değerler"
 msgid "Vendor"
 msgstr "Tedarikçi"
 
-#: ../wxui/main.py:1105
+#: ../wxui/main.py:1115
 msgid "View"
 msgstr "Göster"
 
@@ -4052,7 +4375,7 @@ msgstr "Göster"
 msgid "WARNING!"
 msgstr "UYARI!"
 
-#: ../wxui/memedit.py:2722 ../wxui/main.py:2003 ../wxui/main.py:2171
+#: ../wxui/memedit.py:2722 ../wxui/main.py:2013 ../wxui/main.py:2181
 #: ../wxui/bugreport.py:234
 msgid "Warning"
 msgstr "Uyarı"
@@ -4062,7 +4385,7 @@ msgstr "Uyarı"
 msgid "Warning: %s"
 msgstr "Uyarı: %s"
 
-#: ../wxui/main.py:460
+#: ../wxui/main.py:461
 msgid "Welcome"
 msgstr "Hoşgeldiniz"
 
@@ -4094,7 +4417,7 @@ msgstr ""
 msgid "Yes"
 msgstr ""
 
-#: ../wxui/main.py:2278
+#: ../wxui/main.py:2291
 msgid "You are running the latest version of CHIRP."
 msgstr ""
 
@@ -4134,11 +4457,11 @@ msgstr "her biri bayt"
 msgid "contains"
 msgstr ""
 
-#: ../wxui/main.py:2104
+#: ../wxui/main.py:2114
 msgid "disabled"
 msgstr "devre dışı bırakıldı"
 
-#: ../wxui/main.py:2104
+#: ../wxui/main.py:2114
 msgid "enabled"
 msgstr "etkinleştirildi"
 
@@ -4152,6 +4475,10 @@ msgstr "mükerrer sorunları aradım"
 
 #: ../wxui/memcolordialog.py:297
 msgid "starts with"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:289
+msgid "to"
 msgstr ""
 
 #: ../drivers/vx5.py:116
@@ -4525,9 +4852,6 @@ msgstr "{bank} dolu"
 
 #~ msgid "Standby LED Color"
 #~ msgstr "Bekleme LED Rengi"
-
-#~ msgid "Status"
-#~ msgstr "Durum"
 
 #~ msgid "TX LED Color"
 #~ msgstr "TX LED Rengi"

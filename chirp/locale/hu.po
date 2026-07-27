@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: CHIRP\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-27 10:15-0700\n"
+"POT-Creation-Date: 2026-07-27 11:43-0700\n"
 "PO-Revision-Date: 2015-01-28 13:47+0100\n"
 "Last-Translator: Attila Joubert <joubert.attila@gmail.com>\n"
 "Language-Team: English\n"
@@ -49,7 +49,12 @@ msgstr[1] "... és a tömböt felfelé lépteti"
 msgid "%i memories failed validation for this radio (see details below). Add them anyway?"
 msgstr ""
 
-#: ../wxui/main.py:1644
+#: ../wxui/programming_assistant.py:669
+#, python-format
+msgid "%i total, %i included: "
+msgstr ""
+
+#: ../wxui/main.py:1654
 #, fuzzy, python-format
 msgid "%s has not been saved. Save before closing?"
 msgstr "A fájl megváltozott! Menti bezárás előtt?"
@@ -715,24 +720,45 @@ msgid ""
 "It will may not work if you turn on the radio with the cable already attached"
 msgstr ""
 
-#: ../wxui/main.py:2283
+#: ../wxui/main.py:2296
 msgid "A new CHIRP version is available. Please visit the website as soon as possible to download it!"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:430
+msgid "AI Provider Configuration"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:436
+msgid "AI is used ONLY to turn your typed description into the structured fields above -- it never supplies frequencies, tones, or any other technical channel data, and no call is made until you click \"Interpret with AI\"."
 msgstr ""
 
 #: ../drivers/ga510.py:1090
 msgid "AM mode does not allow duplex or tone"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:475
+msgid "API key (session/optional):"
+msgstr ""
+
 #: ../wxui/memcolorlegend.py:74
 msgid "APRS or other amateur data frequency."
 msgstr ""
 
-#: ../wxui/main.py:1020
+#: ../wxui/main.py:1030
 msgid "About"
 msgstr ""
 
-#: ../wxui/main.py:2020
+#: ../wxui/main.py:2030
 msgid "About CHIRP"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:250
+msgid "Activities (comma-separated):"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:546
+#, python-format
+msgid "Activities: %s"
 msgstr ""
 
 #: ../wxui/memcolordialog.py:380 ../wxui/memcolordialog.py:388
@@ -764,7 +790,12 @@ msgstr ""
 msgid "Add..."
 msgstr ""
 
-#: ../wxui/main.py:2075
+#: ../wxui/programming_assistant.py:780
+#, python-format
+msgid "Adjusted for this radio: %i"
+msgstr ""
+
+#: ../wxui/main.py:2085
 msgid "Agree"
 msgstr ""
 
@@ -776,13 +807,26 @@ msgstr ""
 msgid "All"
 msgstr "Mind"
 
-#: ../wxui/main.py:1438
+#: ../wxui/main.py:1448
 #, fuzzy
 msgid "All Files"
 msgstr "CSV fájlok"
 
-#: ../wxui/main.py:1449
+#: ../wxui/main.py:1459
 msgid "All supported formats"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:551
+#, python-format
+msgid "Allow duplicate replacement: %s"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:531
+msgid "Allow network source queries (RepeaterBook, satellites)"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:281
+msgid "Allow replacing conflicting existing memories"
 msgstr ""
 
 #: ../wxui/clone.py:626
@@ -795,6 +839,15 @@ msgstr ""
 
 #: ../wxui/memcolorlegend.py:81
 msgid "Amateur allocation, no specific subtype."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:239
+msgid "Amateur license class:"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:544
+#, python-format
+msgid "Amateur license: %s"
 msgstr ""
 
 #: ../wxui/memcolorlegend.py:79
@@ -817,6 +870,11 @@ msgstr ""
 msgid "An error has occurred"
 msgstr "Hiba történt"
 
+#: ../wxui/programming_assistant.py:777
+#, python-format
+msgid "Applied: %i"
+msgstr ""
+
 #: ../wxui/memcolordialog.py:728
 msgid "Apply"
 msgstr ""
@@ -833,7 +891,7 @@ msgstr ""
 msgid "Applying settings"
 msgstr ""
 
-#: ../wxui/main.py:1741
+#: ../wxui/main.py:1751
 #, fuzzy
 msgid "Automatic from system"
 msgstr "Automatic Repeater Offset"
@@ -854,7 +912,7 @@ msgstr ""
 msgid "Background:"
 msgstr ""
 
-#: ../wxui/main.py:2200
+#: ../wxui/main.py:2210
 msgid "Bandplan"
 msgstr ""
 
@@ -863,12 +921,17 @@ msgstr ""
 msgid "Bands"
 msgstr ""
 
-#: ../wxui/main.py:212
+#: ../wxui/main.py:213
 msgid "Banks"
 msgstr ""
 
 #: ../wxui/developer.py:282
 msgid "Bin"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:779
+#, python-format
+msgid "Blocked by validation: %i"
 msgstr ""
 
 #: ../wxui/memcolordialog.py:334
@@ -883,7 +946,7 @@ msgstr ""
 msgid "Bold:"
 msgstr ""
 
-#: ../wxui/main.py:223
+#: ../wxui/main.py:224
 msgid "Browser"
 msgstr "Böngésző"
 
@@ -908,6 +971,10 @@ msgstr ""
 msgid "Building Radio Browser"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:568
+msgid "Building plan..."
+msgstr ""
+
 #: ../wxui/memcolordialog.py:291
 msgid "Built-in classification"
 msgstr ""
@@ -920,7 +987,7 @@ msgstr ""
 msgid "Business/industrial land-mobile band."
 msgstr ""
 
-#: ../wxui/main.py:1770
+#: ../wxui/main.py:1780
 msgid "CHIRP must be restarted for the new selection to take effect"
 msgstr ""
 
@@ -949,16 +1016,21 @@ msgstr ""
 msgid "Changing this setting requires refreshing the settings from the image, which will happen now."
 msgstr ""
 
+#: ../wxui/programming_assistant.py:548
+#, python-format
+msgid "Channel limit: %i"
+msgstr ""
+
 #: ../wxui/memedit.py:2538
 #, python-format
 msgid "Channels with equivalent TX and RX %s are represented by tone mode of \"%s\""
 msgstr ""
 
-#: ../wxui/main.py:1032
+#: ../wxui/main.py:1042
 msgid "Check for Updates..."
 msgstr ""
 
-#: ../wxui/main.py:1437
+#: ../wxui/main.py:1447
 msgid "Chirp Image Files"
 msgstr ""
 
@@ -989,7 +1061,7 @@ msgstr ""
 msgid "Choose Cross Mode"
 msgstr "Kereszt-üzem"
 
-#: ../wxui/main.py:1269
+#: ../wxui/main.py:1279
 msgid "Choose Diff Target"
 msgstr ""
 
@@ -1035,11 +1107,11 @@ msgstr[1] ""
 msgid "Clear Column"
 msgstr ""
 
-#: ../wxui/main.py:2061
+#: ../wxui/main.py:2071
 msgid "Click here for full license text"
 msgstr ""
 
-#: ../wxui/main.py:2040
+#: ../wxui/main.py:2050
 msgid "Click here for online documentation"
 msgstr ""
 
@@ -1073,7 +1145,7 @@ msgstr "Letöltés a rádióról"
 msgid "Cloning to radio"
 msgstr "Feltöltés a rádióra"
 
-#: ../wxui/main.py:1146 ../wxui/main.py:2076
+#: ../wxui/main.py:1156 ../wxui/main.py:2086
 msgid "Close"
 msgstr ""
 
@@ -1081,7 +1153,7 @@ msgstr ""
 msgid "Close String"
 msgstr ""
 
-#: ../wxui/main.py:1147
+#: ../wxui/main.py:1157
 msgid "Close file"
 msgstr ""
 
@@ -1123,6 +1195,14 @@ msgstr ""
 
 #: ../wxui/memcolordialog.py:457
 msgid "Conditions"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:214
+msgid "Configure AI Provider..."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:509
+msgid "Confirm your request"
 msgstr ""
 
 #: ../drivers/tmd710.py:184 ../drivers/tmd710.py:187
@@ -1190,7 +1270,7 @@ msgstr ""
 msgid "Customize Menus"
 msgstr ""
 
-#: ../wxui/main.py:1027
+#: ../wxui/main.py:1037
 msgid "Customize Menus..."
 msgstr ""
 
@@ -1228,7 +1308,7 @@ msgstr ""
 msgid "DV Memory"
 msgstr "ez a memória"
 
-#: ../wxui/main.py:2113
+#: ../wxui/main.py:2123
 msgid "Danger Ahead"
 msgstr ""
 
@@ -1267,17 +1347,29 @@ msgstr ""
 msgid "Delete rule \"%s\"?"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:196
+msgid "Describe what you want programmed"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:198
+msgid "Describe your request in plain language, or just fill in the fields below directly -- AI is entirely optional and nothing here requires it."
+msgstr ""
+
 #: ../wxui/bugreport.py:568
 #, fuzzy
 msgid "Detailed information"
 msgstr "%s információk lekérése"
 
-#: ../wxui/main.py:1038
+#: ../wxui/programming_assistant.py:618
+msgid "Details"
+msgstr "Részletek"
+
+#: ../wxui/main.py:1048
 #, fuzzy
 msgid "Developer Mode"
 msgstr "Fejlesztői"
 
-#: ../wxui/main.py:2119
+#: ../wxui/main.py:2129
 #, python-format
 msgid "Developer state is now %s. CHIRP must be restarted to take effect"
 msgstr ""
@@ -1299,11 +1391,11 @@ msgstr "Digitális kód"
 msgid "Digital Modes"
 msgstr "Digitális kód"
 
-#: ../wxui/main.py:2131
+#: ../wxui/main.py:2141
 msgid "Disable reporting"
 msgstr ""
 
-#: ../wxui/memedit.py:594
+#: ../wxui/memedit.py:594 ../wxui/programming_assistant.py:446
 #, fuzzy
 msgid "Disabled"
 msgstr "Engedélyezve"
@@ -1334,16 +1426,16 @@ msgstr ""
 msgid "Double-click to change bank name"
 msgstr ""
 
-#: ../wxui/main.py:1148
+#: ../wxui/main.py:1158
 msgid "Download"
 msgstr ""
 
-#: ../wxui/main.py:1149
+#: ../wxui/main.py:1159
 #, fuzzy
 msgid "Download from radio"
 msgstr "Letöltés a rádióról"
 
-#: ../wxui/main.py:895
+#: ../wxui/main.py:896
 #, fuzzy
 msgid "Download from radio..."
 msgstr "Letöltés a rádióról"
@@ -1361,7 +1453,7 @@ msgstr ""
 msgid "Driver information"
 msgstr ""
 
-#: ../wxui/main.py:573
+#: ../wxui/main.py:574
 msgid "Driver messages"
 msgstr ""
 
@@ -1404,7 +1496,7 @@ msgstr ""
 msgid "Empty or skipped memory slot."
 msgstr ""
 
-#: ../wxui/main.py:965
+#: ../wxui/main.py:966
 msgid "Enable Automatic Edits"
 msgstr ""
 
@@ -1427,6 +1519,10 @@ msgstr "Engedélyezve"
 msgid "Enabled:"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:457
+msgid "Endpoint URL:"
+msgstr ""
+
 #: ../wxui/memedit.py:402
 #, fuzzy
 msgid "Enter Frequency"
@@ -1438,6 +1534,10 @@ msgstr ""
 
 #: ../wxui/memedit.py:2557
 msgid "Enter TX Frequency (MHz)"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:324
+msgid "Enter a description first."
 msgstr ""
 
 #: ../wxui/memedit.py:1566
@@ -1507,6 +1607,11 @@ msgstr "Hiba a(z) %s érték beállításakor"
 msgid "Error communicating with radio"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:349 ../wxui/programming_assistant.py:592
+#, python-format
+msgid "Error: %s"
+msgstr ""
+
 #: ../wxui/memquery.py:236
 msgid "Example: \"foo\""
 msgstr ""
@@ -1543,6 +1648,11 @@ msgstr ""
 msgid "Exclude private and closed repeaters"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:781
+#, python-format
+msgid "Existing memories replaced: %i"
+msgstr ""
+
 #: ../wxui/clone.py:750
 #, fuzzy
 msgid "Experimental driver"
@@ -1560,12 +1670,12 @@ msgstr ""
 msgid "Export can only write CSV files"
 msgstr ""
 
-#: ../wxui/main.py:1629
+#: ../wxui/main.py:1639
 #, fuzzy
 msgid "Export to CSV"
 msgstr "Export fájlba"
 
-#: ../wxui/main.py:750
+#: ../wxui/main.py:751
 #, fuzzy
 msgid "Export to CSV..."
 msgstr "Export fájlba"
@@ -1595,6 +1705,11 @@ msgstr ""
 
 #: ../wxui/memcolorlegend.py:50
 msgid "FRS"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:784
+#, python-format
+msgid "Failed to apply: %i"
 msgstr ""
 
 #: ../wxui/memedit.py:3651
@@ -1643,14 +1758,14 @@ msgstr ""
 msgid "File a new bug"
 msgstr ""
 
-#: ../wxui/main.py:580
+#: ../wxui/main.py:581
 #, python-format
 msgid "File does not exist: %s"
 msgstr ""
 
-#: ../wxui/main.py:1441 ../wxui/main.py:1524 ../wxui/main.py:1534
-#: ../wxui/main.py:1567 ../wxui/main.py:1625 ../wxui/main.py:1990
-#: ../wxui/main.py:1991
+#: ../wxui/main.py:1451 ../wxui/main.py:1534 ../wxui/main.py:1544
+#: ../wxui/main.py:1577 ../wxui/main.py:1635 ../wxui/main.py:2000
+#: ../wxui/main.py:2001
 #, fuzzy
 msgid "Files"
 msgstr "_Fájl"
@@ -1672,7 +1787,7 @@ msgstr ""
 msgid "Filter..."
 msgstr ""
 
-#: ../wxui/main.py:1699
+#: ../wxui/main.py:1709
 #, fuzzy
 msgid "Find"
 msgstr "RFinder"
@@ -1686,12 +1801,12 @@ msgstr ""
 msgid "Find Duplicate Memories..."
 msgstr ""
 
-#: ../wxui/main.py:830
+#: ../wxui/main.py:831
 #, fuzzy
 msgid "Find Next"
 msgstr "RFinder"
 
-#: ../wxui/main.py:816
+#: ../wxui/main.py:817
 #, fuzzy
 msgid "Find..."
 msgstr "RFinder"
@@ -1939,6 +2054,11 @@ msgstr ""
 msgid "GMRS"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:545
+#, python-format
+msgid "GMRS license declared: %s"
+msgstr ""
+
 #: ../wxui/memcolorlegend.py:85
 msgid "General Mobile Radio Service."
 msgstr ""
@@ -1960,6 +2080,10 @@ msgstr "ez a memória"
 
 #: ../wxui/memedit.py:1738
 msgid "Goto..."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:615
+msgid "Group"
 msgstr ""
 
 #: ../wxui/memcolorlegend.py:42
@@ -1998,7 +2122,7 @@ msgstr ""
 msgid "Ham: Simplex"
 msgstr ""
 
-#: ../wxui/main.py:1107
+#: ../wxui/main.py:1117
 msgid "Help"
 msgstr "Súgó"
 
@@ -2036,13 +2160,17 @@ msgstr ""
 msgid "I have"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:244
+msgid "I have a GMRS license"
+msgstr ""
+
 #: ../wxui/query_sources.py:366 ../wxui/query_sources.py:372
 #: ../wxui/query_sources.py:666 ../wxui/query_sources.py:672
 #: ../wxui/query_sources.py:818 ../wxui/query_sources.py:824
 msgid "If set, sort results by distance from these coordinates"
 msgstr ""
 
-#: ../wxui/main.py:1611
+#: ../wxui/main.py:1621
 msgid "Import"
 msgstr "Importálás"
 
@@ -2064,16 +2192,16 @@ msgstr ""
 msgid "Import color profile \"%s\"?"
 msgstr ""
 
-#: ../wxui/main.py:743
+#: ../wxui/main.py:744
 #, fuzzy
 msgid "Import from file..."
 msgstr "Importálás fájlból"
 
-#: ../wxui/main.py:1615
+#: ../wxui/main.py:1625
 msgid "Import messages"
 msgstr ""
 
-#: ../wxui/main.py:1609
+#: ../wxui/main.py:1619
 msgid "Import not recommended"
 msgstr ""
 
@@ -2085,7 +2213,7 @@ msgstr ""
 msgid "Index"
 msgstr "Sorszám"
 
-#: ../wxui/main.py:225
+#: ../wxui/main.py:226
 msgid "Info"
 msgstr ""
 
@@ -2106,7 +2234,7 @@ msgstr ""
 msgid "Install desktop icon?"
 msgstr ""
 
-#: ../wxui/main.py:1008
+#: ../wxui/main.py:1018
 msgid "Interact with driver"
 msgstr ""
 
@@ -2117,6 +2245,18 @@ msgstr "Belső hiba"
 
 #: ../chirp_common.py:741
 msgid "Internal driver error: Attempt to modify frozen memory; Please report this as a bug using \"Report or update a bug\" in the Help menu"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:211
+msgid "Interpret with AI"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:352
+msgid "Interpreted -- review the fields below before continuing."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:328
+msgid "Interpreting..."
 msgstr ""
 
 #: ../wxui/memcolorlegend.py:33
@@ -2148,8 +2288,12 @@ msgstr "Érvénytelen érték %s"
 msgid "Invalid locator"
 msgstr "Érvénytelen érték %s"
 
-#: ../wxui/main.py:1987
+#: ../wxui/main.py:1997
 msgid "Invalid or unsupported module file"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:403
+msgid "Invalid request"
 msgstr ""
 
 #: ../wxui/memedit.py:294 ../wxui/memedit.py:300 ../wxui/memedit.py:733
@@ -2174,11 +2318,11 @@ msgstr ""
 msgid "Known emergency/distress frequency."
 msgstr ""
 
-#: ../wxui/main.py:351
+#: ../wxui/main.py:352
 msgid "LIVE"
 msgstr ""
 
-#: ../drivers/radtel_rt490.py:1028 ../wxui/main.py:880 ../wxui/main.py:1755
+#: ../drivers/radtel_rt490.py:1028 ../wxui/main.py:881 ../wxui/main.py:1765
 #, fuzzy
 msgid "Language"
 msgstr "Nyelv választás"
@@ -2222,16 +2366,20 @@ msgstr ""
 msgid "Limit results to this distance (mi) from coordinates"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:292
+msgid "Limit to memory range:"
+msgstr ""
+
 #: ../wxui/query_sources.py:405
 msgid "Limit use"
 msgstr ""
 
-#: ../wxui/main.py:1842
+#: ../wxui/main.py:1852
 #, fuzzy
 msgid "Live Radio"
 msgstr "Rádió"
 
-#: ../wxui/main.py:757
+#: ../wxui/main.py:758
 #, fuzzy
 msgid "Load Module..."
 msgstr "Modul betöltése"
@@ -2241,21 +2389,34 @@ msgstr "Modul betöltése"
 msgid "Load module from issue"
 msgstr "Modul betöltése"
 
-#: ../wxui/main.py:1080
+#: ../wxui/main.py:1090
 #, fuzzy
 msgid "Load module from issue..."
 msgstr "Modul betöltése"
 
-#: ../wxui/main.py:2167
+#: ../wxui/main.py:2177
 msgid "Loading a module will not affect open tabs. It is recommended (unless instructed otherwise) to close all tabs before loading a module."
 msgstr ""
 
-#: ../wxui/main.py:1994
+#: ../wxui/main.py:2004
 msgid "Loading modules can be extremely dangerous, leading to damage to your computer, radio, or both. NEVER load a module from a source you do not trust, and especially not from anywhere other than the main CHIRP website (chirpmyradio.com). Loading a module from another source is akin to giving them direct access to your computer and everything on it! Proceed despite this risk?"
 msgstr ""
 
 #: ../wxui/clone.py:147
 msgid "Loading settings"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:615
+msgid "Loc"
+msgstr "Hely"
+
+#: ../wxui/programming_assistant.py:226
+msgid "Location:"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:542
+#, python-format
+msgid "Location: %s"
 msgstr ""
 
 #: ../wxui/query_sources.py:110
@@ -2300,7 +2461,11 @@ msgstr ""
 msgid "Match ALL of these conditions:"
 msgstr ""
 
-#: ../wxui/main.py:204
+#: ../wxui/programming_assistant.py:263
+msgid "Maximum channels:"
+msgstr ""
+
+#: ../wxui/main.py:205
 msgid "Memories"
 msgstr "Memória"
 
@@ -2339,8 +2504,9 @@ msgstr ""
 msgid "Memory {num} not in bank {bank}"
 msgstr ""
 
-#: ../wxui/memedit.py:673 ../wxui/memcolordialog.py:285
-#: ../wxui/query_sources.py:626 ../wxui/query_sources.py:779
+#: ../wxui/memedit.py:673 ../wxui/programming_assistant.py:617
+#: ../wxui/memcolordialog.py:285 ../wxui/query_sources.py:626
+#: ../wxui/query_sources.py:779
 #, fuzzy
 msgid "Mode"
 msgstr "Mód"
@@ -2349,22 +2515,26 @@ msgstr "Mód"
 msgid "Model"
 msgstr "Modell"
 
+#: ../wxui/programming_assistant.py:462
+msgid "Model name:"
+msgstr ""
+
 #: ../wxui/query_sources.py:502 ../wxui/query_sources.py:1300
 #, fuzzy
 msgid "Modes"
 msgstr "Mód"
 
-#: ../wxui/main.py:1991
+#: ../wxui/main.py:2001
 #, fuzzy
 msgid "Module"
 msgstr "Modul betöltése"
 
-#: ../wxui/main.py:1963
+#: ../wxui/main.py:1973
 #, fuzzy
 msgid "Module Loaded"
 msgstr "Modul betöltése"
 
-#: ../wxui/main.py:2178
+#: ../wxui/main.py:2188
 msgid "Module loaded successfully"
 msgstr ""
 
@@ -2412,7 +2582,8 @@ msgstr ""
 msgid "NOAA/Weather"
 msgstr ""
 
-#: ../wxui/memcolordialog.py:287 ../wxui/memcolordialog.py:455
+#: ../wxui/programming_assistant.py:615 ../wxui/memcolordialog.py:287
+#: ../wxui/memcolordialog.py:455
 msgid "Name"
 msgstr "Név"
 
@@ -2420,17 +2591,30 @@ msgstr "Név"
 msgid "Name:"
 msgstr ""
 
-#: ../wxui/main.py:694
+#: ../wxui/programming_assistant.py:270
+msgid "Naming style:"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:549
+#, python-format
+msgid "Naming style: %s"
+msgstr ""
+
+#: ../wxui/main.py:695
 msgid "New Window"
 msgstr ""
 
-#: ../wxui/main.py:2285
+#: ../wxui/main.py:2298
 #, fuzzy
 msgid "New version available"
 msgstr "A CHIRP egy új verziója érhető el:"
 
 #: ../wxui/memcolordialog.py:242 ../wxui/memcolordialog.py:487
 msgid "No"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:310
+msgid "No AI provider configured -- fill in the fields below directly, or configure a provider above."
 msgstr ""
 
 #: ../wxui/memedit.py:1933
@@ -2445,6 +2629,14 @@ msgstr "Memória beszúrása alá"
 #: ../wxui/memquery.py:254
 #, python-format
 msgid "No example for %s"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:816
+msgid "No memory editor is available for the current tab."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:743
+msgid "No memory editor tab is available for this radio; nothing was applied."
 msgstr ""
 
 #: ../wxui/developer.py:706
@@ -2469,7 +2661,7 @@ msgstr ""
 msgid "No results!"
 msgstr ""
 
-#: ../wxui/main.py:2188
+#: ../wxui/main.py:2198
 msgid "No traces stored"
 msgstr ""
 
@@ -2477,7 +2669,7 @@ msgstr ""
 msgid "No transmit frequency configured."
 msgstr ""
 
-#: ../wxui/main.py:2279
+#: ../wxui/main.py:2292
 msgid "No update available"
 msgstr ""
 
@@ -2508,6 +2700,10 @@ msgid ""
 "TX Freq"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:446
+msgid "Ollama (local)"
+msgstr ""
+
 #: ../wxui/memquery.py:252
 #, python-format
 msgid "One of: %s"
@@ -2526,7 +2722,7 @@ msgstr ""
 msgid "Only certain prefixes"
 msgstr ""
 
-#: ../wxui/main.py:332
+#: ../wxui/main.py:333
 msgid "Only memory tabs may be exported"
 msgstr ""
 
@@ -2534,37 +2730,37 @@ msgstr ""
 msgid "Only working repeaters"
 msgstr ""
 
-#: ../wxui/main.py:1142 ../wxui/main.py:1611
+#: ../wxui/main.py:1152 ../wxui/main.py:1621
 msgid "Open"
 msgstr ""
 
-#: ../wxui/main.py:727
+#: ../wxui/main.py:728
 #, fuzzy
 msgid "Open Recent"
 msgstr "Leg_utóbbi"
 
-#: ../wxui/main.py:707
+#: ../wxui/main.py:708
 #, fuzzy
 msgid "Open Stock Config"
 msgstr "A csoportos beállítás megnyitása"
 
-#: ../wxui/main.py:1143 ../wxui/main.py:1452
+#: ../wxui/main.py:1153 ../wxui/main.py:1462
 msgid "Open a file"
 msgstr ""
 
-#: ../wxui/main.py:2009
+#: ../wxui/main.py:2019
 msgid "Open a module"
 msgstr ""
 
-#: ../wxui/main.py:1061
+#: ../wxui/main.py:1071
 msgid "Open debug log"
 msgstr ""
 
-#: ../wxui/main.py:543
+#: ../wxui/main.py:544
 msgid "Open in new window"
 msgstr ""
 
-#: ../wxui/main.py:1097
+#: ../wxui/main.py:1107
 msgid "Open last serial trace"
 msgstr ""
 
@@ -2572,10 +2768,14 @@ msgstr ""
 msgid "Open repeaters only"
 msgstr ""
 
-#: ../wxui/main.py:649
+#: ../wxui/main.py:650
 #, fuzzy
 msgid "Open stock config directory"
 msgstr "A(z) {name} konfigurációs készlet megnyitása"
+
+#: ../wxui/programming_assistant.py:446
+msgid "OpenAI-compatible"
+msgstr ""
 
 #: ../wxui/memquery.py:143 ../wxui/memcolordialog.py:346
 msgid "Operator"
@@ -2675,7 +2875,12 @@ msgstr ""
 msgid "Pasted memory will overwrite memory %s"
 msgstr ""
 
-#: ../wxui/main.py:2289
+#: ../wxui/programming_assistant.py:598
+#, python-format
+msgid "Plan built: %i candidate(s) ready to review."
+msgstr ""
+
+#: ../wxui/main.py:2302
 msgid "Please be sure to quit CHIRP before installing the new version!"
 msgstr ""
 
@@ -2683,7 +2888,7 @@ msgstr ""
 msgid "Please check the bug number and try again. If you do actually want to report against this bug, please comment on it via the website and ask for it to be re-opened."
 msgstr ""
 
-#: ../wxui/main.py:2107
+#: ../wxui/main.py:2117
 msgid "Please note that developer mode is intended for use by developers of the CHIRP project, or under the direction of a developer. It enables behaviors and functions that can damage your computer and your radio if not used with EXTREME care. You have been warned! Proceed anyway?"
 msgstr ""
 
@@ -2711,17 +2916,38 @@ msgstr "Teljesítmény"
 msgid "Prefixes"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:275
+msgid "Preserve existing memories (recommended)"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:550
+#, python-format
+msgid "Preserve existing memories: %s"
+msgstr ""
+
 #: ../wxui/developer.py:158
 #, fuzzy
 msgid "Press enter to set this in memory"
 msgstr "Memória beállítási hiba"
 
-#: ../wxui/main.py:770
+#: ../wxui/main.py:771
 msgid "Print Preview"
 msgstr ""
 
 #: ../wxui/printing.py:29
 msgid "Printing"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:817
+msgid "Programming Assistant"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:750
+msgid "Programming Assistant plan"
+msgstr ""
+
+#: ../wxui/main.py:982
+msgid "Programming Assistant... (Experimental)"
 msgstr ""
 
 #: ../wxui/clone.py:526
@@ -2744,6 +2970,14 @@ msgstr ""
 msgid "Property Value"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:298
+msgid "Protected ranges (e.g. 0-9, 90-99):"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:452
+msgid "Provider:"
+msgstr ""
+
 #: ../wxui/memcolorlegend.py:54
 msgid "Public Safety"
 msgstr ""
@@ -2756,12 +2990,12 @@ msgstr ""
 msgid "QTH Locator"
 msgstr ""
 
-#: ../wxui/main.py:2216
+#: ../wxui/main.py:2229
 #, fuzzy, python-format
 msgid "Query %s"
 msgstr "Lekérdezés hiba"
 
-#: ../wxui/main.py:912
+#: ../wxui/main.py:913
 #, fuzzy
 msgid "Query Source"
 msgstr "Lekérd. adatforrása"
@@ -2790,7 +3024,11 @@ msgstr "Lekérdezés hiba"
 msgid "RX DTCS"
 msgstr "RX DTCS kód"
 
-#: ../wxui/main.py:1106
+#: ../wxui/programming_assistant.py:616
+msgid "RX Freq"
+msgstr ""
+
+#: ../wxui/main.py:1116
 msgid "Radio"
 msgstr "Rádió"
 
@@ -2824,6 +3062,15 @@ msgid ""
 "<small>Premium account required</small>"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:232
+msgid "Radius (miles):"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:543
+#, python-format
+msgid "Radius: %s miles"
+msgstr ""
+
 #: ../wxui/memcolorlegend.py:53
 msgid "Railroad"
 msgstr ""
@@ -2842,7 +3089,8 @@ msgstr "DTCS kód"
 msgid "Receive frequency"
 msgstr "Frekvencia"
 
-#: ../wxui/memcolorlegend.py:37 ../wxui/memcolordialog.py:290
+#: ../wxui/memcolorlegend.py:37 ../wxui/programming_assistant.py:682
+#: ../wxui/memcolordialog.py:290
 msgid "Receive-only"
 msgstr ""
 
@@ -2873,16 +3121,28 @@ msgstr ""
 msgid "Refreshed memory %s"
 msgstr "ezek a memóriák"
 
-#: ../wxui/main.py:984
-msgid "Reload Driver"
+#: ../wxui/programming_assistant.py:648
+msgid "Regulatory & Privacy Details"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:640
+msgid "Regulatory && Privacy Details..."
 msgstr ""
 
 #: ../wxui/main.py:994
+msgid "Reload Driver"
+msgstr ""
+
+#: ../wxui/main.py:1004
 msgid "Reload Driver and File"
 msgstr ""
 
 #: ../wxui/memedit.py:1846
 msgid "Reload required"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:480
+msgid "Remember API key on this computer (obfuscated, NOT securely encrypted -- no OS keyring is available)"
 msgstr ""
 
 #: ../wxui/clone.py:628
@@ -2916,7 +3176,7 @@ msgstr ""
 msgid "Replace ALL current color settings (including custom rules) with the built-in default profile?"
 msgstr ""
 
-#: ../wxui/main.py:1087
+#: ../wxui/main.py:1097
 msgid "Report or update a bug..."
 msgstr ""
 
@@ -2925,13 +3185,22 @@ msgstr ""
 msgid "Reporting a new bug: %r"
 msgstr "Listázás letiltva"
 
-#: ../wxui/main.py:1048
+#: ../wxui/main.py:1058
 #, fuzzy
 msgid "Reporting enabled"
 msgstr "Listázás letiltva"
 
-#: ../wxui/main.py:2127
+#: ../wxui/main.py:2137
 msgid "Reporting helps the CHIRP project know which radio models and OS platforms to spend our limited efforts on. We would really appreciate if you left it enabled. Really disable reporting?"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:256
+msgid "Requested services:"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:547
+#, python-format
+msgid "Requested services: %s"
 msgstr ""
 
 #: ../wxui/memcolordialog.py:269
@@ -2950,19 +3219,23 @@ msgstr ""
 msgid "Reset all built-in category colors to their defaults? Custom rules are not affected."
 msgstr ""
 
-#: ../wxui/main.py:1772 ../wxui/main.py:2121
+#: ../wxui/main.py:1782 ../wxui/main.py:2131
 msgid "Restart Required"
 msgstr ""
 
-#: ../wxui/main.py:720
+#: ../wxui/main.py:721
 #, python-format
 msgid "Restore %i tab"
 msgid_plural "Restore %i tabs"
 msgstr[0] ""
 msgstr[1] ""
 
-#: ../wxui/main.py:872
+#: ../wxui/main.py:873
 msgid "Restore tabs on start"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:724
+msgid "Result"
 msgstr ""
 
 #: ../wxui/query_sources.py:415
@@ -2971,6 +3244,14 @@ msgstr ""
 
 #: ../wxui/common.py:338
 msgid "Retrieved settings"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:511
+msgid "Review the interpreted request below. Nothing is queried or built until you continue -- go back to correct anything."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:623
+msgid "Review the proposed plan"
 msgstr ""
 
 #: ../wxui/memedit.py:3181
@@ -3002,15 +3283,15 @@ msgid ""
 "up-to-date transmitter data."
 msgstr ""
 
-#: ../wxui/main.py:1144
+#: ../wxui/main.py:1154
 msgid "Save"
 msgstr ""
 
-#: ../wxui/main.py:1646
+#: ../wxui/main.py:1656
 msgid "Save before closing?"
 msgstr ""
 
-#: ../wxui/main.py:1145 ../wxui/main.py:1538 ../wxui/main.py:1565
+#: ../wxui/main.py:1155 ../wxui/main.py:1548 ../wxui/main.py:1575
 msgid "Save file"
 msgstr ""
 
@@ -3035,7 +3316,7 @@ msgstr ""
 msgid "Security Risk"
 msgstr ""
 
-#: ../wxui/main.py:973
+#: ../wxui/main.py:974
 #, fuzzy
 msgid "Select Bandplan..."
 msgstr "Oszlopok kiválasztása"
@@ -3046,7 +3327,7 @@ msgstr "Oszlopok kiválasztása"
 msgid "Select Bands"
 msgstr "Oszlopok kiválasztása"
 
-#: ../wxui/main.py:1755
+#: ../wxui/main.py:1765
 #, fuzzy
 msgid "Select Language"
 msgstr "Oszlopok kiválasztása"
@@ -3060,11 +3341,11 @@ msgstr "Oszlopok kiválasztása"
 msgid "Select Modes to Import"
 msgstr ""
 
-#: ../wxui/main.py:2199
+#: ../wxui/main.py:2209
 msgid "Select a bandplan"
 msgstr ""
 
-#: ../wxui/main.py:1273
+#: ../wxui/main.py:1283
 msgid "Select a tab and memory to diff"
 msgstr ""
 
@@ -3104,12 +3385,16 @@ msgstr ""
 msgid "Set Column Value..."
 msgstr ""
 
-#: ../wxui/main.py:217
+#: ../wxui/main.py:218
 msgid "Settings"
 msgstr "Beállítás"
 
 #: ../drivers/uvk5.py:2092
 msgid "Settings are read-only due to unsupported firmware version"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:525
+msgid "Share precise coordinates with network sources (off = distance sorting is skipped; only your entered state/location text is used)"
 msgstr ""
 
 #: ../wxui/memedit.py:159
@@ -3136,7 +3421,7 @@ msgstr "Memóriasor mutatása"
 msgid "Show color legend"
 msgstr ""
 
-#: ../wxui/main.py:1068
+#: ../wxui/main.py:1078
 msgid "Show debug log location"
 msgstr ""
 
@@ -3144,8 +3429,12 @@ msgstr ""
 msgid "Show extra fields"
 msgstr ""
 
-#: ../wxui/main.py:1074
+#: ../wxui/main.py:1084
 msgid "Show image backup location"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:686
+msgid "Simplex"
 msgstr ""
 
 #: ../wxui/memedit.py:695
@@ -3154,6 +3443,11 @@ msgstr "Ugrás"
 
 #: ../wxui/memcolordialog.py:289
 msgid "Skip state"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:778
+#, python-format
+msgid "Skipped (not included or invalid): %i"
 msgstr ""
 
 #: ../wxui/memedit.py:3455
@@ -3218,6 +3512,15 @@ msgstr "Felülírja?"
 msgid "Sorting"
 msgstr "Beállítás"
 
+#: ../wxui/programming_assistant.py:618
+msgid "Source"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:788
+#, python-format
+msgid "Sources with no data: %s"
+msgstr ""
+
 #: ../wxui/query_sources.py:566
 msgid "State"
 msgstr ""
@@ -3226,12 +3529,20 @@ msgstr ""
 msgid "State/Province"
 msgstr ""
 
-#: ../wxui/main.py:2179
+#: ../wxui/programming_assistant.py:617
+msgid "Status"
+msgstr ""
+
+#: ../wxui/main.py:2189
 msgid "Success"
 msgstr ""
 
 #: ../wxui/bugreport.py:732
 msgid "Successfully sent bug report:"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:616
+msgid "TX Freq / RX-only"
 msgstr ""
 
 #: ../wxui/memedit.py:346
@@ -3282,6 +3593,10 @@ msgid ""
 "'DATA MODE' to select USER-U, USER-L and RTTY \n"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:80
+msgid "The Programming Assistant organizes publicly available and curated frequency information into a proposed set of radio memories. It does not verify your license or authorization to transmit, and a radio's technical ability to transmit on a frequency does not establish legal authorization or equipment certification for that service. You remain responsible for operating lawfully. Aviation, weather, marine, public safety, business, and railroad channels are always programmed as receive-only in this release."
+msgstr ""
+
 #: ../drivers/boblov_x3plus.py:119
 msgid ""
 "The X3Plus driver is currently experimental.\n"
@@ -3310,7 +3625,11 @@ msgstr ""
 msgid "The memory editor requires a reload in order to change the workflow. That will happen now. Any other open tabs will be updated the next time they are loaded."
 msgstr ""
 
-#: ../wxui/main.py:1602
+#: ../wxui/programming_assistant.py:792
+msgid "The open image has been updated. Nothing has been uploaded to a radio -- use Radio > Upload to Radio when you are ready."
+msgstr ""
+
+#: ../wxui/main.py:1612
 #, python-format
 msgid "The recommended procedure for importing memories is to open the source file and copy/paste memories from it into your target image. If you continue with this import function, CHIRP will replace all memories in your currently-open file with those in %(file)s. Would you like to open this file to copy/paste memories across, or proceed with the import?"
 msgstr ""
@@ -3345,11 +3664,11 @@ msgstr ""
 msgid "This image is read-only due to being from a radio with unsupported firmware"
 msgstr ""
 
-#: ../wxui/main.py:1839
+#: ../wxui/main.py:1849
 msgid "This is a live-mode radio, which means changes are sent to the radio in real-time as you make them. Upload is not necessary!"
 msgstr ""
 
-#: ../wxui/main.py:1845
+#: ../wxui/main.py:1855
 msgid "This is a radio-independent file and cannot be uploaded directly to a radio. Open a radio image (or download one from a radio) and then copy/paste items from this tab into that one in order to upload"
 msgstr ""
 
@@ -3424,7 +3743,7 @@ msgstr ""
 msgid "This will load a module from a website issue"
 msgstr ""
 
-#: ../wxui/memedit.py:523
+#: ../wxui/memedit.py:523 ../wxui/programming_assistant.py:617
 msgid "Tone"
 msgstr "CTCSS"
 
@@ -3492,7 +3811,7 @@ msgstr ""
 msgid "Unable to edit memory before radio is loaded"
 msgstr ""
 
-#: ../wxui/main.py:1493
+#: ../wxui/main.py:1503
 #, fuzzy, python-format
 msgid "Unable to find stock config %r"
 msgstr "A csoportos beállítás megnyitása"
@@ -3526,7 +3845,7 @@ msgstr "Ennél a modellnél nem változtatható"
 msgid "Unable to set %s on this memory"
 msgstr "Ennél a modellnél nem változtatható"
 
-#: ../wxui/main.py:1849
+#: ../wxui/main.py:1859
 #, fuzzy
 msgid "Unable to upload this file"
 msgstr "Ennél a modellnél nem változtatható"
@@ -3574,12 +3893,12 @@ msgstr "{instructions}"
 msgid "Upload is disabled due to unsupported firmware version"
 msgstr ""
 
-#: ../wxui/main.py:1151
+#: ../wxui/main.py:1161
 #, fuzzy
 msgid "Upload to radio"
 msgstr "Feltöltés a rádióra"
 
-#: ../wxui/main.py:904
+#: ../wxui/main.py:905
 #, fuzzy
 msgid "Upload to radio..."
 msgstr "Feltöltés a rádióra"
@@ -3597,16 +3916,20 @@ msgstr ""
 msgid "Use TX Frequency Workflow"
 msgstr ""
 
-#: ../wxui/main.py:855
+#: ../wxui/main.py:856
 msgid "Use fixed-width font"
 msgstr ""
 
-#: ../wxui/main.py:864
+#: ../wxui/main.py:865
 msgid "Use larger font"
 msgstr ""
 
 #: ../wxui/bugreport.py:265
 msgid "Username"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:469
+msgid "Using CHIRP_ASSISTANT_API_KEY environment variable"
 msgstr ""
 
 #: ../wxui/memcolorlegend.py:88
@@ -3661,7 +3984,7 @@ msgstr ""
 msgid "Vendor"
 msgstr "Gyártó"
 
-#: ../wxui/main.py:1105
+#: ../wxui/main.py:1115
 #, fuzzy
 msgid "View"
 msgstr "Né_zet"
@@ -3670,7 +3993,7 @@ msgstr "Né_zet"
 msgid "WARNING!"
 msgstr ""
 
-#: ../wxui/memedit.py:2722 ../wxui/main.py:2003 ../wxui/main.py:2171
+#: ../wxui/memedit.py:2722 ../wxui/main.py:2013 ../wxui/main.py:2181
 #: ../wxui/bugreport.py:234
 msgid "Warning"
 msgstr ""
@@ -3680,7 +4003,7 @@ msgstr ""
 msgid "Warning: %s"
 msgstr ""
 
-#: ../wxui/main.py:460
+#: ../wxui/main.py:461
 msgid "Welcome"
 msgstr ""
 
@@ -3712,7 +4035,7 @@ msgstr ""
 msgid "Yes"
 msgstr ""
 
-#: ../wxui/main.py:2278
+#: ../wxui/main.py:2291
 msgid "You are running the latest version of CHIRP."
 msgstr ""
 
@@ -3752,12 +4075,12 @@ msgstr ""
 msgid "contains"
 msgstr ""
 
-#: ../wxui/main.py:2104
+#: ../wxui/main.py:2114
 #, fuzzy
 msgid "disabled"
 msgstr "Engedélyezve"
 
-#: ../wxui/main.py:2104
+#: ../wxui/main.py:2114
 #, fuzzy
 msgid "enabled"
 msgstr "Engedélyezve"
@@ -3772,6 +4095,10 @@ msgstr ""
 
 #: ../wxui/memcolordialog.py:297
 msgid "starts with"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:289
+msgid "to"
 msgstr ""
 
 #: ../drivers/vx5.py:116
@@ -3860,9 +4187,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "Delete and shift block up"
 #~ msgstr "... és a tömböt felfelé lépteti"
-
-#~ msgid "Details"
-#~ msgstr "Részletek"
 
 #~ msgid "Diff of {a} and {b}"
 #~ msgstr "{a} és {b} összehasonlítása"
@@ -4024,9 +4348,6 @@ msgstr ""
 
 #~ msgid "Kenwood ITM Files"
 #~ msgstr "Kenwood ITM fájlok"
-
-#~ msgid "Loc"
-#~ msgstr "Hely"
 
 #~ msgid "Location memory will be imported into"
 #~ msgstr "Memória helye lesz beimportálva"
