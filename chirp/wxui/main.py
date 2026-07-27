@@ -1064,6 +1064,18 @@ class ChirpMain(wx.Frame):
         help_menu.Append(reporting_menu)
         reporting_menu.Check(not CONF.get_bool('no_report', default=False))
 
+        assistant_menu = wx.MenuItem(
+            help_menu, wx.NewId(),
+            _('Enable Programming Assistant (Experimental)'),
+            kind=wx.ITEM_CHECK)
+        tag(assistant_menu, 'help.programming_assistant_enabled')
+        self.Bind(wx.EVT_MENU,
+                  functools.partial(self._menu_programming_assistant_enabled,
+                                    assistant_menu),
+                  assistant_menu)
+        help_menu.Append(assistant_menu)
+        assistant_menu.Check(programming_assistant.assistant_enabled())
+
         if logger.Logger.instance.has_debug_log_file:
             # Only expose these debug log menu elements if we are logging to
             # a debug.log file this session.
@@ -2145,6 +2157,30 @@ GNU General Public License for more details."""
                 return
 
         CONF.set_bool('no_report', not menuitem.IsChecked())
+
+    def _menu_programming_assistant_enabled(self, menuitem, event):
+        programming_assistant.set_assistant_enabled(menuitem.IsChecked())
+        state = menuitem.IsChecked() and _('enabled') or _('disabled')
+        if menuitem.IsChecked():
+            msg = _(
+                'The Programming Assistant is experimental. It only '
+                'proposes memories from public/curated data and your own '
+                'answers -- it never verifies your license, never '
+                'transmits, and never uploads to a radio by itself. You '
+                'review and Apply (or discard) everything it proposes, '
+                'and Apply is a single undoable action. Enable it?')
+            d = wx.MessageDialog(self, msg, _('Experimental Feature'),
+                                 style=wx.ICON_WARNING | wx.YES_NO)
+            if d.ShowModal() != wx.ID_YES:
+                menuitem.Check(False)
+                programming_assistant.set_assistant_enabled(False)
+                return
+
+        wx.MessageBox(_('Programming Assistant is now %s. '
+                        'CHIRP must be restarted to take effect') % state,
+                      _('Restart Required'), wx.OK)
+        LOG.info('User set programming assistant enabled to %s',
+                 menuitem.IsChecked())
 
     @common.error_proof()
     def _menu_debug_log(self, event):
