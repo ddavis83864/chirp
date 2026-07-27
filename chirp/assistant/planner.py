@@ -169,8 +169,14 @@ def allocate_memory_numbers(candidates, capability, existing_memories,
     Never reuses an occupied, protected, or special-channel number.
     Candidates that can't be placed get include=False and a reason;
     returns True if capacity was exceeded."""
+    # A memory can be immutable (some fields can never be changed by
+    # set_memory()) while still reading as empty -- e.g. a fixed
+    # priority/call channel nobody has programmed content into yet.
+    # Treat it as unavailable regardless of its empty flag; otherwise
+    # Apply would raise ImmutableValueError for a slot this function
+    # itself handed out.
     occupied = {number for number, memory in existing_memories
-                if not memory.empty}
+                if not memory.empty or getattr(memory, 'immutable', ())}
     lo, hi = capability.memory_bounds
     start = request.requested_start_memory
     end = request.requested_end_memory

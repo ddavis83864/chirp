@@ -28,6 +28,7 @@ _MODULES = (
     'tests.unit.test_assistant_converter_validator',
     'tests.unit.test_assistant_providers',
     'tests.unit.test_assistant_providers_integration',
+    'tests.unit.test_assistant_radio_profiles',
     'tests.unit.test_assistant_sources',
     'tests.unit.test_assistant_service',
     'tests.unit.test_wxui_programming_assistant',
