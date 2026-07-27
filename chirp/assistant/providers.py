@@ -22,7 +22,7 @@ frequency, tone, offset, DCS code, or any other technical channel fact;
 ProgrammingRequest has no field for any of those, so there is no key an
 AI response could populate to inject one. Every provider response is:
 
-  1. Parsed as JSON only (never eval()/exec()'d).
+  1. Parsed as JSON only -- never executed as code.
   2. Converted via ProgrammingRequest.from_dict(), which silently drops
      unknown keys and type-mismatched values rather than trusting them.
   3. Passed through ProgrammingRequest.validate() -- the exact same gate

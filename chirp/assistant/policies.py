@@ -38,8 +38,9 @@ from chirp.assistant import models
 # rules, but the *equipment* must itself be certified for that service
 # -- a CHIRP-programmable radio is essentially never such a certified
 # device, so this release does not transmit-enable them. This is a
-# conservative default; a future service-specific policy could refine
-# it (e.g. detecting a radio explicitly marketed/certified for GMRS).
+# conservative default; a later, more service-specific policy could
+# refine it (e.g. detecting a radio explicitly marketed/certified for
+# GMRS).
 _LICENSE_BY_RULE_NO_TRANSMIT = (models.SERVICE_FRS,)
 _LICENSE_BY_RULE_TRANSMIT_OK = (models.SERVICE_MURS,)
 

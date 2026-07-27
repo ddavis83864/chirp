@@ -59,7 +59,7 @@ if git diff ${BASE}.. -- 'tools/cpep8.blacklist' | tail -n +5 | grep -q '^+'; th
     fail 'Do not add new files to cpep8.blacklist; fix the code'
 fi
 
-grep -i 'license' added_lines > license_lines
+grep -iE '(licensed under|license:|spdx-license-identifier|mit license|bsd license|apache license|isc license|mozilla public license|permission is hereby granted|redistribution and use in source|all rights reserved)' added_lines > license_lines
 if grep -ivE '(GNU General Public License|Free Software Foundation|gnu.org.licenses)' license_lines; then
     fail 'Files must be GPLv3 licensed (or not contain any license language)'
 fi

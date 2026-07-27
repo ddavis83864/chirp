@@ -53,27 +53,27 @@ _ACTIVITY_CHOICES = (
     'camping', 'aviation', 'marine', 'off-road', 'travel', 'emergency prep',
 )
 _SERVICE_LABELS = (
-    (models.SERVICE_HAM, 'Amateur (Ham) Radio'),
-    (models.SERVICE_GMRS, 'GMRS'),
-    (models.SERVICE_FRS, 'FRS'),
-    (models.SERVICE_MURS, 'MURS'),
-    (models.SERVICE_WEATHER, 'NOAA Weather'),
-    (models.SERVICE_AVIATION, 'Aviation (receive-only)'),
-    (models.SERVICE_MARINE, 'Marine (receive-only)'),
-    (models.SERVICE_PUBLIC_SAFETY, 'Public Safety (receive-only)'),
-    (models.SERVICE_BUSINESS, 'Business/Industrial (receive-only)'),
-    (models.SERVICE_RAILROAD, 'Railroad (receive-only)'),
-    (models.SERVICE_SATELLITE, 'Amateur Satellite'),
+    (models.SERVICE_HAM, _('Amateur (Ham) Radio')),
+    (models.SERVICE_GMRS, _('GMRS')),
+    (models.SERVICE_FRS, _('FRS')),
+    (models.SERVICE_MURS, _('MURS')),
+    (models.SERVICE_WEATHER, _('NOAA Weather')),
+    (models.SERVICE_AVIATION, _('Aviation (receive-only)')),
+    (models.SERVICE_MARINE, _('Marine (receive-only)')),
+    (models.SERVICE_PUBLIC_SAFETY, _('Public Safety (receive-only)')),
+    (models.SERVICE_BUSINESS, _('Business/Industrial (receive-only)')),
+    (models.SERVICE_RAILROAD, _('Railroad (receive-only)')),
+    (models.SERVICE_SATELLITE, _('Amateur Satellite')),
 )
 _LICENSE_LABELS = (
-    (models.LICENSE_NONE, 'None'),
-    (models.LICENSE_TECHNICIAN, 'Technician'),
-    (models.LICENSE_GENERAL, 'General'),
-    (models.LICENSE_EXTRA, 'Extra'),
+    (models.LICENSE_NONE, _('None')),
+    (models.LICENSE_TECHNICIAN, _('Technician')),
+    (models.LICENSE_GENERAL, _('General')),
+    (models.LICENSE_EXTRA, _('Extra')),
 )
 _NAMING_LABELS = (
-    (models.NAMING_SHORT, 'Short (radio-constrained)'),
-    (models.NAMING_DESCRIPTIVE, 'Descriptive'),
+    (models.NAMING_SHORT, _('Short (radio-constrained)')),
+    (models.NAMING_DESCRIPTIVE, _('Descriptive')),
 )
 
 _DISCLAIMER = _(
@@ -234,7 +234,7 @@ class DescribePage(AssistantPage):
         grid.Add(self.radius, 0)
 
         self.license_choice = wx.Choice(
-            self, choices=[_(label) for _id, label in _LICENSE_LABELS])
+            self, choices=[label for _id, label in _LICENSE_LABELS])
         self.license_choice.SetSelection(0)
         grid.Add(wx.StaticText(self, label=_('Amateur license class:')), 0,
                  wx.ALIGN_CENTER_VERTICAL)
@@ -252,7 +252,7 @@ class DescribePage(AssistantPage):
         grid.Add(self.activities, 1, wx.EXPAND)
 
         self.services = wx.CheckListBox(
-            self, choices=[_(label) for _id, label in _SERVICE_LABELS])
+            self, choices=[label for _id, label in _SERVICE_LABELS])
         grid.Add(wx.StaticText(self, label=_('Requested services:')), 0,
                  wx.TOP)
         grid.Add(self.services, 1, wx.EXPAND)
@@ -265,7 +265,7 @@ class DescribePage(AssistantPage):
         grid.Add(self.channel_limit, 0)
 
         self.naming_choice = wx.Choice(
-            self, choices=[_(label) for _id, label in _NAMING_LABELS])
+            self, choices=[label for _id, label in _NAMING_LABELS])
         self.naming_choice.SetSelection(0)
         grid.Add(wx.StaticText(self, label=_('Naming style:')), 0,
                  wx.ALIGN_CENTER_VERTICAL)
