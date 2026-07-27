@@ -1,0 +1,269 @@
+"""Real-wx (not mocked) tests for the Programming Assistant wizard.
+
+Unlike most chirp.wxui.* tests, this module needs actual wx.adv.Wizard/
+WizardPage behavior (page chaining, Next-button gating) that isn't
+meaningfully exercisable behind a MagicMock, so it uses the real
+wxPython installed in the test environment instead of the
+sys.modules['wx']-mocking pattern used elsewhere (see
+test_wxui_memquery.py). CI must have wxPython available for this file
+to run (it already does, per tox.ini's [testenv:unit] sitepackages).
+"""
+
+import os
+import sys
+import tempfile
+import unittest
+
+# Other test modules (e.g. test_wxui_memquery.py) mock sys.modules['wx']
+# at import time to test wx.* code without a real wx runtime. Since
+# pytest imports all test modules into the same process, that mock can
+# still be sitting in sys.modules by the time this file is collected,
+# which breaks the real `import wx.adv`/`import wx.lib.newevent` this
+# file actually needs. Purge any such entries first so this file always
+# gets a genuine wx import regardless of collection order.
+for _name in [n for n in sys.modules
+              if n == 'wx' or n.startswith('wx.')]:
+    del sys.modules[_name]
+
+import wx  # noqa: E402
+import wx.adv  # noqa: E402
+
+from chirp.assistant import models  # noqa: E402
+from chirp.drivers import generic_csv  # noqa: E402
+from chirp.wxui import config  # noqa: E402
+from chirp.wxui import memedit  # noqa: E402
+from chirp.wxui import programming_assistant  # noqa: E402
+
+_TEST_CSV = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__)))), 'test.csv')
+
+_APP = wx.App()
+
+
+class _FakeEditorSet:
+    def __init__(self, radio, editor):
+        self.radio = radio
+        self.current_editor = editor
+        self._editor_index = {'Memories': editor}
+
+
+class _FakeChirpMain:
+    def __init__(self, editorset):
+        self.current_editorset = editorset
+
+
+class ProgrammingAssistantWxTestBase(unittest.TestCase):
+    def setUp(self):
+        config._CONFIG = config.ChirpConfig(tempfile.mkdtemp())
+        self.radio = generic_csv.CSVRadio(_TEST_CSV)
+        self.frame = wx.Frame(None)
+        # Real menu bar so memedit's own _update_menu() (called by its
+        # pre-existing undo_context() on every apply, unrelated to this
+        # feature) has real Undo/Redo/TX-workflow items to update,
+        # matching what main.ChirpMain always provides in the real app.
+        menubar = wx.MenuBar()
+        editmenu = wx.Menu()
+        editmenu.Append(wx.ID_UNDO)
+        editmenu.Append(wx.ID_REDO)
+        editmenu.Append(wx.MenuItem(editmenu, memedit.TX_WORKFLOW_ID,
+                                    'Use TX Frequency Workflow',
+                                    kind=wx.ITEM_CHECK))
+        menubar.Append(editmenu, '&Edit')
+        self.frame.SetMenuBar(menubar)
+
+        self.editor = memedit.ChirpMemEdit(self.radio, self.frame)
+        self.editor.refresh()
+        eset = _FakeEditorSet(self.radio, self.editor)
+        self.chirpmain = _FakeChirpMain(eset)
+        self.wizard = wx.adv.Wizard(self.frame)
+        self.context = programming_assistant.AssistantContext(
+            self.wizard, self.chirpmain)
+
+    def tearDown(self):
+        self.frame.Destroy()
+
+
+class HelperFunctionTest(unittest.TestCase):
+    def test_parse_ranges_basic(self):
+        self.assertEqual(((0, 9), (90, 99)),
+                         programming_assistant._parse_ranges('0-9, 90-99'))
+
+    def test_parse_ranges_single_number(self):
+        self.assertEqual(((5, 5),),
+                         programming_assistant._parse_ranges('5'))
+
+    def test_parse_ranges_empty(self):
+        self.assertEqual((), programming_assistant._parse_ranges(''))
+
+    def test_parse_ranges_ignores_garbage(self):
+        self.assertEqual(((0, 9),),
+                         programming_assistant._parse_ranges('0-9, banana'))
+
+    def test_freq_str_formats_mhz(self):
+        self.assertEqual('146.5200',
+                         programming_assistant._freq_str(146520000))
+
+    def test_freq_str_none(self):
+        self.assertEqual('', programming_assistant._freq_str(None))
+
+
+class AssistantContextTest(ProgrammingAssistantWxTestBase):
+    def test_finds_memedit_from_current_editor(self):
+        self.assertIs(self.editor, self.context.memedit)
+
+    def test_finds_memedit_when_other_tab_selected(self):
+        eset = _FakeEditorSet(self.radio, None)  # simulate Banks tab active
+        eset._editor_index = {'Memories': self.editor, 'Banks': None}
+        chirpmain = _FakeChirpMain(eset)
+        context = programming_assistant.AssistantContext(
+            self.wizard, chirpmain)
+        self.assertIs(self.editor, context.memedit)
+
+    def test_default_provider_is_disabled(self):
+        self.assertEqual('disabled', self.context.provider().kind)
+
+    def test_get_page_caches_instances(self):
+        p1 = self.context.get_page(
+            'describe', programming_assistant.DescribePage)
+        p2 = self.context.get_page(
+            'describe', programming_assistant.DescribePage)
+        self.assertIs(p1, p2)
+
+
+class ReviewPageTest(ProgrammingAssistantWxTestBase):
+    def _plan_with_one_ready_one_blocked(self):
+        ready = models.ChannelCandidate(
+            source='s', service=models.SERVICE_WEATHER, group='Weather',
+            label='NOAA 1', freq=162400000, mode='FM',
+            status=models.STATUS_RECEIVE_ONLY, receive_only=True,
+            include=True, memory_number=1, name='WX1')
+        blocked = models.ChannelCandidate(
+            source='s', service=models.SERVICE_HAM, group='Amateur Simplex',
+            label='Bad', freq=99999999999, mode='FM',
+            status=models.STATUS_BLOCKED, include=False,
+            errors=('out of range',))
+        return models.ChannelPlan(groups=[
+            models.PlanGroup(name='Weather', candidates=[ready]),
+            models.PlanGroup(name='Amateur Simplex', candidates=[blocked]),
+        ])
+
+    def test_populate_creates_one_row_per_candidate(self):
+        self.context.plan = self._plan_with_one_ready_one_blocked()
+        page = programming_assistant.ReviewPage(self.context)
+        page._populate()
+        self.assertEqual(2, page.list.GetItemCount())
+        self.assertEqual(2, len(page._row_candidates))
+
+    def test_next_disabled_when_nothing_included(self):
+        blocked = models.ChannelCandidate(
+            source='s', service=models.SERVICE_HAM, group='g', label='Bad',
+            freq=1, include=False, status=models.STATUS_BLOCKED)
+        self.context.plan = models.ChannelPlan(
+            groups=[models.PlanGroup(name='g', candidates=[blocked])])
+        page = programming_assistant.ReviewPage(self.context)
+        page._populate()
+        self.assertFalse(page._validate_next())
+
+    def test_next_enabled_when_something_included(self):
+        self.context.plan = self._plan_with_one_ready_one_blocked()
+        page = programming_assistant.ReviewPage(self.context)
+        page._populate()
+        self.assertTrue(page._validate_next())
+
+    def test_unchecking_row_updates_candidate(self):
+        self.context.plan = self._plan_with_one_ready_one_blocked()
+        page = programming_assistant.ReviewPage(self.context)
+        page._populate()
+        candidate = page._row_candidates[0]
+        self.assertTrue(candidate.include)
+        page.list.CheckItem(0, False)
+
+        class FakeEvent:
+            def GetIndex(self):
+                return 0
+        page._on_check(FakeEvent())
+        self.assertFalse(candidate.include)
+
+
+class ResultPageApplyTest(ProgrammingAssistantWxTestBase):
+    def test_apply_creates_one_undo_entry_for_all_candidates(self):
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_WEATHER,), channel_limit=20)
+        plan = self.context.service.build_plan(req, network_allowed=False)
+        self.context.service.convert_and_validate(plan)
+        self.context.request = req
+        self.context.plan = plan
+
+        page = programming_assistant.ResultPage(self.context)
+        page._apply()
+
+        self.assertEqual(1, len(self.editor._undo_queue))
+        applied_numbers = [c.memory_number for c in plan.all_candidates
+                           if c.include]
+        self.assertEqual(7, len(applied_numbers))
+        for n in applied_numbers:
+            self.assertFalse(self.radio.get_memory(n).empty)
+
+    def test_undo_restores_original_image(self):
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_WEATHER,), channel_limit=20)
+        plan = self.context.service.build_plan(req, network_allowed=False)
+        self.context.service.convert_and_validate(plan)
+        self.context.request = req
+        self.context.plan = plan
+        applied_numbers = [c.memory_number for c in plan.all_candidates
+                           if c.include]
+
+        page = programming_assistant.ResultPage(self.context)
+        page._apply()
+        self.editor._undo(None)
+
+        for n in applied_numbers:
+            self.assertTrue(self.radio.get_memory(n).empty)
+
+    def test_apply_never_touches_a_serial_port_or_uploads(self):
+        # There is no upload/clone method on AssistantService or the
+        # wizard pages at all -- confirm the apply path only calls
+        # methods that exist on the in-memory editor/radio.
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_WEATHER,), channel_limit=5)
+        plan = self.context.service.build_plan(req, network_allowed=False)
+        self.context.service.convert_and_validate(plan)
+        self.context.request = req
+        self.context.plan = plan
+
+        for attr in ('upload', 'clone_to', 'sync_out', 'do_upload'):
+            self.assertFalse(hasattr(self.context.service, attr))
+
+        page = programming_assistant.ResultPage(self.context)
+        page._apply()
+        self.assertIn('Nothing has been uploaded to a radio',
+                      page.result.GetValue())
+
+    def test_existing_memories_preserved_through_apply(self):
+        existing_occupied = [
+            n for n, m in self.context.service.existing_memories
+            if not m.empty]
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_WEATHER,), channel_limit=5)
+        plan = self.context.service.build_plan(req, network_allowed=False)
+        self.context.service.convert_and_validate(plan)
+        self.context.request = req
+        self.context.plan = plan
+
+        page = programming_assistant.ResultPage(self.context)
+        page._apply()
+
+        for n in existing_occupied:
+            self.assertFalse(self.radio.get_memory(n).empty)
+
+
+class MenuIntegrationTest(unittest.TestCase):
+    def test_assistant_enabled_default(self):
+        config._CONFIG = config.ChirpConfig(tempfile.mkdtemp())
+        self.assertTrue(programming_assistant.assistant_enabled())
+
+
+if __name__ == '__main__':
+    unittest.main()
