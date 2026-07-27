@@ -1,3 +1,4 @@
+import dataclasses
 import unittest
 
 from chirp.assistant import models
@@ -104,6 +105,20 @@ class ProgrammingRequestFromDictTest(unittest.TestCase):
     def test_non_dict_input(self):
         req = models.ProgrammingRequest.from_dict('not a dict')
         self.assertEqual([], req.validate())
+
+    def test_no_reorder_field_exists(self):
+        # allow_reordering was removed during remediation review: it
+        # was accepted from AI/dict input and stored, but nothing in
+        # chirp.assistant.planner ever read it, so setting it had zero
+        # effect -- an inoperative control. Guard against silently
+        # reintroducing another one of these without wiring it up.
+        field_names = {f.name for f in
+                       dataclasses.fields(models.ProgrammingRequest)}
+        self.assertFalse(
+            any('reorder' in name for name in field_names),
+            'a reorder-related field exists on ProgrammingRequest but '
+            'nothing in planner.py implements reordering -- either wire '
+            'it up or remove it, do not leave an inoperative control')
 
     def test_round_trip(self):
         req = models.ProgrammingRequest(

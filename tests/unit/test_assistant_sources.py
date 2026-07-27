@@ -1,8 +1,11 @@
 import unittest
 from unittest import mock
 
+import requests
+
 from chirp.assistant import models
 from chirp.assistant import sources
+from chirp.sources import repeaterbook
 
 
 class StaticSourceTest(unittest.TestCase):
@@ -120,6 +123,55 @@ class BuildCandidatesDispatchTest(unittest.TestCase):
             sources.build_candidates(req, network_allowed=False)
         fetch_rb.assert_not_called()
         fetch_sat.assert_not_called()
+
+
+class DescribeFetchFailureTest(unittest.TestCase):
+    """A timeout, a connection failure, an HTTP error, and anything
+    else must read as distinguishable reasons, not one generic
+    str(exception) -- see remediation review of source/failure
+    messaging."""
+
+    def test_timeout_is_distinguished(self):
+        msg = sources._describe_fetch_failure(
+            requests.exceptions.Timeout('slow'))
+        self.assertIn('timed out', msg)
+
+    def test_connection_error_is_distinguished(self):
+        msg = sources._describe_fetch_failure(
+            requests.exceptions.ConnectionError('dns fail'))
+        self.assertIn('offline', msg)
+
+    def test_http_error_is_distinguished(self):
+        msg = sources._describe_fetch_failure(
+            requests.exceptions.HTTPError('503 Server Error'))
+        self.assertIn('server returned an error', msg)
+
+    def test_other_exception_falls_back_to_message(self):
+        msg = sources._describe_fetch_failure(ValueError('weird state'))
+        self.assertEqual('weird state', msg)
+
+
+class FetchFailureCategorizationTest(unittest.TestCase):
+    """fetch_repeaterbook/fetch_satellites must surface a categorized
+    reason (not a raw exception repr) when the underlying adapter
+    raises instead of reporting through QueryStatus.send_fail."""
+
+    def test_repeaterbook_timeout_categorized(self):
+        req = models.ProgrammingRequest(location_text='Idaho')
+        with mock.patch.object(repeaterbook.RepeaterBook, 'do_fetch',
+                               side_effect=requests.exceptions.Timeout):
+            candidates, err = sources.fetch_repeaterbook(req, '')
+        self.assertEqual([], candidates)
+        self.assertIn('timed out', err)
+
+    def test_satellite_connection_error_categorized(self):
+        with mock.patch(
+                'chirp.sources.amsats.RadioAmateurSatellites.do_fetch',
+                side_effect=requests.exceptions.ConnectionError):
+            candidates, err = sources.fetch_satellites(
+                models.ProgrammingRequest())
+        self.assertEqual([], candidates)
+        self.assertIn('offline', err)
 
 
 class ResolveStateTest(unittest.TestCase):

@@ -47,6 +47,8 @@ chirp.wxui.programming_assistant.
 import logging
 import time
 
+import requests
+
 from chirp import chirp_common
 from chirp.assistant import converter
 from chirp.assistant import models
@@ -58,6 +60,22 @@ from chirp.sources import fips
 from chirp.sources import repeaterbook
 
 LOG = logging.getLogger(__name__)
+
+
+def _describe_fetch_failure(exc):
+    """Turn a raw fetch exception into a short, categorized reason a
+    user can act on, instead of an arbitrary str(exception) -- a
+    connection timeout, a DNS/connection failure, and some other
+    internal error all read very differently to a non-technical user,
+    even though today's underlying adapters don't consistently
+    distinguish them at the point where they signal failure."""
+    if isinstance(exc, requests.exceptions.Timeout):
+        return 'the request timed out'
+    if isinstance(exc, requests.exceptions.ConnectionError):
+        return 'could not connect (network unreachable or offline)'
+    if isinstance(exc, requests.exceptions.HTTPError):
+        return 'the server returned an error (%s)' % exc
+    return str(exc)
 
 
 class _CollectingStatus(sources_base.QueryStatus):
@@ -157,7 +175,7 @@ def fetch_repeaterbook(request, service, status=None):
         radio.do_fetch(status, dict(params))
     except Exception as e:
         LOG.exception('RepeaterBook fetch failed: %s', e)
-        return [], str(e)
+        return [], _describe_fetch_failure(e)
 
     if status.failed:
         return [], status.failed
@@ -189,7 +207,7 @@ def fetch_satellites(request, status=None):
         radio.do_fetch(status, {})
     except Exception as e:
         LOG.exception('Satellite fetch failed: %s', e)
-        return [], str(e)
+        return [], _describe_fetch_failure(e)
     if status.failed:
         return [], status.failed
     candidates = []

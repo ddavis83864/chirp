@@ -105,7 +105,6 @@ class ProgrammingRequest:
     channel_limit: int = 40
     preserve_existing: bool = True
     allow_duplicate_replacement: bool = False
-    allow_reordering: bool = False
     naming_style: str = NAMING_SHORT
     protected_memory_ranges: tuple = ()
     requested_start_memory: int | None = None
@@ -210,7 +209,7 @@ class ProgrammingRequest:
                 if isinstance(value, int) and not isinstance(value, bool):
                     kwargs[key] = value
             elif key in ('has_gmrs_license', 'preserve_existing',
-                         'allow_duplicate_replacement', 'allow_reordering',
+                         'allow_duplicate_replacement',
                          'share_precise_location'):
                 if isinstance(value, bool):
                     kwargs[key] = value
