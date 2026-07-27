@@ -28,6 +28,7 @@ for _name in [n for n in sys.modules
 import wx  # noqa: E402
 import wx.adv  # noqa: E402
 
+from chirp import chirp_common  # noqa: E402
 from chirp.assistant import models  # noqa: E402
 from chirp.drivers import generic_csv  # noqa: E402
 from chirp.wxui import config  # noqa: E402
@@ -257,6 +258,97 @@ class ResultPageApplyTest(ProgrammingAssistantWxTestBase):
 
         for n in existing_occupied:
             self.assertFalse(self.radio.get_memory(n).empty)
+
+    def test_immutable_memory_blocked_before_apply_not_silently_written(self):
+        # generic_csv.CSVRadio doesn't itself enforce
+        # check_set_memory_immutable_policy in its own set_memory()
+        # (most drivers don't need to), but import_logic.import_mem()
+        # -- which converter.convert_candidate() always goes through --
+        # calls dst_radio.check_set_memory_immutable_policy() itself
+        # during conversion and converter.py catches the resulting
+        # ImmutableValueError, well before finalize_for_apply()/_apply()
+        # ever run. Confirm that actually holds: a candidate targeting
+        # an immutable memory must be blocked at conversion time, never
+        # silently written and counted as applied.
+        protected_number = 3
+        seed = chirp_common.Memory(number=protected_number, name='PROTECT')
+        seed.freq = 146520000
+        self.radio.set_memory(seed)
+        # CSVRadio.set_memory() always clears .immutable on the memory
+        # it dupes and stores, so mark it directly on the stored copy
+        # afterward -- this simulates a driver that DOES ship with an
+        # immutable field on some memory (e.g. a fixed call channel).
+        self.radio.memories[protected_number].immutable = ['freq']
+
+        candidate = models.ChannelCandidate(
+            source='t', service=models.SERVICE_HAM, group='g',
+            label='NEW', freq=146850000, tx_freq=146250000, mode='FM')
+        candidate.memory_number = protected_number
+        candidate.name = 'NEW'
+        plan = models.ChannelPlan(groups=[
+            models.PlanGroup(name='g', candidates=[candidate])])
+        self.context.service.convert_and_validate(plan)
+        self.assertEqual(models.STATUS_BLOCKED, candidate.status)
+        self.assertFalse(candidate.include)
+        self.context.request = models.ProgrammingRequest()
+        self.context.plan = plan
+
+        page = programming_assistant.ResultPage(self.context)
+        page._apply()
+
+        self.assertEqual(146520000,
+                         self.radio.get_memory(protected_number).freq)
+        self.assertIn('Applied: 0', page.result.GetValue())
+        self.assertIn('Skipped (not included or invalid): 1',
+                      page.result.GetValue())
+
+    def test_partial_apply_failure_reports_and_undo_still_works(self):
+        # Apply is explicitly documented as "one undoable action," not
+        # an atomic all-or-nothing write (see this module's docstring
+        # and the Help-menu disclosure in chirp.wxui.main). Verify that
+        # claim precisely: when one candidate in a batch fails mid-apply,
+        # an earlier candidate's successful write is NOT rolled back
+        # automatically (non-atomic), the failure is reported correctly,
+        # and undo_context() alone is still sufficient to revert the
+        # whole batch -- including the partial success -- in one action.
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_WEATHER,), channel_limit=2)
+        plan = self.context.service.build_plan(req, network_allowed=False)
+        self.context.service.convert_and_validate(plan)
+        self.context.request = req
+        self.context.plan = plan
+
+        preview = self.context.service.finalize_for_apply(plan)
+        self.assertEqual(2, len(preview))
+        first_number = preview[0][1].number
+        self.assertTrue(self.radio.get_memory(first_number).empty)
+
+        real_set_memory = self.editor.set_memory
+        calls = {'n': 0}
+
+        def flaky_set_memory(mem, refresh=True):
+            calls['n'] += 1
+            if calls['n'] == 2:
+                raise RuntimeError('simulated driver failure')
+            return real_set_memory(mem, refresh=refresh)
+
+        self.editor.set_memory = flaky_set_memory
+        try:
+            page = programming_assistant.ResultPage(self.context)
+            page._apply()
+        finally:
+            self.editor.set_memory = real_set_memory
+
+        # Not atomic: the first candidate's write is still live.
+        self.assertFalse(self.radio.get_memory(first_number).empty)
+        self.assertIn('Applied: 1', page.result.GetValue())
+        self.assertIn('Failed to apply: 1', page.result.GetValue())
+
+        # But the whole batch is still exactly one undo entry, and
+        # undoing it reverts the partial success too.
+        self.assertEqual(1, len(self.editor._undo_queue))
+        self.editor._undo(None)
+        self.assertTrue(self.radio.get_memory(first_number).empty)
 
 
 class MenuIntegrationTest(unittest.TestCase):
