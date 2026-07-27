@@ -174,6 +174,23 @@ determination — frequency allocations vary by country, licensing class, and
 local band plan, and change over time. You remain responsible for
 verifying your own frequencies and operating privileges.
 
+### Programming Assistant (Experimental)
+
+Radio > Programming Assistant... turns a description of what you want
+programmed — structured fields, or an optional AI-interpreted plain-text
+description like "I live near Coeur d'Alene, I fly GA, I camp, I have a
+GMRS license and a Technician license" — into a previewed, editable batch
+of proposed memories. Every proposed channel is converted and validated
+through CHIRP's own import/validation logic for the radio you have open,
+and nothing is written until you review and approve it; applying a plan
+is one undoable action on the open image only — it never uploads to a
+radio. AI, when configured, only ever extracts structured fields from
+your text; it never supplies frequencies, tones, or any other technical
+data. Aviation, weather, marine, public safety, business, and railroad
+channels are always receive-only. See
+[docs/programming_assistant.md](docs/programming_assistant.md) for full
+details, data sources, privacy behavior, and known limitations.
+
 ### `run-chirp.sh` / `run-chirp.ps1`
 
 Convenience launchers for running CHIRP straight from a git checkout, without
