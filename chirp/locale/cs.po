@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: CHIRP\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-27 11:43-0700\n"
+"POT-Creation-Date: 2026-07-27 11:52-0700\n"
 "PO-Revision-Date: 2026-06-17 14:30+0200\n"
 "Last-Translator: Martin Macko <martin.macko@email.cz>\n"
 "Language-Team: Czech\n"
@@ -1270,6 +1270,14 @@ msgstr "Vždy začít s nedávným seznamem"
 msgid "Amateur"
 msgstr "Radioamatérské"
 
+#: ../wxui/programming_assistant.py:56
+msgid "Amateur (Ham) Radio"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:66
+msgid "Amateur Satellite"
+msgstr ""
+
 #: ../wxui/memcolorlegend.py:81
 msgid "Amateur allocation, no specific subtype."
 msgstr ""
@@ -1335,6 +1343,10 @@ msgstr "Dostupné moduly"
 
 #: ../wxui/memcolorlegend.py:48
 msgid "Aviation"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:61
+msgid "Aviation (receive-only)"
 msgstr ""
 
 #: ../wxui/memcolorlegend.py:47
@@ -1414,6 +1426,10 @@ msgstr ""
 
 #: ../wxui/memcolorlegend.py:55
 msgid "Business/Industrial"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:64
+msgid "Business/Industrial (receive-only)"
 msgstr ""
 
 #: ../wxui/memcolorlegend.py:91
@@ -1793,6 +1809,10 @@ msgstr ""
 msgid "Describe your request in plain language, or just fill in the fields below directly -- AI is entirely optional and nothing here requires it."
 msgstr ""
 
+#: ../wxui/programming_assistant.py:76
+msgid "Descriptive"
+msgstr ""
+
 #: ../wxui/bugreport.py:568
 msgid "Detailed information"
 msgstr "Podrobné informace"
@@ -2112,7 +2132,7 @@ msgstr "Exportovat do CSV"
 msgid "Export to CSV..."
 msgstr "Exportovat do CSV..."
 
-#: ../wxui/memedit.py:3742
+#: ../wxui/memedit.py:3742 ../wxui/programming_assistant.py:72
 msgid "Extra"
 msgstr "Extra"
 
@@ -2133,7 +2153,7 @@ msgid ""
 "required."
 msgstr "BEZPLATNÁ databáze převaděčů, která poskytuje nejaktuálnější informace o převaděčích v Evropě. Není vyžadován žádný účet."
 
-#: ../wxui/memcolorlegend.py:50
+#: ../wxui/memcolorlegend.py:50 ../wxui/programming_assistant.py:58
 msgid "FRS"
 msgstr ""
 
@@ -2589,14 +2609,19 @@ msgstr ""
 msgid "Frequency outside TX bands must be duplex=off"
 msgstr "Frekvence mimo vysílací pásma (TX) musí mít duplex=off"
 
-#: ../wxui/memcolorlegend.py:49 ../wxui/query_sources.py:355
-#: ../wxui/query_sources.py:435 ../wxui/query_sources.py:536
+#: ../wxui/memcolorlegend.py:49 ../wxui/programming_assistant.py:57
+#: ../wxui/query_sources.py:355 ../wxui/query_sources.py:435
+#: ../wxui/query_sources.py:536
 msgid "GMRS"
 msgstr "GMRS"
 
 #: ../wxui/programming_assistant.py:545
 #, python-format
 msgid "GMRS license declared: %s"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:71
+msgid "General"
 msgstr ""
 
 #: ../wxui/memcolorlegend.py:85
@@ -2971,7 +2996,7 @@ msgstr "Text loga 2 (12 znaků)"
 msgid "Longitude"
 msgstr "Zeměpisná délka"
 
-#: ../wxui/memcolorlegend.py:51
+#: ../wxui/memcolorlegend.py:51 ../wxui/programming_assistant.py:59
 msgid "MURS"
 msgstr ""
 
@@ -2982,6 +3007,10 @@ msgstr "Ruční úprava paměti %i"
 
 #: ../wxui/memcolorlegend.py:52
 msgid "Marine"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:62
+msgid "Marine (receive-only)"
 msgstr ""
 
 #: ../wxui/memcolordialog.py:670
@@ -3102,6 +3131,10 @@ msgstr ""
 msgid "NO"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:60
+msgid "NOAA Weather"
+msgstr ""
+
 #: ../wxui/memcolorlegend.py:92
 msgid "NOAA Weather Radio channel."
 msgstr ""
@@ -3197,6 +3230,10 @@ msgstr ""
 
 #: ../wxui/main.py:2292
 msgid "No update available"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:69
+msgid "None"
 msgstr ""
 
 #: ../wxui/memedit.py:3157
@@ -3507,6 +3544,10 @@ msgstr ""
 msgid "Public Safety"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:63
+msgid "Public Safety (receive-only)"
+msgstr ""
+
 #: ../wxui/memcolorlegend.py:90
 msgid "Public safety allocation."
 msgstr ""
@@ -3596,6 +3637,10 @@ msgstr ""
 
 #: ../wxui/memcolorlegend.py:53
 msgid "Railroad"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:65
+msgid "Railroad (receive-only)"
 msgstr ""
 
 #: ../wxui/memcolorlegend.py:89
@@ -3923,6 +3968,10 @@ msgstr ""
 msgid "Shift amount (or transmit frequency) controlled by duplex"
 msgstr "Velikost odskoku (nebo vysílací frekvence) řízená duplexem"
 
+#: ../wxui/programming_assistant.py:75
+msgid "Short (radio-constrained)"
+msgstr ""
+
 #: ../wxui/menucustomize.py:217
 msgid "Show All"
 msgstr ""
@@ -4076,6 +4125,10 @@ msgstr "Vysílací frekvence (TX)"
 #: ../wxui/memedit.py:155
 msgid "TX-RX DTCS polarity (normal or reversed)"
 msgstr "Polarita TX-RX DTCS (normální nebo obrácená)"
+
+#: ../wxui/programming_assistant.py:70
+msgid "Technician"
+msgstr ""
 
 #: ../wxui/memcolordialog.py:587 ../wxui/memcolordialog.py:615
 msgid "Test Rule"
