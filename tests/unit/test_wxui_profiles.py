@@ -16,6 +16,9 @@ import unittest
 from tests.unit import base  # noqa: F401 -- installs builtins._
 
 from chirp import directory
+from chirp.profiles import model as profile_model
+from chirp.profiles import schema as profile_schema
+from chirp.profiles import serialization as profile_serialization
 
 _HAS_DISPLAY = bool(os.environ.get('DISPLAY'))
 
@@ -57,14 +60,11 @@ class ProfileGuiTestCase(unittest.TestCase):
                 'on this same hazard)')
 
         global wx, wxmain, profileapply, profilecontroller, profileeditor
-        global profile_schema, profile_serialization
         import wx
         from chirp.wxui import main as wxmain
         from chirp.wxui import profileapply
         from chirp.wxui import profilecontroller
         from chirp.wxui import profileeditor
-        from chirp.profiles import schema as profile_schema
-        from chirp.profiles import serialization as profile_serialization
 
         app = wx.App()
         app._lc = wx.Locale(wx.LANGUAGE_ENGLISH)
@@ -228,6 +228,56 @@ class TransactionalApplyTest(ProfileGuiTestCase):
         target_memedit._undo(None)
         restored = target_eset.radio.get_memory(applied_number)
         self.assertTrue(restored.empty)
+
+    def test_failed_apply_rolls_back_and_raises(self):
+        from chirp.profiles import errors as profile_errors
+
+        target_eset, target_memedit = self._empty_editorset()
+
+        profile = profile_model.Profile(name='Rollback Test')
+        for i in range(3):
+            profile.add_channel(profile_model.ProfileChannel(
+                logical_id='ch-%d' % i, name='CH%d' % i,
+                rx_freq_hz=146_000_000 + i * 100_000,
+                transmit=profile_model.TransmitBehavior(
+                    mode=profile_schema.TRANSMIT_ENABLED)))
+
+        change_set = profilecontroller.build_changeset_for_editorset(
+            profile, target_eset)
+        for item in change_set.items:
+            change_set.set_approval(item.logical_id,
+                                    profile_schema.APPROVAL_APPROVED)
+        approved = change_set.approved_items()
+        self.assertEqual(3, len(approved))
+
+        before = [target_eset.radio.get_memory(n).empty for n in range(3)]
+        self.assertTrue(all(before))
+
+        real_set_memory = target_eset.radio.set_memory
+        call_count = {'n': 0}
+
+        def flaky_set_memory(mem):
+            call_count['n'] += 1
+            if call_count['n'] == 2:
+                raise RuntimeError('simulated driver failure')
+            return real_set_memory(mem)
+
+        target_eset.radio.set_memory = flaky_set_memory
+        try:
+            with self.assertRaises(profile_errors.TransactionError):
+                profilecontroller.apply_changeset(
+                    target_memedit, profile.name, change_set)
+        finally:
+            target_eset.radio.set_memory = real_set_memory
+
+        numbers = (
+            approved[0].target_memory_number,
+            approved[2].target_memory_number)
+        after = [target_eset.radio.get_memory(n).empty for n in numbers]
+        self.assertTrue(
+            all(after),
+            'image was left partially modified after a failed apply '
+            'instead of being rolled back')
 
     def test_blocked_items_are_never_in_approved_items(self):
         eset = self._open_copy()
