@@ -30,6 +30,26 @@ downloadable `CHIRP-*-x86_64.AppImage` asset, built automatically by
   always receive-only. See
   [docs/programming_assistant.md](docs/programming_assistant.md).
 
+## [1.12.0] - 2026-07-27
+
+### Added
+
+- File > Open Recent now has "Remove from Recent Files..." (pick
+  specific entries to remove) and "Clear Recent Files" (empty the
+  whole list) at the bottom of the submenu.
+
+## [1.11.0] - 2026-07-27
+
+### Added
+
+- Help > Install Linux Launcher... (Linux AppImage only): checks that the
+  running AppImage is executable (offering to fix it if not), then lets
+  you add CHIRP to your desktop environment's application menu, create a
+  launcher icon on your Desktop, or both. Everything is installed
+  per-user with no administrator access; re-running it after moving the
+  AppImage safely updates the existing launcher in place. See the
+  AppImage builds section of [README.md](README.md) for details.
+
 ## [1.10.0] - 2026-07-27
 
 ### Added

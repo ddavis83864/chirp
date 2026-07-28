@@ -139,6 +139,16 @@ edge cases of hiding.
 
 ![Customize Menus dialog showing the File tab with all items checked](docs/screenshots/customize-menus.png)
 
+### Open Recent cleanup
+
+File > Open Recent now has "Remove from Recent Files..." and "Clear Recent
+Files" at the bottom of the list. "Remove from Recent Files..." opens a
+checklist of your current recent files so you can pick specific ones to
+drop; "Clear Recent Files" empties the whole list in one click. Both are
+only shown when the list has entries.
+
+![Open Recent submenu showing three recent files above Remove from Recent Files... and Clear Recent Files](docs/screenshots/open-recent-cleanup.png)
+
 ### Configurable memory color coding
 
 The memory list can color-code rows (or just selected columns) by what a
@@ -173,6 +183,8 @@ These categories are a visual convenience aid, not a legal or regulatory
 determination — frequency allocations vary by country, licensing class, and
 local band plan, and change over time. You remain responsible for
 verifying your own frequencies and operating privileges.
+
+![Memory list color-coded by category, showing a repeater, simplex, calling frequency, satellite, APRS/data, digital voice, beacon, receive-only, aviation, GMRS, FRS, MURS, marine, weather, unknown, and disabled memory alongside the color legend](docs/screenshots/memory-color-coding.png)
 
 ### Programming Assistant (Experimental)
 
@@ -231,6 +243,40 @@ starts from CHIRP's real defaults (developer mode off, no "Browser"/"Info"
 tabs) regardless of what's already set elsewhere on the host. Pass
 `--config-dir /path` yourself if you want it to share state with another
 install instead.
+
+**Installing a launcher:** since an AppImage is just a standalone
+executable file, your desktop environment won't normally know about it —
+there's no menu entry or icon to launch it from without a terminal or file
+browser. Help > Install Linux Launcher... (only shown when CHIRP detects
+it's running as an AppImage, via the `APPIMAGE` environment variable the
+AppImage runtime sets) fixes that:
+
+- It first checks that the AppImage file has execute permission, and
+  offers to add it (only the owner-execute bit; nothing else is touched)
+  if it's missing.
+- You then choose to add CHIRP to your desktop environment's application
+  menu, create a launcher icon on your Desktop, or both. Both are entirely
+  per-user: the application-menu entry goes to
+  `~/.local/share/applications/chirp-appimage.desktop`, and CHIRP's icon is
+  copied to `~/.local/share/icons/hicolor/256x256/apps/chirp.png` — no
+  administrator/root access is used, and nothing outside your home
+  directory is touched.
+- If you later move the AppImage file, just run Help > Install Linux
+  Launcher... again from the new location to update the existing launcher
+  in place; it recognizes and safely updates its own previously-created
+  files rather than making duplicates, and never overwrites a file it
+  didn't create itself.
+- Some desktop environments (notably GNOME/Nautilus) require a
+  newly-created desktop icon to be manually marked as trusted (e.g.
+  right-click it and choose "Allow Launching") before it can be
+  double-clicked; the application-menu entry doesn't need this.
+- To remove a launcher created this way, delete
+  `~/.local/share/applications/chirp-appimage.desktop` and/or
+  `~/Desktop/chirp-appimage.desktop`; the copied icon at
+  `~/.local/share/icons/hicolor/256x256/apps/chirp.png` can be removed the
+  same way if no other CHIRP install needs it.
+
+![Install Linux Launcher dialog showing the detected AppImage path, its executable status, and the application-menu/desktop checkboxes](docs/screenshots/install-linux-launcher.png)
 
 **Building one yourself:**
 
