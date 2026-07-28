@@ -35,6 +35,7 @@ from chirp.profiles import changeset as changeset_mod
 from chirp.profiles import errors as profile_errors
 from chirp.profiles import extraction
 from chirp.profiles import schema as profile_schema
+from chirp.wxui import common as wx_common
 from chirp.wxui import memedit
 
 _ = wx.GetTranslation
@@ -105,6 +106,45 @@ def build_changeset_for_editorset(
         explicit_range=explicit_range)
 
 
+def _is_live_radio(memedit_widget):
+    """True if @memedit_widget queues radio I/O to a background thread
+    (a live, serial-connected radio) rather than executing it
+    synchronously in the calling thread (an opened image file).
+
+    This matters because memedit.ChirpMemEdit.set_memory() goes through
+    do_radio(), which -- for *both* editor kinds -- catches whatever the
+    driver raises and stores it on the job object rather than
+    re-raising it to the caller (it only surfaces as a per-row error
+    indicator in the grid). For a synchronous, file-backed image, this
+    module calls the radio directly instead so a driver failure raises
+    here and can actually be rolled back (section 15). That would be
+    unsafe for a live radio (the async editor's contract is that only
+    its own worker thread touches the radio object), so live-radio
+    targets keep going through set_memory()/erase_memory() as normal --
+    matching the same semantics every other existing bulk edit in CHIRP
+    already has for a live radio (queued jobs, per-row error indication,
+    one Undo entry; no synchronous rollback guarantee). See
+    docs/profiles.md.
+    """
+    return isinstance(memedit_widget, wx_common.ChirpAsyncEditor)
+
+
+def _set_memory(memedit_widget, mem, live):
+    if live:
+        memedit_widget.set_memory(mem, refresh=False)
+    else:
+        memedit_widget._undo_ctx.record_current_memory(mem.number)
+        memedit_widget._radio.set_memory(mem)
+
+
+def _erase_memory(memedit_widget, number, live):
+    if live:
+        memedit_widget.erase_memory(number, refresh=False)
+    else:
+        memedit_widget._undo_ctx.record_current_memory(number)
+        memedit_widget._radio.erase_memory(number)
+
+
 def apply_changeset(memedit_widget, profile_name, change_set):
     """Apply every approved item in @change_set to @memedit_widget's
     radio as a single undoable transaction (section 15).
@@ -114,11 +154,13 @@ def apply_changeset(memedit_widget, profile_name, change_set):
     anything (section 15.2) -- if any fails, nothing is applied at all.
     Applies through memedit's existing undo_context, so the whole
     transaction appears as one entry ("Apply <profile_name> profile")
-    in the normal Undo menu. If applying any individual item raises
-    unexpectedly partway through (should not happen after the
-    pre-validation pass), everything already applied in this
-    transaction is explicitly reversed and errors.TransactionError is
-    raised; the image is left as it was before apply() was called.
+    in the normal Undo menu. For a synchronous (file-backed image)
+    target, if applying any individual item raises unexpectedly
+    partway through (should not happen after the pre-validation pass),
+    everything already applied in this transaction is explicitly
+    reversed and errors.TransactionError is raised; the image is left
+    as it was before apply() was called. See _is_live_radio() for why
+    this guarantee does not extend to a live serial-connected radio.
 
     :raises profile_errors.ProfileValidationError: pre-validation caught
         a problem; nothing was applied.
@@ -144,6 +186,7 @@ def apply_changeset(memedit_widget, profile_name, change_set):
     if issues:
         raise profile_errors.ProfileValidationError(issues)
 
+    live = _is_live_radio(memedit_widget)
     applied = []
     undo_name = _('Apply %s profile') % profile_name
     try:
@@ -151,12 +194,12 @@ def apply_changeset(memedit_widget, profile_name, change_set):
             for item in approved:
                 mem = item.proposed_memory.dupe()
                 mem.number = item.target_memory_number
-                memedit_widget.set_memory(mem, refresh=False)
+                _set_memory(memedit_widget, mem, live)
                 applied.append(item)
     except Exception as e:
         LOG.error('Profile apply failed after %d/%d items applied: %s',
                   len(applied), len(approved), e)
-        _rollback(memedit_widget, applied)
+        _rollback(memedit_widget, applied, live)
         raise profile_errors.TransactionError(
             'Applying the profile failed (%s); all changes from this '
             'attempt have been reverted and the image is unchanged.' %
@@ -165,7 +208,7 @@ def apply_changeset(memedit_widget, profile_name, change_set):
         memedit_widget.refresh()
 
 
-def _rollback(memedit_widget, applied_items):
+def _rollback(memedit_widget, applied_items, live):
     """Best-effort manual reversal of a partially-applied transaction.
 
     Only reachable if a driver raises unexpectedly *after* every
@@ -178,10 +221,10 @@ def _rollback(memedit_widget, applied_items):
             for item in reversed(applied_items):
                 existing = item.existing_memory
                 if existing is not None:
-                    memedit_widget.set_memory(existing.dupe(), refresh=False)
+                    _set_memory(memedit_widget, existing.dupe(), live)
                 else:
-                    memedit_widget.erase_memory(
-                        item.target_memory_number, refresh=False)
+                    _erase_memory(
+                        memedit_widget, item.target_memory_number, live)
     except Exception:
         LOG.exception('Rollback of failed profile apply also failed; '
                       'image may be left partially modified')

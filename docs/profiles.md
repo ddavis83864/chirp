@@ -216,15 +216,14 @@ change_set)`:
    `RadioFeatures.validate_memory()` *again*, immediately before touching
    anything. If any fails, `errors.ProfileValidationError` is raised and
    **nothing** is applied.
-3. Applies every item through `memedit.undo_context()` -- CHIRP's existing
-   per-editor undo/redo mechanism (`chirp/wxui/memedit.py`,
+3. Applies every item inside one `memedit.undo_context()` -- CHIRP's
+   existing per-editor undo/redo mechanism (`chirp/wxui/memedit.py`,
    `MemeditUndoContext`) -- so the whole transaction is exactly **one**
    entry in the normal Undo menu, e.g. "Apply North Idaho Camping profile".
-   This is the same mechanism (and the same "validate everything against a
-   throwaway copy first, then apply in one undo_context" idiom) already used
-   by bulk operations like CSV import and multi-memory drag
-   (`memedit.memedit_import_all`, `_apply_column_value`) -- Radio Profiles
-   reuses established infrastructure rather than inventing a parallel one.
+   This reuses the same "validate everything against a throwaway copy
+   first, then apply in one undo_context" idiom already used by bulk
+   operations like CSV import and multi-memory drag
+   (`memedit.memedit_import_all`, `_apply_column_value`).
 4. If a mutation fails *unexpectedly* after step 2's pre-validation pass
    (should not happen in practice -- this is the residual case a driver
    raises for a reason `RadioFeatures.validate_memory` didn't catch),
@@ -238,21 +237,49 @@ change_set)`:
    image; the user reviews the result and initiates any radio upload
    through CHIRP's normal Download/Upload workflow, same as any other edit.
 
-### A note on live (serial-connected) radios
+### Why step 4 doesn't just call `memedit_widget.set_memory()`
 
-`memedit`'s undo/apply mechanism supports two editor backends:
-`ChirpSyncEditor` (synchronous, in-memory -- used for opened image files)
-and `ChirpAsyncEditor` (queues jobs to a background thread -- used for a
-live serial-connected radio). `apply_changeset()`'s rollback-on-unexpected-
-failure logic is only reachable synchronously for `ChirpSyncEditor`-backed
-targets, since queued async jobs don't complete before `set_memory()`
-returns. Every documented/tested workflow for this release targets an
-*opened image file*, matching the "review, then explicitly upload" mental
-model (section 15.6/15.7). Applying a profile directly against a live radio
-connection follows the same semantics as any other bulk edit already in
-CHIRP (queued jobs, per-row error indication, one Undo entry) -- this is not
-a regression from existing behavior, but true synchronous rollback for that
-path specifically is a known limitation (see Known limitations, below).
+`memedit.ChirpMemEdit.set_memory()` routes through `do_radio()`, which --
+for *both* of memedit's editor backends -- catches whatever the driver
+raises and stashes it on the job object rather than re-raising it to the
+caller; it only ever surfaces as a per-row red error indicator in the grid.
+That's the right default for interactive single-cell edits, but it would
+make step 4's rollback silently unreachable: an exception the driver raises
+during `set_memory()` would never propagate to `apply_changeset()`'s
+`try/except` at all.
+
+`chirp.wxui.memedit` has two editor backends: `ChirpSyncEditor`
+(synchronous, in-memory -- used for opened image files, `ChirpMemEdit`'s own
+base class) and `ChirpAsyncEditor` (queues jobs to a background thread --
+used for a live serial-connected radio, `ChirpLiveMemEdit`).
+`apply_changeset()` tells them apart (`_is_live_radio()`) and, for a
+synchronous target only, calls `memedit_widget._radio.set_memory()`
+directly (recording undo state manually via
+`memedit_widget._undo_ctx.record_current_memory()` first) instead of going
+through `set_memory()`'s job wrapper -- so a driver failure raises
+synchronously, right here, and step 4's rollback actually runs (this is
+exercised by
+`test_wxui_profiles.py::TransactionalApplyTest::test_failed_apply_rolls_back_and_raises`,
+which injects a failure on the second of three memories and asserts the
+image ends up with none of the three applied). This intentionally bypasses
+`set_memory()`'s `FrozenMemory` copy-protection and `set_memory_extra()`
+syncing for `ExternalMemoryProperties` radios (e.g. D-STAR call lists) --
+an acceptable trade-off since profiles don't model those extra,
+driver-specific properties in this release anyway (section 2: "translation
+of every device-specific radio setting" is explicitly out of scope).
+
+For a live radio (`_is_live_radio()` is `True`), doing the same direct call
+would be unsafe -- `ChirpAsyncEditor`'s whole contract is that only its own
+worker thread touches the radio object -- so `apply_changeset()` keeps using
+`set_memory()`/`erase_memory()` as normal there. That means applying a
+profile directly against a live radio connection has the same semantics as
+any other existing bulk edit in CHIRP (queued jobs, per-row error
+indication, one Undo entry) rather than the synchronous rollback guarantee
+described above; this is not a regression from existing behavior, but it is
+a real, documented difference (see Known limitations, below). Every
+documented/tested apply workflow for this release targets an opened image
+file, matching the "review, then explicitly upload" mental model (section
+15.6/15.7).
 
 ## Target-specific overrides and composition
 
