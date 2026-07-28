@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: CHIRP\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-27 17:56-0700\n"
+"POT-Creation-Date: 2026-07-27 22:10-0700\n"
 "PO-Revision-Date: 2023-07-12 21:21+0200\n"
 "Last-Translator: szporwolik\n"
 "Language-Team: Polish\n"
@@ -57,12 +57,17 @@ msgstr[2] "%i pamięci oraz przesuń blok do góry"
 msgid "%i memories failed validation for this radio (see details below). Add them anyway?"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:817
+#, python-format
+msgid "%i total, %i included: "
+msgstr ""
+
 #: ../linux_desktop.py:322
 #, python-format
 msgid "%s already exists and was not created by CHIRP; refusing to overwrite it"
 msgstr ""
 
-#: ../wxui/main.py:1673
+#: ../wxui/main.py:1695
 #, python-format
 msgid "%s has not been saved. Save before closing?"
 msgstr "%s nie został zapisany. Zapisać przed zamknięciem?"
@@ -759,25 +764,46 @@ msgstr ""
 "\n"
 "Obraz może nie działać, jeśli radio zostanie włączone z podłączonym kablem"
 
-#: ../wxui/main.py:2312
+#: ../wxui/main.py:2361
 msgid "A new CHIRP version is available. Please visit the website as soon as possible to download it!"
 msgstr "Nowa wersja programu CHIRP jest dostępna. Odwiedź stronę internetową projektu i pobierz ją!"
 
+#: ../wxui/programming_assistant.py:518
+msgid "AI Provider Configuration"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:524
+msgid "AI is used ONLY to turn your typed description into the structured fields above -- it never supplies frequencies, tones, or any other technical channel data, and no call is made until you click \"Interpret with AI\"."
+msgstr ""
+
 #: ../drivers/ga510.py:1090
 msgid "AM mode does not allow duplex or tone"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:563
+msgid "API key (session/optional):"
 msgstr ""
 
 #: ../wxui/memcolorlegend.py:74
 msgid "APRS or other amateur data frequency."
 msgstr ""
 
-#: ../wxui/main.py:1021
+#: ../wxui/main.py:1031
 msgid "About"
 msgstr "O programie"
 
-#: ../wxui/main.py:2049
+#: ../wxui/main.py:2071
 msgid "About CHIRP"
 msgstr "O programie CHIRP"
+
+#: ../wxui/programming_assistant.py:307
+msgid "Activities (comma-separated):"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:635
+#, python-format
+msgid "Activities: %s"
+msgstr ""
 
 #: ../wxui/linux_launcher.py:67
 msgid "Add CHIRP to the application menu"
@@ -812,7 +838,12 @@ msgstr ""
 msgid "Add..."
 msgstr ""
 
-#: ../wxui/main.py:2104
+#: ../wxui/programming_assistant.py:928
+#, python-format
+msgid "Adjusted for this radio: %i"
+msgstr ""
+
+#: ../wxui/main.py:2126
 msgid "Agree"
 msgstr ""
 
@@ -824,13 +855,26 @@ msgstr ""
 msgid "All"
 msgstr "Wszystkie"
 
-#: ../wxui/main.py:1444
+#: ../wxui/main.py:1466
 msgid "All Files"
 msgstr "Wszystkie pliki"
 
-#: ../wxui/main.py:1455
+#: ../wxui/main.py:1477
 msgid "All supported formats"
 msgstr "Wszystkie wspierane formaty"
+
+#: ../wxui/programming_assistant.py:640
+#, python-format
+msgid "Allow duplicate replacement: %s"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:620
+msgid "Allow network source queries (RepeaterBook, satellites)"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:353
+msgid "Allow replacing conflicting existing memories"
+msgstr ""
 
 #: ../wxui/clone.py:626
 msgid "Always start with recent list"
@@ -840,8 +884,25 @@ msgstr ""
 msgid "Amateur"
 msgstr "Amatorska"
 
+#: ../wxui/programming_assistant.py:57
+msgid "Amateur (Ham) Radio"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:67
+msgid "Amateur Satellite"
+msgstr ""
+
 #: ../wxui/memcolorlegend.py:81
 msgid "Amateur allocation, no specific subtype."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:296
+msgid "Amateur license class:"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:633
+#, python-format
+msgid "Amateur license: %s"
 msgstr ""
 
 #: ../wxui/memcolorlegend.py:79
@@ -880,6 +941,11 @@ msgstr ""
 msgid "Application menu launcher"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:925
+#, python-format
+msgid "Applied: %i"
+msgstr ""
+
 #: ../wxui/memcolordialog.py:728
 msgid "Apply"
 msgstr ""
@@ -896,7 +962,7 @@ msgstr ""
 msgid "Applying settings"
 msgstr "Stosowanie ustawień"
 
-#: ../wxui/main.py:1770
+#: ../wxui/main.py:1792
 msgid "Automatic from system"
 msgstr "Automatyczny z systemu"
 
@@ -908,6 +974,10 @@ msgstr "Dostępne moduły"
 msgid "Aviation"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:62
+msgid "Aviation (receive-only)"
+msgstr ""
+
 #: ../wxui/memcolorlegend.py:47
 msgid "Aviation Emergency"
 msgstr ""
@@ -916,7 +986,7 @@ msgstr ""
 msgid "Background:"
 msgstr ""
 
-#: ../wxui/main.py:2229
+#: ../wxui/main.py:2275
 msgid "Bandplan"
 msgstr "Bandplan"
 
@@ -925,13 +995,18 @@ msgstr "Bandplan"
 msgid "Bands"
 msgstr "Pasma"
 
-#: ../wxui/main.py:213
+#: ../wxui/main.py:214
 msgid "Banks"
 msgstr "Banki"
 
 #: ../wxui/developer.py:282
 msgid "Bin"
 msgstr "Bin"
+
+#: ../wxui/programming_assistant.py:927
+#, python-format
+msgid "Blocked by validation: %i"
+msgstr ""
 
 #: ../wxui/memcolordialog.py:334
 msgid "Bold"
@@ -945,7 +1020,7 @@ msgstr ""
 msgid "Bold:"
 msgstr ""
 
-#: ../wxui/main.py:224
+#: ../wxui/main.py:225
 msgid "Browser"
 msgstr "Przeglądarka"
 
@@ -970,6 +1045,10 @@ msgstr ""
 msgid "Building Radio Browser"
 msgstr "Budowanie przeglądarki radiostacji"
 
+#: ../wxui/programming_assistant.py:697
+msgid "Building plan..."
+msgstr ""
+
 #: ../wxui/memcolordialog.py:291
 msgid "Built-in classification"
 msgstr ""
@@ -978,11 +1057,15 @@ msgstr ""
 msgid "Business/Industrial"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:65
+msgid "Business/Industrial (receive-only)"
+msgstr ""
+
 #: ../wxui/memcolorlegend.py:91
 msgid "Business/industrial land-mobile band."
 msgstr ""
 
-#: ../wxui/main.py:1799
+#: ../wxui/main.py:1821
 msgid "CHIRP must be restarted for the new selection to take effect"
 msgstr "CHIRP musi zostać ponowie uruchomiony, aby zmiany przyniosły efekt"
 
@@ -1015,16 +1098,25 @@ msgstr ""
 msgid "Changing this setting requires refreshing the settings from the image, which will happen now."
 msgstr "Zmiana tego ustawienia wymaga odświeżenia z obrazu, co zostanie teraz wykonane."
 
+#: ../wxui/programming_assistant.py:637
+#, python-format
+msgid "Channel limit: %i"
+msgstr ""
+
 #: ../wxui/memedit.py:2538
 #, python-format
 msgid "Channels with equivalent TX and RX %s are represented by tone mode of \"%s\""
 msgstr "Kanały z takim samym TX oraz RX %s są reprezentowane trybem tonu \"%s\""
 
-#: ../wxui/main.py:1033
+#: ../wxui/programming_assistant.py:327 ../wxui/programming_assistant.py:453
+msgid "Check at least one requested service to continue."
+msgstr ""
+
+#: ../wxui/main.py:1043
 msgid "Check for Updates..."
 msgstr ""
 
-#: ../wxui/main.py:1443
+#: ../wxui/main.py:1465
 msgid "Chirp Image Files"
 msgstr "Pliki obrazu CHIRP"
 
@@ -1054,7 +1146,7 @@ msgstr ""
 msgid "Choose Cross Mode"
 msgstr "Wybierz tryb krzyżowy"
 
-#: ../wxui/main.py:1275
+#: ../wxui/main.py:1297
 msgid "Choose Diff Target"
 msgstr ""
 
@@ -1101,15 +1193,15 @@ msgstr[2] ""
 msgid "Clear Column"
 msgstr ""
 
-#: ../wxui/main.py:1212
+#: ../wxui/main.py:1234
 msgid "Clear Recent Files"
 msgstr ""
 
-#: ../wxui/main.py:2090
+#: ../wxui/main.py:2112
 msgid "Click here for full license text"
 msgstr ""
 
-#: ../wxui/main.py:2069
+#: ../wxui/main.py:2091
 msgid "Click here for online documentation"
 msgstr ""
 
@@ -1141,7 +1233,7 @@ msgstr "Pobieranie z radiostacji"
 msgid "Cloning to radio"
 msgstr "Wysyłanie do radiostacji"
 
-#: ../wxui/main.py:1159 ../wxui/main.py:2105
+#: ../wxui/main.py:1181 ../wxui/main.py:2127
 msgid "Close"
 msgstr "Zamknij"
 
@@ -1150,7 +1242,7 @@ msgstr "Zamknij"
 msgid "Close String"
 msgstr "Zamknij plik"
 
-#: ../wxui/main.py:1160
+#: ../wxui/main.py:1182
 msgid "Close file"
 msgstr "Zamknij plik"
 
@@ -1192,6 +1284,14 @@ msgstr ""
 
 #: ../wxui/memcolordialog.py:457
 msgid "Conditions"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:271
+msgid "Configure AI Provider..."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:597
+msgid "Confirm your request"
 msgstr ""
 
 #: ../drivers/tmd710.py:184 ../drivers/tmd710.py:187
@@ -1264,7 +1364,7 @@ msgstr ""
 msgid "Customize Menus"
 msgstr ""
 
-#: ../wxui/main.py:1028
+#: ../wxui/main.py:1038
 msgid "Customize Menus..."
 msgstr ""
 
@@ -1301,7 +1401,7 @@ msgstr ""
 msgid "DV Memory"
 msgstr "Pamięć DV"
 
-#: ../wxui/main.py:2142
+#: ../wxui/main.py:2164
 msgid "Danger Ahead"
 msgstr "Niebezpieczeństwo"
 
@@ -1339,6 +1439,18 @@ msgstr ""
 msgid "Delete rule \"%s\"?"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:253
+msgid "Describe what you want programmed"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:255
+msgid "Describe your request in plain language, or just fill in the fields below directly -- AI is entirely optional and nothing here requires it."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:77
+msgid "Descriptive"
+msgstr ""
+
 #: ../wxui/linux_launcher.py:117
 msgid "Desktop launcher"
 msgstr ""
@@ -1348,15 +1460,19 @@ msgstr ""
 msgid "Detailed information"
 msgstr "Informacje o radiostacji"
 
+#: ../wxui/programming_assistant.py:766
+msgid "Details"
+msgstr ""
+
 #: ../wxui/linux_launcher.py:54
 msgid "Detected AppImage:"
 msgstr ""
 
-#: ../wxui/main.py:1039
+#: ../wxui/main.py:1049
 msgid "Developer Mode"
 msgstr "Tryb dewelopera"
 
-#: ../wxui/main.py:2148
+#: ../wxui/main.py:2170
 #, python-format
 msgid "Developer state is now %s. CHIRP must be restarted to take effect"
 msgstr "Tryb developera jest teraz %s. CHIRP musi zostać ponowie uruchomiony, aby zmiany przyniosły efekt"
@@ -1378,11 +1494,11 @@ msgstr "Kod cyfrowy"
 msgid "Digital Modes"
 msgstr "Kod cyfrowy"
 
-#: ../wxui/main.py:2160
+#: ../wxui/main.py:2182
 msgid "Disable reporting"
 msgstr "Wyłącz raportowanie"
 
-#: ../wxui/memedit.py:594
+#: ../wxui/memedit.py:594 ../wxui/programming_assistant.py:534
 msgid "Disabled"
 msgstr "Wyłączony"
 
@@ -1412,15 +1528,15 @@ msgstr ""
 msgid "Double-click to change bank name"
 msgstr "Kliknij podwójnie w celu zmiany nazwy banku"
 
-#: ../wxui/main.py:1161
+#: ../wxui/main.py:1183
 msgid "Download"
 msgstr "Pobierz"
 
-#: ../wxui/main.py:1162
+#: ../wxui/main.py:1184
 msgid "Download from radio"
 msgstr "Pobierz z radiostacji"
 
-#: ../wxui/main.py:896
+#: ../wxui/main.py:897
 msgid "Download from radio..."
 msgstr "Pobierz z radiostacji..."
 
@@ -1436,7 +1552,7 @@ msgstr "Sterownik"
 msgid "Driver information"
 msgstr ""
 
-#: ../wxui/main.py:574
+#: ../wxui/main.py:575
 msgid "Driver messages"
 msgstr ""
 
@@ -1479,12 +1595,16 @@ msgstr ""
 msgid "Empty or skipped memory slot."
 msgstr ""
 
-#: ../wxui/main.py:966
+#: ../wxui/main.py:967
 msgid "Enable Automatic Edits"
 msgstr "Zezwól na automatyczną edycję"
 
 #: ../wxui/memedit.py:1776
 msgid "Enable Memory Color Coding"
+msgstr ""
+
+#: ../wxui/main.py:1070
+msgid "Enable Programming Assistant (Experimental)"
 msgstr ""
 
 #: ../wxui/memcolordialog.py:673
@@ -1501,6 +1621,10 @@ msgstr "Włączony"
 msgid "Enabled:"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:545
+msgid "Endpoint URL:"
+msgstr ""
+
 #: ../wxui/memedit.py:402
 msgid "Enter Frequency"
 msgstr "Wprowadź częstotliwość"
@@ -1512,6 +1636,10 @@ msgstr "Wprowadź przesunięcie (MHz)"
 #: ../wxui/memedit.py:2557
 msgid "Enter TX Frequency (MHz)"
 msgstr "Wprowadź częstotliwość nadawania (MHz)"
+
+#: ../wxui/programming_assistant.py:396
+msgid "Enter a description first."
+msgstr ""
 
 #: ../wxui/memedit.py:1566
 msgid "Enter a name for the new column. This column is for your own use (e.g. notes or sorting); it is not saved and will be lost when this tab is closed."
@@ -1580,6 +1708,11 @@ msgstr "Błąd stosowania ustawień"
 msgid "Error communicating with radio"
 msgstr "Błąd komunikacji z radiostacją"
 
+#: ../wxui/programming_assistant.py:421 ../wxui/programming_assistant.py:729
+#, python-format
+msgid "Error: %s"
+msgstr ""
+
 #: ../wxui/memquery.py:236
 msgid "Example: \"foo\""
 msgstr ""
@@ -1616,6 +1749,15 @@ msgstr ""
 msgid "Exclude private and closed repeaters"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:929
+#, python-format
+msgid "Existing memories replaced: %i"
+msgstr ""
+
+#: ../wxui/main.py:2201
+msgid "Experimental Feature"
+msgstr ""
+
 #: ../wxui/clone.py:750
 msgid "Experimental driver"
 msgstr "Sterownik eksperymentalny"
@@ -1632,15 +1774,15 @@ msgstr ""
 msgid "Export can only write CSV files"
 msgstr "Eksport może tylko zapisywać pliki CSV"
 
-#: ../wxui/main.py:1658
+#: ../wxui/main.py:1680
 msgid "Export to CSV"
 msgstr "Eksportuj do pliku CSV"
 
-#: ../wxui/main.py:751
+#: ../wxui/main.py:752
 msgid "Export to CSV..."
 msgstr "Eksportuj do pliku CSV..."
 
-#: ../wxui/memedit.py:3742
+#: ../wxui/memedit.py:3742 ../wxui/programming_assistant.py:73
 msgid "Extra"
 msgstr "Dodatkowa"
 
@@ -1666,8 +1808,13 @@ msgstr ""
 "informacji o przemiennikach w Europie.\n"
 "Nie jest wymagane konto użytkownika."
 
-#: ../wxui/memcolorlegend.py:50
+#: ../wxui/memcolorlegend.py:50 ../wxui/programming_assistant.py:59
 msgid "FRS"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:932
+#, python-format
+msgid "Failed to apply: %i"
 msgstr ""
 
 #: ../wxui/memedit.py:3651
@@ -1725,14 +1872,14 @@ msgstr ""
 msgid "File a new bug"
 msgstr ""
 
-#: ../wxui/main.py:581
+#: ../wxui/main.py:582
 #, python-format
 msgid "File does not exist: %s"
 msgstr "Plik nie istnieje: %s"
 
-#: ../wxui/main.py:1447 ../wxui/main.py:1553 ../wxui/main.py:1563
-#: ../wxui/main.py:1596 ../wxui/main.py:1654 ../wxui/main.py:2019
-#: ../wxui/main.py:2020
+#: ../wxui/main.py:1469 ../wxui/main.py:1575 ../wxui/main.py:1585
+#: ../wxui/main.py:1618 ../wxui/main.py:1676 ../wxui/main.py:2041
+#: ../wxui/main.py:2042
 msgid "Files"
 msgstr "Pliki"
 
@@ -1753,7 +1900,7 @@ msgstr "Filtruj wyniki z lokalizacją pasująco do tej wartości tekstowej"
 msgid "Filter..."
 msgstr "Filtr"
 
-#: ../wxui/main.py:1728
+#: ../wxui/main.py:1750
 msgid "Find"
 msgstr "Wyszukaj"
 
@@ -1766,11 +1913,11 @@ msgstr ""
 msgid "Find Duplicate Memories..."
 msgstr ""
 
-#: ../wxui/main.py:831
+#: ../wxui/main.py:832
 msgid "Find Next"
 msgstr "Wyszukaj następny"
 
-#: ../wxui/main.py:817
+#: ../wxui/main.py:818
 msgid "Find..."
 msgstr "Wyszukaj"
 
@@ -2012,10 +2159,20 @@ msgstr ""
 msgid "Frequency outside TX bands must be duplex=off"
 msgstr "Częstotliwość poza pasmami TX musi używać duplex=off"
 
-#: ../wxui/memcolorlegend.py:49 ../wxui/query_sources.py:355
-#: ../wxui/query_sources.py:435 ../wxui/query_sources.py:536
+#: ../wxui/memcolorlegend.py:49 ../wxui/programming_assistant.py:58
+#: ../wxui/query_sources.py:355 ../wxui/query_sources.py:435
+#: ../wxui/query_sources.py:536
 msgid "GMRS"
 msgstr "GMRS"
+
+#: ../wxui/programming_assistant.py:634
+#, python-format
+msgid "GMRS license declared: %s"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:72
+msgid "General"
+msgstr ""
 
 #: ../wxui/memcolorlegend.py:85
 msgid "General Mobile Radio Service."
@@ -2036,6 +2193,10 @@ msgstr "Idź do pamięci:"
 #: ../wxui/memedit.py:1738
 msgid "Goto..."
 msgstr "Idź do..."
+
+#: ../wxui/programming_assistant.py:763
+msgid "Group"
+msgstr ""
 
 #: ../wxui/memcolorlegend.py:42
 msgid "Ham: APRS/Data"
@@ -2073,7 +2234,7 @@ msgstr ""
 msgid "Ham: Simplex"
 msgstr ""
 
-#: ../wxui/main.py:1120
+#: ../wxui/main.py:1142
 msgid "Help"
 msgstr "Pomoc"
 
@@ -2110,6 +2271,10 @@ msgstr ""
 msgid "I have"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:301
+msgid "I have a GMRS license"
+msgstr ""
+
 #: ../linux_desktop.py:264
 msgid "Icon name"
 msgstr ""
@@ -2120,7 +2285,7 @@ msgstr ""
 msgid "If set, sort results by distance from these coordinates"
 msgstr "Jeśli ustawiono, sortuje wyniki po odległości od tych współrzędnych"
 
-#: ../wxui/main.py:1640
+#: ../wxui/main.py:1662
 msgid "Import"
 msgstr "Importuj"
 
@@ -2142,15 +2307,15 @@ msgstr ""
 msgid "Import color profile \"%s\"?"
 msgstr ""
 
-#: ../wxui/main.py:744
+#: ../wxui/main.py:745
 msgid "Import from file..."
 msgstr "Importuj z pliku..."
 
-#: ../wxui/main.py:1644
+#: ../wxui/main.py:1666
 msgid "Import messages"
 msgstr "Importuj wiadomości"
 
-#: ../wxui/main.py:1638
+#: ../wxui/main.py:1660
 msgid "Import not recommended"
 msgstr "Importuj nie jest zalecany"
 
@@ -2162,7 +2327,7 @@ msgstr ""
 msgid "Index"
 msgstr "Indeks"
 
-#: ../wxui/main.py:226
+#: ../wxui/main.py:227
 msgid "Info"
 msgstr "Info"
 
@@ -2182,7 +2347,7 @@ msgstr ""
 msgid "Install Linux Launcher"
 msgstr ""
 
-#: ../wxui/main.py:1083
+#: ../wxui/main.py:1105
 msgid "Install Linux Launcher..."
 msgstr ""
 
@@ -2190,7 +2355,7 @@ msgstr ""
 msgid "Install desktop icon?"
 msgstr "Utworzyć skrót pulpitu?"
 
-#: ../wxui/main.py:1009
+#: ../wxui/main.py:1019
 msgid "Interact with driver"
 msgstr "Interakcja ze sterownikiem"
 
@@ -2200,6 +2365,18 @@ msgstr "Wewnętrzny błąd sterownika"
 
 #: ../chirp_common.py:741
 msgid "Internal driver error: Attempt to modify frozen memory; Please report this as a bug using \"Report or update a bug\" in the Help menu"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:268
+msgid "Interpret with AI"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:424
+msgid "Interpreted -- review the fields below before continuing."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:400
+msgid "Interpreting..."
 msgstr ""
 
 #: ../wxui/memcolorlegend.py:33
@@ -2229,9 +2406,13 @@ msgstr "Niewłaściwa edycja: %s"
 msgid "Invalid locator"
 msgstr "Błędny lokator"
 
-#: ../wxui/main.py:2016
+#: ../wxui/main.py:2038
 msgid "Invalid or unsupported module file"
 msgstr "Niewłaściwy lub niespierany plik modułu"
+
+#: ../wxui/programming_assistant.py:491
+msgid "Invalid request"
+msgstr ""
 
 #: ../wxui/memedit.py:294 ../wxui/memedit.py:300 ../wxui/memedit.py:733
 #, python-format
@@ -2263,11 +2444,11 @@ msgstr ""
 msgid "Known emergency/distress frequency."
 msgstr ""
 
-#: ../wxui/main.py:352
+#: ../wxui/main.py:353
 msgid "LIVE"
 msgstr "Na żywo"
 
-#: ../drivers/radtel_rt490.py:1028 ../wxui/main.py:881 ../wxui/main.py:1784
+#: ../drivers/radtel_rt490.py:1028 ../wxui/main.py:882 ../wxui/main.py:1806
 msgid "Language"
 msgstr "Język"
 
@@ -2322,17 +2503,21 @@ msgstr "Ogranicz wyniki do odległości (km) od współrzędnych"
 msgid "Limit results to this distance (mi) from coordinates"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:364
+msgid "Limit to memory range:"
+msgstr ""
+
 #: ../wxui/query_sources.py:405
 #, fuzzy
 msgid "Limit use"
 msgstr "Ogranicz status"
 
-#: ../wxui/main.py:1871
+#: ../wxui/main.py:1893
 #, fuzzy
 msgid "Live Radio"
 msgstr "Radiostacja"
 
-#: ../wxui/main.py:758
+#: ../wxui/main.py:759
 msgid "Load Module..."
 msgstr "Załaduj moduł"
 
@@ -2340,21 +2525,34 @@ msgstr "Załaduj moduł"
 msgid "Load module from issue"
 msgstr "Załaduj moduł ze zgłoszenia"
 
-#: ../wxui/main.py:1093
+#: ../wxui/main.py:1115
 msgid "Load module from issue..."
 msgstr "Załaduj moduł ze zgłoszenia..."
 
-#: ../wxui/main.py:2196
+#: ../wxui/main.py:2242
 msgid "Loading a module will not affect open tabs. It is recommended (unless instructed otherwise) to close all tabs before loading a module."
 msgstr ""
 
-#: ../wxui/main.py:2023
+#: ../wxui/main.py:2045
 msgid "Loading modules can be extremely dangerous, leading to damage to your computer, radio, or both. NEVER load a module from a source you do not trust, and especially not from anywhere other than the main CHIRP website (chirpmyradio.com). Loading a module from another source is akin to giving them direct access to your computer and everything on it! Proceed despite this risk?"
 msgstr "Ładowanie modułów może być ekstremalnie niebezpiecznie i prowadzić do uszkodzenia komputera lub/oraz radiostacji. NIGDY nie ładuj modułu ze źródła, któremu nie ufasz, w szczególności nie pobranego ze strony projektu CHIRP (chirpmyradio.com). Ładowanie modułu z innego źródła jest równoznaczne z udzielaniem dostępu do komputera oraz wszystkiego na nim! Kontynuować pomimo ryzyka?"
 
 #: ../wxui/clone.py:147
 msgid "Loading settings"
 msgstr "Ładowanie ustawień"
+
+#: ../wxui/programming_assistant.py:763
+msgid "Loc"
+msgstr "Lp."
+
+#: ../wxui/programming_assistant.py:283
+msgid "Location:"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:631
+#, python-format
+msgid "Location: %s"
+msgstr ""
 
 #: ../wxui/query_sources.py:110
 msgid "Locator"
@@ -2377,7 +2575,7 @@ msgstr "Napis powitalny 2 (12 znaków)"
 msgid "Longitude"
 msgstr "Długość geograficzna"
 
-#: ../wxui/memcolorlegend.py:51
+#: ../wxui/memcolorlegend.py:51 ../wxui/programming_assistant.py:60
 msgid "MURS"
 msgstr ""
 
@@ -2390,6 +2588,10 @@ msgstr "Ręczna edycja pamięci %i"
 msgid "Marine"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:63
+msgid "Marine (receive-only)"
+msgstr ""
+
 #: ../wxui/memcolordialog.py:670
 msgid "Master Controls"
 msgstr ""
@@ -2398,7 +2600,11 @@ msgstr ""
 msgid "Match ALL of these conditions:"
 msgstr ""
 
-#: ../wxui/main.py:205
+#: ../wxui/programming_assistant.py:335
+msgid "Maximum channels:"
+msgstr ""
+
+#: ../wxui/main.py:206
 msgid "Memories"
 msgstr "Pamięci"
 
@@ -2437,8 +2643,9 @@ msgstr "Pamięć musi być w banku, aby można ją było edytować"
 msgid "Memory {num} not in bank {bank}"
 msgstr "Pamięć {num} nie jest w banku {bank}"
 
-#: ../wxui/memedit.py:673 ../wxui/memcolordialog.py:285
-#: ../wxui/query_sources.py:626 ../wxui/query_sources.py:779
+#: ../wxui/memedit.py:673 ../wxui/programming_assistant.py:765
+#: ../wxui/memcolordialog.py:285 ../wxui/query_sources.py:626
+#: ../wxui/query_sources.py:779
 msgid "Mode"
 msgstr "Tryb"
 
@@ -2446,19 +2653,23 @@ msgstr "Tryb"
 msgid "Model"
 msgstr "Model"
 
+#: ../wxui/programming_assistant.py:550
+msgid "Model name:"
+msgstr ""
+
 #: ../wxui/query_sources.py:502 ../wxui/query_sources.py:1300
 msgid "Modes"
 msgstr "Tryby"
 
-#: ../wxui/main.py:2020
+#: ../wxui/main.py:2042
 msgid "Module"
 msgstr "Moduł"
 
-#: ../wxui/main.py:1992
+#: ../wxui/main.py:2014
 msgid "Module Loaded"
 msgstr "Załadowano moduł"
 
-#: ../wxui/main.py:2207
+#: ../wxui/main.py:2253
 msgid "Module loaded successfully"
 msgstr "Pomyślnie załadowano moduł"
 
@@ -2496,6 +2707,10 @@ msgstr ""
 msgid "NO"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:61
+msgid "NOAA Weather"
+msgstr ""
+
 #: ../wxui/memcolorlegend.py:92
 msgid "NOAA Weather Radio channel."
 msgstr ""
@@ -2504,7 +2719,8 @@ msgstr ""
 msgid "NOAA/Weather"
 msgstr ""
 
-#: ../wxui/memcolordialog.py:287 ../wxui/memcolordialog.py:455
+#: ../wxui/programming_assistant.py:763 ../wxui/memcolordialog.py:287
+#: ../wxui/memcolordialog.py:455
 msgid "Name"
 msgstr "Nazwa"
 
@@ -2512,16 +2728,29 @@ msgstr "Nazwa"
 msgid "Name:"
 msgstr ""
 
-#: ../wxui/main.py:695
+#: ../wxui/programming_assistant.py:342
+msgid "Naming style:"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:638
+#, python-format
+msgid "Naming style: %s"
+msgstr ""
+
+#: ../wxui/main.py:696
 msgid "New Window"
 msgstr "Nowe okno"
 
-#: ../wxui/main.py:2314
+#: ../wxui/main.py:2363
 msgid "New version available"
 msgstr "Nowa wersja jest dostępna"
 
 #: ../wxui/memcolordialog.py:242 ../wxui/memcolordialog.py:487
 msgid "No"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:382
+msgid "No AI provider configured -- fill in the fields below directly, or configure a provider above."
 msgstr ""
 
 #: ../wxui/memedit.py:1933
@@ -2535,6 +2764,14 @@ msgstr "Brak pustych wierszy poniżej!"
 #: ../wxui/memquery.py:254
 #, python-format
 msgid "No example for %s"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:1008
+msgid "No memory editor is available for the current tab."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:891
+msgid "No memory editor tab is available for this radio; nothing was applied."
 msgstr ""
 
 #: ../wxui/developer.py:706
@@ -2559,7 +2796,7 @@ msgstr "Brak wyników"
 msgid "No results!"
 msgstr "Brak wyników!"
 
-#: ../wxui/main.py:2217
+#: ../wxui/main.py:2263
 msgid "No traces stored"
 msgstr ""
 
@@ -2567,9 +2804,13 @@ msgstr ""
 msgid "No transmit frequency configured."
 msgstr ""
 
-#: ../wxui/main.py:2308
+#: ../wxui/main.py:2357
 msgid "No update available"
 msgstr ""
+
+#: ../wxui/programming_assistant.py:70
+msgid "None"
+msgstr " Żaden"
 
 #: ../wxui/memedit.py:3157
 #, python-format
@@ -2610,6 +2851,10 @@ msgid ""
 "TX Freq"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:534
+msgid "Ollama (local)"
+msgstr ""
+
 #: ../wxui/memquery.py:252
 #, python-format
 msgid "One of: %s"
@@ -2628,7 +2873,7 @@ msgstr "Tylko konkretne tryby"
 msgid "Only certain prefixes"
 msgstr "Tylko konkretne prefiksy"
 
-#: ../wxui/main.py:333
+#: ../wxui/main.py:334
 msgid "Only memory tabs may be exported"
 msgstr "Tylko zakładki pamięci mogą być wyeksportowane"
 
@@ -2636,35 +2881,35 @@ msgstr "Tylko zakładki pamięci mogą być wyeksportowane"
 msgid "Only working repeaters"
 msgstr "Tylko czynne przemienniki"
 
-#: ../wxui/main.py:1155 ../wxui/main.py:1640
+#: ../wxui/main.py:1177 ../wxui/main.py:1662
 msgid "Open"
 msgstr "Otwórz"
 
-#: ../wxui/main.py:728
+#: ../wxui/main.py:729
 msgid "Open Recent"
 msgstr "Otwórz ostatnio używany"
 
-#: ../wxui/main.py:708
+#: ../wxui/main.py:709
 msgid "Open Stock Config"
 msgstr "Otwórz konfigurację wstępną"
 
-#: ../wxui/main.py:1156 ../wxui/main.py:1458
+#: ../wxui/main.py:1178 ../wxui/main.py:1480
 msgid "Open a file"
 msgstr "Otwórz plik"
 
-#: ../wxui/main.py:2038
+#: ../wxui/main.py:2060
 msgid "Open a module"
 msgstr "Otwórz moduł"
 
-#: ../wxui/main.py:1062
+#: ../wxui/main.py:1084
 msgid "Open debug log"
 msgstr "Otwórz log debugowy"
 
-#: ../wxui/main.py:544
+#: ../wxui/main.py:545
 msgid "Open in new window"
 msgstr "Otwórz w nowym oknie"
 
-#: ../wxui/main.py:1110
+#: ../wxui/main.py:1132
 msgid "Open last serial trace"
 msgstr ""
 
@@ -2672,9 +2917,13 @@ msgstr ""
 msgid "Open repeaters only"
 msgstr "Otórz tylko przemienniki"
 
-#: ../wxui/main.py:650
+#: ../wxui/main.py:651
 msgid "Open stock config directory"
 msgstr "Otwórz katalog konfiguracji wstępnych"
+
+#: ../wxui/programming_assistant.py:534
+msgid "OpenAI-compatible"
+msgstr ""
 
 #: ../wxui/memquery.py:143 ../wxui/memcolordialog.py:346
 msgid "Operator"
@@ -2769,7 +3018,12 @@ msgstr "Wklejone pamięci nadpiszą pamięć %s"
 msgid "Pasted memory will overwrite memory %s"
 msgstr "Wklejona pamięć nadpisze pamięć %s"
 
-#: ../wxui/main.py:2318
+#: ../wxui/programming_assistant.py:736
+#, python-format
+msgid "Plan built: %i candidate(s) ready to review."
+msgstr ""
+
+#: ../wxui/main.py:2367
 msgid "Please be sure to quit CHIRP before installing the new version!"
 msgstr "Proszę wyjdź z programu CHIRP przed instalacją nowej wersji!"
 
@@ -2777,7 +3031,7 @@ msgstr "Proszę wyjdź z programu CHIRP przed instalacją nowej wersji!"
 msgid "Please check the bug number and try again. If you do actually want to report against this bug, please comment on it via the website and ask for it to be re-opened."
 msgstr ""
 
-#: ../wxui/main.py:2136
+#: ../wxui/main.py:2158
 msgid "Please note that developer mode is intended for use by developers of the CHIRP project, or under the direction of a developer. It enables behaviors and functions that can damage your computer and your radio if not used with EXTREME care. You have been warned! Proceed anyway?"
 msgstr "Proszę zauważyć, że tryb dewelopera jest przeznaczony dla deweloperów projektu CHIRP lub do użycia pod nadzorem dewelopera. Włącza on zachowania oraz funkcje, które mogą uszkodzić komputer oraz radiostację, jeśli nie będą wykorzystywane z EKSTREMALNĄ uwagą. Zostałeś ostrzeżony! Kontynuować?"
 
@@ -2805,17 +3059,43 @@ msgstr "Moc"
 msgid "Prefixes"
 msgstr "Prefiks"
 
+#: ../wxui/programming_assistant.py:347
+msgid "Preserve existing memories (recommended)"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:639
+#, python-format
+msgid "Preserve existing memories: %s"
+msgstr ""
+
 #: ../wxui/developer.py:158
 msgid "Press enter to set this in memory"
 msgstr "Naciśnij przycisk enter, aby ustawić to w pamięci"
 
-#: ../wxui/main.py:771
+#: ../wxui/main.py:772
 msgid "Print Preview"
 msgstr "Podgląd wydruku"
 
 #: ../wxui/printing.py:29
 msgid "Printing"
 msgstr "Drukowanie"
+
+#: ../wxui/programming_assistant.py:1009
+msgid "Programming Assistant"
+msgstr ""
+
+#: ../wxui/main.py:2208
+#, python-format
+msgid "Programming Assistant is now %s. CHIRP must be restarted to take effect"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:898
+msgid "Programming Assistant plan"
+msgstr ""
+
+#: ../wxui/main.py:983
+msgid "Programming Assistant... (Experimental)"
+msgstr ""
 
 #: ../wxui/clone.py:526
 msgid "Prolific USB device"
@@ -2839,8 +3119,20 @@ msgstr "Nazwa"
 msgid "Property Value"
 msgstr "Wartość"
 
+#: ../wxui/programming_assistant.py:370
+msgid "Protected ranges (e.g. 0-9, 90-99):"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:540
+msgid "Provider:"
+msgstr ""
+
 #: ../wxui/memcolorlegend.py:54
 msgid "Public Safety"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:64
+msgid "Public Safety (receive-only)"
 msgstr ""
 
 #: ../wxui/memcolorlegend.py:90
@@ -2851,12 +3143,12 @@ msgstr ""
 msgid "QTH Locator"
 msgstr "QTH Lokator"
 
-#: ../wxui/main.py:2245
+#: ../wxui/main.py:2294
 #, python-format
 msgid "Query %s"
 msgstr "Odpytywanie %s"
 
-#: ../wxui/main.py:913
+#: ../wxui/main.py:914
 msgid "Query Source"
 msgstr "Źródło zapytań"
 
@@ -2882,7 +3174,11 @@ msgstr "Odpytywanie"
 msgid "RX DTCS"
 msgstr "DTCS RX"
 
-#: ../wxui/main.py:1119
+#: ../wxui/programming_assistant.py:764
+msgid "RX Freq"
+msgstr ""
+
+#: ../wxui/main.py:1141
 msgid "Radio"
 msgstr "Radiostacja"
 
@@ -2915,8 +3211,21 @@ msgid ""
 "<small>Premium account required</small>"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:289
+msgid "Radius (miles):"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:632
+#, python-format
+msgid "Radius: %s miles"
+msgstr ""
+
 #: ../wxui/memcolorlegend.py:53
 msgid "Railroad"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:66
+msgid "Railroad (receive-only)"
 msgstr ""
 
 #: ../wxui/memcolorlegend.py:89
@@ -2931,7 +3240,8 @@ msgstr ""
 msgid "Receive frequency"
 msgstr "Wprowadź częstotliwość"
 
-#: ../wxui/memcolorlegend.py:37 ../wxui/memcolordialog.py:290
+#: ../wxui/memcolorlegend.py:37 ../wxui/programming_assistant.py:830
+#: ../wxui/memcolordialog.py:290
 msgid "Receive-only"
 msgstr ""
 
@@ -2960,16 +3270,28 @@ msgstr "Wymagane jest odświeżenie"
 msgid "Refreshed memory %s"
 msgstr "Odświeżono pamięć %s"
 
-#: ../wxui/main.py:985
+#: ../wxui/programming_assistant.py:796
+msgid "Regulatory & Privacy Details"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:788
+msgid "Regulatory && Privacy Details..."
+msgstr ""
+
+#: ../wxui/main.py:995
 msgid "Reload Driver"
 msgstr "Przeładuj sterownik"
 
-#: ../wxui/main.py:995
+#: ../wxui/main.py:1005
 msgid "Reload Driver and File"
 msgstr "Przeładuj sterownik oraz plik"
 
 #: ../wxui/memedit.py:1846
 msgid "Reload required"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:568
+msgid "Remember API key on this computer (obfuscated, NOT securely encrypted -- no OS keyring is available)"
 msgstr ""
 
 #: ../wxui/clone.py:628
@@ -2989,7 +3311,7 @@ msgstr ""
 msgid "Remove from Recent Files"
 msgstr ""
 
-#: ../wxui/main.py:1207
+#: ../wxui/main.py:1229
 msgid "Remove from Recent Files..."
 msgstr ""
 
@@ -3011,7 +3333,7 @@ msgstr ""
 msgid "Replace ALL current color settings (including custom rules) with the built-in default profile?"
 msgstr ""
 
-#: ../wxui/main.py:1100
+#: ../wxui/main.py:1122
 msgid "Report or update a bug..."
 msgstr "Zgłoś lub uaktualnij zgłoszenie..."
 
@@ -3020,13 +3342,22 @@ msgstr "Zgłoś lub uaktualnij zgłoszenie..."
 msgid "Reporting a new bug: %r"
 msgstr "Raportowanie nowego błędu: %r"
 
-#: ../wxui/main.py:1049
+#: ../wxui/main.py:1059
 msgid "Reporting enabled"
 msgstr "Raportowanie jest włączone"
 
-#: ../wxui/main.py:2156
+#: ../wxui/main.py:2178
 msgid "Reporting helps the CHIRP project know which radio models and OS platforms to spend our limited efforts on. We would really appreciate if you left it enabled. Really disable reporting?"
 msgstr "Raportowanie pomaga projektowi CHIRP zrozumieć, które modele radiostacji oraz systemów operacyjnych należy traktować priorytetowo. Naprawdę doceniamy zostawienie tej opcji włączonej. Naprawdę wyłączyć raportowanie?"
+
+#: ../wxui/programming_assistant.py:322
+msgid "Requested services:"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:636
+#, python-format
+msgid "Requested services: %s"
+msgstr ""
 
 #: ../wxui/memcolordialog.py:269
 msgid "Reset All Colors"
@@ -3044,11 +3375,11 @@ msgstr ""
 msgid "Reset all built-in category colors to their defaults? Custom rules are not affected."
 msgstr ""
 
-#: ../wxui/main.py:1801 ../wxui/main.py:2150
+#: ../wxui/main.py:1823 ../wxui/main.py:2172 ../wxui/main.py:2210
 msgid "Restart Required"
 msgstr "Wymagany jest restart"
 
-#: ../wxui/main.py:721
+#: ../wxui/main.py:722
 #, fuzzy, python-format
 msgid "Restore %i tab"
 msgid_plural "Restore %i tabs"
@@ -3056,9 +3387,13 @@ msgstr[0] "Przywrócono %i zakładek"
 msgstr[1] "Przywrócono %i zakładek"
 msgstr[2] "Przywrócono %i zakładek"
 
-#: ../wxui/main.py:873
+#: ../wxui/main.py:874
 msgid "Restore tabs on start"
 msgstr "Przywróć zakładki po uruchomieniu"
+
+#: ../wxui/programming_assistant.py:872
+msgid "Result"
+msgstr ""
 
 #: ../wxui/query_sources.py:415
 msgid "Results from other areas"
@@ -3067,6 +3402,14 @@ msgstr ""
 #: ../wxui/common.py:338
 msgid "Retrieved settings"
 msgstr "Pobrano ustawienia"
+
+#: ../wxui/programming_assistant.py:599
+msgid "Review the interpreted request below. Nothing is queried or built until you continue -- go back to correct anything."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:771
+msgid "Review the proposed plan"
+msgstr ""
 
 #: ../wxui/memedit.py:3181
 msgid "Rows"
@@ -3097,15 +3440,15 @@ msgid ""
 "up-to-date transmitter data."
 msgstr ""
 
-#: ../wxui/main.py:1157
+#: ../wxui/main.py:1179
 msgid "Save"
 msgstr "Zapisz"
 
-#: ../wxui/main.py:1675
+#: ../wxui/main.py:1697
 msgid "Save before closing?"
 msgstr "Zapisać przed zamknięciem?"
 
-#: ../wxui/main.py:1158 ../wxui/main.py:1567 ../wxui/main.py:1594
+#: ../wxui/main.py:1180 ../wxui/main.py:1589 ../wxui/main.py:1616
 msgid "Save file"
 msgstr "Zapisz plik"
 
@@ -3129,7 +3472,7 @@ msgstr ""
 msgid "Security Risk"
 msgstr ""
 
-#: ../wxui/main.py:974
+#: ../wxui/main.py:975
 msgid "Select Bandplan..."
 msgstr "Wybierz bandplan"
 
@@ -3138,7 +3481,7 @@ msgstr "Wybierz bandplan"
 msgid "Select Bands"
 msgstr "Wybierz pasma"
 
-#: ../wxui/main.py:1784
+#: ../wxui/main.py:1806
 msgid "Select Language"
 msgstr "Wybierz język"
 
@@ -3150,11 +3493,11 @@ msgstr "Wybierz tryby"
 msgid "Select Modes to Import"
 msgstr ""
 
-#: ../wxui/main.py:2228
+#: ../wxui/main.py:2274
 msgid "Select a bandplan"
 msgstr "Wybierz bandplan"
 
-#: ../wxui/main.py:1279
+#: ../wxui/main.py:1301
 msgid "Select a tab and memory to diff"
 msgstr ""
 
@@ -3198,7 +3541,7 @@ msgstr ""
 msgid "Set Column Value..."
 msgstr ""
 
-#: ../wxui/main.py:218
+#: ../wxui/main.py:219
 msgid "Settings"
 msgstr "Ustawienia"
 
@@ -3206,8 +3549,16 @@ msgstr "Ustawienia"
 msgid "Settings are read-only due to unsupported firmware version"
 msgstr ""
 
+#: ../wxui/programming_assistant.py:614
+msgid "Share precise coordinates with network sources (off = distance sorting is skipped; only your entered state/location text is used)"
+msgstr ""
+
 #: ../wxui/memedit.py:159
 msgid "Shift amount (or transmit frequency) controlled by duplex"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:76
+msgid "Short (radio-constrained)"
 msgstr ""
 
 #: ../wxui/menucustomize.py:217
@@ -3230,7 +3581,7 @@ msgstr "Pokaż surową pamięć"
 msgid "Show color legend"
 msgstr ""
 
-#: ../wxui/main.py:1069
+#: ../wxui/main.py:1091
 msgid "Show debug log location"
 msgstr "Pokaż lokalizację pliku debug"
 
@@ -3238,9 +3589,13 @@ msgstr "Pokaż lokalizację pliku debug"
 msgid "Show extra fields"
 msgstr "Pokazuj dodatkowe pola"
 
-#: ../wxui/main.py:1075
+#: ../wxui/main.py:1097
 msgid "Show image backup location"
 msgstr "Pokaż lokalizację backupu pamięci"
+
+#: ../wxui/programming_assistant.py:834
+msgid "Simplex"
+msgstr ""
 
 #: ../wxui/memedit.py:695
 msgid "Skip"
@@ -3248,6 +3603,11 @@ msgstr "Przeskocz"
 
 #: ../wxui/memcolordialog.py:289
 msgid "Skip state"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:926
+#, python-format
+msgid "Skipped (not included or invalid): %i"
 msgstr ""
 
 #: ../wxui/linux_launcher.py:122
@@ -3316,6 +3676,15 @@ msgstr "Sortuj pamięci"
 msgid "Sorting"
 msgstr "Sortowanie"
 
+#: ../wxui/programming_assistant.py:766
+msgid "Source"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:936
+#, python-format
+msgid "Sources with no data: %s"
+msgstr ""
+
 #: ../wxui/query_sources.py:566
 msgid "State"
 msgstr "Stan"
@@ -3324,12 +3693,21 @@ msgstr "Stan"
 msgid "State/Province"
 msgstr "Stan/Prowincja"
 
-#: ../wxui/main.py:2208
+#: ../wxui/programming_assistant.py:765
+#, fuzzy
+msgid "Status"
+msgstr "Stan"
+
+#: ../wxui/main.py:2254
 msgid "Success"
 msgstr "Sukces"
 
 #: ../wxui/bugreport.py:732
 msgid "Successfully sent bug report:"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:764
+msgid "TX Freq / RX-only"
 msgstr ""
 
 #: ../wxui/memedit.py:346
@@ -3338,6 +3716,10 @@ msgstr ""
 
 #: ../wxui/memedit.py:155
 msgid "TX-RX DTCS polarity (normal or reversed)"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:71
+msgid "Technician"
 msgstr ""
 
 #: ../wxui/memcolordialog.py:587 ../wxui/memcolordialog.py:615
@@ -3380,6 +3762,14 @@ msgid ""
 "'DATA MODE' to select USER-U, USER-L and RTTY \n"
 msgstr ""
 
+#: ../wxui/main.py:2195
+msgid "The Programming Assistant is experimental. It only proposes memories from public/curated data and your own answers -- it never verifies your license, never transmits, and never uploads to a radio by itself. You review and Apply (or discard) everything it proposes, and Apply is a single undoable action. Enable it?"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:81
+msgid "The Programming Assistant organizes publicly available and curated frequency information into a proposed set of radio memories. It does not verify your license or authorization to transmit, and a radio's technical ability to transmit on a frequency does not establish legal authorization or equipment certification for that service. You remain responsible for operating lawfully. Aviation, weather, marine, public safety, business, and railroad channels are always programmed as receive-only in this release."
+msgstr ""
+
 #: ../drivers/boblov_x3plus.py:119
 msgid ""
 "The X3Plus driver is currently experimental.\n"
@@ -3416,7 +3806,11 @@ msgstr ""
 msgid "The memory editor requires a reload in order to change the workflow. That will happen now. Any other open tabs will be updated the next time they are loaded."
 msgstr ""
 
-#: ../wxui/main.py:1631
+#: ../wxui/programming_assistant.py:940
+msgid "The open image has been updated. Nothing has been uploaded to a radio -- use Radio > Upload to Radio when you are ready."
+msgstr ""
+
+#: ../wxui/main.py:1653
 #, python-format
 msgid "The recommended procedure for importing memories is to open the source file and copy/paste memories from it into your target image. If you continue with this import function, CHIRP will replace all memories in your currently-open file with those in %(file)s. Would you like to open this file to copy/paste memories across, or proceed with the import?"
 msgstr "Rekomendowaną procedurą do importowania pamięci jest otworzenie pliku źródłowego i kopiowanie/wklejanie z niego do docelowego pliku obrazu. Kontynuacja importu spowoduje, że CHIRP zastąpi wszystkie pamięci w aktualnie otwartym pliku tymi z %(file)s. Czy chcesz otworzyć ten plik, aby kopiować/wklejać pamięci lub kontynuować import?"
@@ -3462,11 +3856,11 @@ msgstr ""
 msgid "This installs a desktop launcher for a running CHIRP AppImage. CHIRP does not appear to be running from an AppImage right now, so there is nothing to install a launcher for. Download and run the CHIRP AppImage to use this feature."
 msgstr ""
 
-#: ../wxui/main.py:1868
+#: ../wxui/main.py:1890
 msgid "This is a live-mode radio, which means changes are sent to the radio in real-time as you make them. Upload is not necessary!"
 msgstr ""
 
-#: ../wxui/main.py:1874
+#: ../wxui/main.py:1896
 msgid "This is a radio-independent file and cannot be uploaded directly to a radio. Open a radio image (or download one from a radio) and then copy/paste items from this tab into that one in order to upload"
 msgstr ""
 
@@ -3539,7 +3933,7 @@ msgstr ""
 msgid "This will load a module from a website issue"
 msgstr "To załaduje moduł ze strony zgłoszenia"
 
-#: ../wxui/memedit.py:523
+#: ../wxui/memedit.py:523 ../wxui/programming_assistant.py:765
 msgid "Tone"
 msgstr "Ton TX"
 
@@ -3605,7 +3999,7 @@ msgstr "Nie można wykryć portu kabla. Należy sprawdzić sterowniki oraz poł�
 msgid "Unable to edit memory before radio is loaded"
 msgstr "Przed pobraniem pamięci, nie można jej edytować"
 
-#: ../wxui/main.py:1499
+#: ../wxui/main.py:1521
 #, python-format
 msgid "Unable to find stock config %r"
 msgstr "Nie znaleziono konfiguracji wstępnej %r"
@@ -3643,7 +4037,7 @@ msgstr "Nie można odkryć %s na tym systemie"
 msgid "Unable to set %s on this memory"
 msgstr "Nie można ustawić %s na tej pamięci"
 
-#: ../wxui/main.py:1878
+#: ../wxui/main.py:1900
 msgid "Unable to upload this file"
 msgstr "Nie można uploadować tego pliku"
 
@@ -3689,11 +4083,11 @@ msgstr "Instrukcje wysyłania"
 msgid "Upload is disabled due to unsupported firmware version"
 msgstr ""
 
-#: ../wxui/main.py:1164
+#: ../wxui/main.py:1186
 msgid "Upload to radio"
 msgstr "Wyślij do radiostacji"
 
-#: ../wxui/main.py:905
+#: ../wxui/main.py:906
 msgid "Upload to radio..."
 msgstr "Wyślij do radiostacji..."
 
@@ -3710,16 +4104,20 @@ msgstr ""
 msgid "Use TX Frequency Workflow"
 msgstr ""
 
-#: ../wxui/main.py:856
+#: ../wxui/main.py:857
 msgid "Use fixed-width font"
 msgstr "Używaj czcionki o stałej szerokości znaków"
 
-#: ../wxui/main.py:865
+#: ../wxui/main.py:866
 msgid "Use larger font"
 msgstr "Używaj większej czcionki"
 
 #: ../wxui/bugreport.py:265
 msgid "Username"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:557
+msgid "Using CHIRP_ASSISTANT_API_KEY environment variable"
 msgstr ""
 
 #: ../wxui/memcolorlegend.py:88
@@ -3774,7 +4172,7 @@ msgstr "Wartości"
 msgid "Vendor"
 msgstr "Producent"
 
-#: ../wxui/main.py:1118
+#: ../wxui/main.py:1140
 msgid "View"
 msgstr "Widok"
 
@@ -3782,7 +4180,7 @@ msgstr "Widok"
 msgid "WARNING!"
 msgstr "UWAGA!"
 
-#: ../wxui/memedit.py:2722 ../wxui/main.py:2032 ../wxui/main.py:2200
+#: ../wxui/memedit.py:2722 ../wxui/main.py:2054 ../wxui/main.py:2246
 #: ../wxui/bugreport.py:234
 msgid "Warning"
 msgstr "Uwaga"
@@ -3792,7 +4190,7 @@ msgstr "Uwaga"
 msgid "Warning: %s"
 msgstr "Uwaga: %s"
 
-#: ../wxui/main.py:461
+#: ../wxui/main.py:462
 msgid "Welcome"
 msgstr "Witamy"
 
@@ -3824,7 +4222,7 @@ msgstr ""
 msgid "Yes"
 msgstr ""
 
-#: ../wxui/main.py:2307
+#: ../wxui/main.py:2356
 msgid "You are running the latest version of CHIRP."
 msgstr ""
 
@@ -3864,11 +4262,11 @@ msgstr "bajtów każdy"
 msgid "contains"
 msgstr ""
 
-#: ../wxui/main.py:2133
+#: ../wxui/main.py:2155 ../wxui/main.py:2192
 msgid "disabled"
 msgstr "wyłączony"
 
-#: ../wxui/main.py:2133
+#: ../wxui/main.py:2155 ../wxui/main.py:2192
 msgid "enabled"
 msgstr "włączony"
 
@@ -3882,6 +4280,10 @@ msgstr ""
 
 #: ../wxui/memcolordialog.py:297
 msgid "starts with"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:361
+msgid "to"
 msgstr ""
 
 #: ../drivers/vx5.py:116
@@ -4092,9 +4494,6 @@ msgstr "{bank} jest pełny"
 #~ msgid "Issue must be a number!"
 #~ msgstr "Numer zgłoszenia:"
 
-#~ msgid "Loc"
-#~ msgstr "Lp."
-
 #, fuzzy
 #~ msgid "Location memory will be imported into"
 #~ msgstr "Lokalizacja {number} jest zaimportowana."
@@ -4143,9 +4542,6 @@ msgstr "{bank} jest pełny"
 
 #~ msgid "New location"
 #~ msgstr "Nowa lokalizacja"
-
-#~ msgid "None"
-#~ msgstr " Żaden"
 
 #, fuzzy
 #~ msgid "Notes"
@@ -4208,10 +4604,6 @@ msgstr "{bank} jest pełny"
 
 #~ msgid "Special Channels"
 #~ msgstr "Kanały specjalne"
-
-#, fuzzy
-#~ msgid "Status"
-#~ msgstr "Stan"
 
 #~ msgid "The file {name} already exists. Do you want to overwrite it?"
 #~ msgstr "Plik {name} istneje.Czy chcesz nadpisać?"

@@ -186,6 +186,25 @@ verifying your own frequencies and operating privileges.
 
 ![Memory list color-coded by category, showing a repeater, simplex, calling frequency, satellite, APRS/data, digital voice, beacon, receive-only, aviation, GMRS, FRS, MURS, marine, weather, unknown, and disabled memory alongside the color legend](docs/screenshots/memory-color-coding.png)
 
+### Programming Assistant (Experimental)
+
+Disabled by default — enable it from Help > Enable Programming
+Assistant (Experimental) and restart CHIRP, then use Radio > Programming
+Assistant... Turns a description of what you want
+programmed — structured fields, or an optional AI-interpreted plain-text
+description like "I live near Coeur d'Alene, I fly GA, I camp, I have a
+GMRS license and a Technician license" — into a previewed, editable batch
+of proposed memories. Every proposed channel is converted and validated
+through CHIRP's own import/validation logic for the radio you have open,
+and nothing is written until you review and approve it; applying a plan
+is one undoable action on the open image only — it never uploads to a
+radio. AI, when configured, only ever extracts structured fields from
+your text; it never supplies frequencies, tones, or any other technical
+data. Aviation, weather, marine, public safety, business, and railroad
+channels are always receive-only. See
+[docs/programming_assistant.md](docs/programming_assistant.md) for full
+details, data sources, privacy behavior, and known limitations.
+
 ### `run-chirp.sh` / `run-chirp.ps1`
 
 Convenience launchers for running CHIRP straight from a git checkout, without
