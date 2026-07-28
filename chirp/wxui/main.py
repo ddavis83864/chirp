@@ -38,6 +38,10 @@ from chirp import directory
 from chirp import errors
 from chirp import logger
 from chirp import platform as chirp_platform
+from chirp.profiles import errors as profile_errors
+from chirp.profiles import model as profile_model
+from chirp.profiles import schema as profile_schema
+from chirp.profiles import serialization as profile_serialization
 from chirp.sources import base
 from chirp.wxui import config
 from chirp.wxui import bankedit
@@ -49,6 +53,9 @@ from chirp.wxui import linux_launcher
 from chirp.wxui import memedit
 from chirp.wxui import menucustomize
 from chirp.wxui import printing
+from chirp.wxui import profileapply
+from chirp.wxui import profilecontroller
+from chirp.wxui import profileeditor
 from chirp.wxui import query_sources
 from chirp.wxui import radioinfo
 from chirp.wxui import radiothread
@@ -442,6 +449,9 @@ class ChirpMain(wx.Frame):
         d = CONF.get('last_dir', 'state')
         if d and os.path.isdir(d):
             chirp_platform.get_platform().set_last_dir(d)
+
+        self._current_profile = None
+        self._current_profile_path = None
 
         self.SetMenuBar(self.make_menubar())
 
@@ -1016,6 +1026,54 @@ class ChirpMain(wx.Frame):
             self._reload_driver_item = None
             self._interact_driver_item = None
 
+        profile_menu = wx.Menu()
+
+        create_profile_item = profile_menu.Append(
+            wx.ID_ANY, _('Create Profile from Current Image'))
+        tag(create_profile_item, 'profile.create')
+        self.Bind(wx.EVT_MENU, self._menu_profile_create, create_profile_item)
+
+        open_profile_item = profile_menu.Append(
+            wx.ID_ANY, _('Open Profile...'))
+        tag(open_profile_item, 'profile.open')
+        self.Bind(wx.EVT_MENU, self._menu_profile_open, open_profile_item)
+
+        edit_profile_item = profile_menu.Append(
+            wx.ID_ANY, _('Edit Profile...'))
+        tag(edit_profile_item, 'profile.edit')
+        self.Bind(wx.EVT_MENU, self._menu_profile_edit, edit_profile_item)
+
+        profile_menu.Append(wx.MenuItem(profile_menu, wx.ID_SEPARATOR))
+
+        save_profile_item = profile_menu.Append(
+            wx.ID_ANY, _('Save Profile'))
+        tag(save_profile_item, 'profile.save')
+        self.Bind(wx.EVT_MENU, self._menu_profile_save, save_profile_item)
+
+        save_profile_as_item = profile_menu.Append(
+            wx.ID_ANY, _('Save Profile As...'))
+        tag(save_profile_as_item, 'profile.save_as')
+        self.Bind(wx.EVT_MENU, self._menu_profile_save_as,
+                  save_profile_as_item)
+
+        import_profile_item = profile_menu.Append(
+            wx.ID_ANY, _('Import Profile...'))
+        tag(import_profile_item, 'profile.import')
+        self.Bind(wx.EVT_MENU, self._menu_profile_open, import_profile_item)
+
+        export_profile_item = profile_menu.Append(
+            wx.ID_ANY, _('Export Profile...'))
+        tag(export_profile_item, 'profile.export')
+        self.Bind(wx.EVT_MENU, self._menu_profile_save_as,
+                  export_profile_item)
+
+        profile_menu.Append(wx.MenuItem(profile_menu, wx.ID_SEPARATOR))
+
+        apply_profile_item = profile_menu.Append(
+            wx.ID_ANY, _('Apply Profile to Current Image...'))
+        tag(apply_profile_item, 'profile.apply')
+        self.Bind(wx.EVT_MENU, self._menu_profile_apply, apply_profile_item)
+
         help_menu = wx.Menu()
 
         about_item = wx.MenuItem(help_menu, wx.NewId(), _('About'))
@@ -1117,6 +1175,7 @@ class ChirpMain(wx.Frame):
         menu_bar.Append(edit_menu, wx.GetStockLabel(wx.ID_EDIT))
         menu_bar.Append(view_menu, '&' + _('View'))
         menu_bar.Append(radio_menu, '&' + _('Radio'))
+        menu_bar.Append(profile_menu, '&' + _('Profile'))
         menu_bar.Append(help_menu, _('Help'))
 
         # Snapshot every hideable item (as plain data, not live wx objects)
@@ -1660,6 +1719,146 @@ class ChirpMain(wx.Frame):
             if fd.ShowModal() == wx.ID_CANCEL:
                 return
             self.current_editorset.export_to_file(fd.GetPath())
+
+    # --- Radio Profiles --------------------------------------------------
+    #
+    # These handlers are intentionally thin: all profile domain logic
+    # (parsing, validation, extraction, adaptation, matching, placement,
+    # conflicts, change-set generation) lives in chirp.profiles.* and is
+    # reached only through chirp.wxui.profilecontroller (section 3.4).
+    # Dialog presentation lives in chirp.wxui.profileeditor/profileapply.
+
+    @common.error_proof(profile_errors.ProfileError)
+    def _menu_profile_create(self, event):
+        eset = self.current_editorset
+        if profilecontroller.get_memedit(eset) is None:
+            wx.MessageBox(
+                _('The current tab has no memories to create a profile '
+                  'from.'),
+                _('Create Profile'), wx.OK | wx.ICON_ERROR, self)
+            return
+
+        name_dlg = wx.TextEntryDialog(
+            self, _('Profile name:'), _('Create Profile from Current Image'),
+            value=os.path.splitext(os.path.basename(eset.filename))[0])
+        if name_dlg.ShowModal() != wx.ID_OK:
+            return
+        name = name_dlg.GetValue().strip()
+
+        result = profilecontroller.create_profile_from_editorset(
+            eset, name=name)
+        summary = result.summary
+        wx.MessageBox(
+            _('Channels extracted: %(extracted)d\n'
+              'Channels omitted: %(omitted)d\n'
+              'Fields preserved: %(preserved)s\n'
+              'Fields converted: %(converted)s\n'
+              'Fields lost: %(lost)s\n'
+              'Receive-only channels detected: %(rxonly)d') % {
+                  'extracted': summary.channels_extracted,
+                  'omitted': summary.channels_omitted,
+                  'preserved': ', '.join(summary.fields_preserved),
+                  'converted': ', '.join(summary.fields_converted) or
+                  _('(none)'),
+                  'lost': ', '.join(summary.fields_lost) or _('(none)'),
+                  'rxonly': len(summary.receive_only_detected),
+              },
+            _('Profile Created'), wx.OK | wx.ICON_INFORMATION, self)
+
+        self._current_profile = result.profile
+        self._current_profile_path = None
+        self._menu_profile_edit(None)
+
+    @common.error_proof(profile_errors.ProfileError)
+    def _menu_profile_open(self, event):
+        wildcard = (
+            _('CHIRP Profile Files') +
+            ' (*%s)|*%s' % (profile_schema.FILE_EXTENSION,
+                            profile_schema.FILE_EXTENSION))
+        with wx.FileDialog(
+                self, _('Open Profile'),
+                chirp_platform.get_platform().get_last_dir(),
+                wildcard=wildcard,
+                style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fd:
+            if fd.ShowModal() == wx.ID_CANCEL:
+                return
+            path = fd.GetPath()
+            chirp_platform.get_platform().set_last_dir(fd.GetDirectory())
+
+        self._current_profile = profile_serialization.load(path)
+        self._current_profile_path = path
+
+    @common.error_proof(profile_errors.ProfileError)
+    def _menu_profile_save(self, event):
+        if self._current_profile is None:
+            wx.MessageBox(_('No profile is open.'), _('Save Profile'),
+                          wx.OK | wx.ICON_ERROR, self)
+            return
+        if not self._current_profile_path:
+            return self._menu_profile_save_as(event)
+        profile_serialization.save(
+            self._current_profile, self._current_profile_path)
+
+    @common.error_proof(profile_errors.ProfileError)
+    def _menu_profile_save_as(self, event):
+        if self._current_profile is None:
+            wx.MessageBox(_('No profile is open.'), _('Save Profile'),
+                          wx.OK | wx.ICON_ERROR, self)
+            return
+        wildcard = (
+            _('CHIRP Profile Files') +
+            ' (*%s)|*%s' % (profile_schema.FILE_EXTENSION,
+                            profile_schema.FILE_EXTENSION))
+        default_name = (self._current_profile.name or 'profile').replace(
+            os.sep, '_') + profile_schema.FILE_EXTENSION
+        style = wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT | wx.FD_CHANGE_DIR
+        with wx.FileDialog(self, _('Save Profile As'),
+                           defaultFile=default_name, wildcard=wildcard,
+                           style=style) as fd:
+            if fd.ShowModal() == wx.ID_CANCEL:
+                return
+            path = fd.GetPath()
+            chirp_platform.get_platform().set_last_dir(fd.GetDirectory())
+        profile_serialization.save(self._current_profile, path)
+        self._current_profile_path = path
+
+    @common.error_proof(profile_errors.ProfileError)
+    def _menu_profile_edit(self, event):
+        if self._current_profile is None:
+            self._current_profile = profile_model.Profile()
+        dlg = profileeditor.ProfileEditorDialog(self, self._current_profile)
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    @common.error_proof(profile_errors.ProfileError)
+    def _menu_profile_apply(self, event):
+        if self._current_profile is None:
+            wx.MessageBox(
+                _('No profile is open. Use Profile > Open Profile or '
+                  'Create Profile from Current Image first.'),
+                _('Apply Profile'), wx.OK | wx.ICON_ERROR, self)
+            return
+        eset = self.current_editorset
+        memedit_widget = profilecontroller.get_memedit(eset)
+        if memedit_widget is None:
+            wx.MessageBox(
+                _('The current tab has no memories to apply a profile '
+                  'to.'),
+                _('Apply Profile'), wx.OK | wx.ICON_ERROR, self)
+            return
+
+        change_set = profilecontroller.build_changeset_for_editorset(
+            self._current_profile, eset)
+
+        dlg = profileapply.ProfileApplyPreviewDialog(self, change_set)
+        try:
+            if dlg.ShowModal() != wx.ID_OK:
+                return
+        finally:
+            dlg.Destroy()
+
+        profilecontroller.apply_changeset(
+            memedit_widget, self._current_profile.name, change_set)
 
     def _prompt_to_close_editor(self, editorset):
         """Returns True if it is okay to close the editor, False otherwise"""
