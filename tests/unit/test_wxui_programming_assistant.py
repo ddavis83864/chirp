@@ -9,7 +9,6 @@ test_wxui_memquery.py). CI must have wxPython available for this file
 to run (it already does, per tox.ini's [testenv:unit] sitepackages).
 """
 
-import os
 import sys
 import tempfile
 import unittest
@@ -35,10 +34,6 @@ from chirp.drivers import generic_csv  # noqa: E402
 from chirp.wxui import config  # noqa: E402
 from chirp.wxui import memedit  # noqa: E402
 from chirp.wxui import programming_assistant  # noqa: E402
-
-_TEST_CSV = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(
-        os.path.abspath(__file__)))), 'test.csv')
 
 _APP = None
 
@@ -92,7 +87,18 @@ class ProgrammingAssistantWxTestBase(unittest.TestCase):
     def setUp(self):
         _ensure_wx_app()
         config._CONFIG = config.ChirpConfig(tempfile.mkdtemp())
-        self.radio = generic_csv.CSVRadio(_TEST_CSV)
+        # CSVRadio(None) builds a blank, in-memory-only radio -- no
+        # file is read or written, so this can never collide with an
+        # unrelated developer file (e.g. a personal test.csv left at
+        # the repo root), differ by working directory, or leak state
+        # between tests or parallel runs. This was previously
+        # generic_csv.CSVRadio applied to a hardcoded repo-root
+        # 'test.csv' filename
+        # -- when absent (every normal checkout) CSVRadio already fell
+        # back to this same blank-radio behavior, so this is not a
+        # behavior change; it makes that reliance explicit instead of
+        # accidental.
+        self.radio = generic_csv.CSVRadio(None)
         self.frame = wx.Frame(None)
         # Real menu bar so memedit's own _update_menu() (called by its
         # pre-existing undo_context() on every apply, unrelated to this
