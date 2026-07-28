@@ -540,6 +540,54 @@ class ResultPageApplyTest(ProgrammingAssistantWxTestBase):
         for n in existing_occupied:
             self.assertFalse(self.radio.get_memory(n).empty)
 
+    def test_full_image_snapshot_only_included_rows_change(self):
+        # Compare the COMPLETE memory state before/after, not just the
+        # rows involved in the plan: an excluded row's target number
+        # must be untouched, and every unrelated memory across the
+        # whole numeric range must be bit-for-bit identical.
+        lo, hi = self.radio.get_features().memory_bounds
+
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_WEATHER,), channel_limit=20)
+        plan = self.context.service.build_plan(req, network_allowed=False)
+        self.context.service.convert_and_validate(plan)
+        weather = [
+            c for c in plan.all_candidates
+            if c.service == models.SERVICE_WEATHER]
+        self.assertGreaterEqual(len(weather), 2)
+        excluded = weather[0]
+        excluded.include = False
+        excluded_number = excluded.memory_number
+        included_numbers = {c.memory_number for c in weather if c.include}
+
+        def _snapshot(mem):
+            return (mem.empty, mem.freq, mem.name, mem.mode, mem.duplex,
+                    mem.offset, mem.tmode, mem.rtone, mem.ctone, mem.dtcs)
+
+        before = {n: _snapshot(self.radio.get_memory(n))
+                  for n in range(lo, hi + 1)}
+
+        self.context.request = req
+        self.context.plan = plan
+        page = programming_assistant.ResultPage(self.context)
+        page._apply()
+
+        after = {n: _snapshot(self.radio.get_memory(n))
+                 for n in range(lo, hi + 1)}
+
+        # The excluded row's own slot must be untouched.
+        self.assertEqual(before[excluded_number], after[excluded_number])
+
+        for n in range(lo, hi + 1):
+            if n in included_numbers:
+                self.assertNotEqual(
+                    before[n], after[n],
+                    'memory %i was included but did not change' % n)
+            else:
+                self.assertEqual(
+                    before[n], after[n],
+                    'memory %i changed but was not part of the plan' % n)
+
     def test_immutable_memory_blocked_before_apply_not_silently_written(self):
         # generic_csv.CSVRadio doesn't itself enforce
         # check_set_memory_immutable_policy in its own set_memory()
