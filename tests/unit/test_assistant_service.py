@@ -181,6 +181,38 @@ class AssistantServiceTest(unittest.TestCase):
         # Nothing was silently dropped from the plan itself.
         self.assertEqual(9, len(plan.all_candidates))
 
+    def test_zero_writable_memories_does_not_crash(self):
+        # The entire numeric range protected: no candidate can ever be
+        # allocated a slot. Must degrade to a clean, empty apply-ready
+        # result, not raise.
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_WEATHER,), channel_limit=20,
+            protected_memory_ranges=((0, 999),))
+        plan = self.svc.build_plan(req, network_allowed=False)
+        self.svc.convert_and_validate(plan)
+        finalized = self.svc.finalize_for_apply(plan)
+
+        self.assertEqual([], finalized)
+        self.assertTrue(plan.capacity_limited)
+        # Still not silently discarded from the plan itself.
+        self.assertEqual(7, len(plan.all_candidates))
+        for c in plan.all_candidates:
+            self.assertFalse(c.include)
+            self.assertTrue(c.reason)
+
+    def test_planner_returning_no_usable_rows_does_not_crash(self):
+        # Only unsupported-service requests: build_candidates()
+        # returns nothing to plan at all.
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_MARINE,), channel_limit=20)
+        plan = self.svc.build_plan(req, network_allowed=False)
+        self.svc.convert_and_validate(plan)
+        finalized = self.svc.finalize_for_apply(plan)
+
+        self.assertEqual([], plan.all_candidates)
+        self.assertEqual([], finalized)
+        self.assertIn('Marine', plan.skipped_sources)
+
     def test_existing_memories_preserved_by_default(self):
         before = {n: m.freq for n, m in self.svc.existing_memories
                   if not m.empty}
