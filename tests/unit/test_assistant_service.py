@@ -1,18 +1,27 @@
-import os
 import unittest
 
 from chirp.assistant import models
 from chirp.assistant import service
 from chirp.drivers import generic_csv
 
-_TEST_CSV = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(
-        os.path.abspath(__file__)))), 'test.csv')
-
 
 class AssistantServiceTest(unittest.TestCase):
     def setUp(self):
-        self.radio = generic_csv.CSVRadio(_TEST_CSV)
+        # CSVRadio(None) builds a blank, in-memory-only radio (see
+        # generic_csv.CSVRadio.__init__) -- no file is read or
+        # written, so this can never collide with an unrelated
+        # developer file (e.g. a personal test.csv left at the repo
+        # root), differ by working directory, or leak state between
+        # tests or parallel runs. This was previously
+        # generic_csv.CSVRadio applied to a hardcoded repo-root
+        # 'test.csv' filename
+        # -- when absent (every normal checkout) CSVRadio already fell
+        # back to this same blank-radio behavior, so this is not a
+        # behavior change; it makes that reliance explicit instead of
+        # accidental, and removes the failure mode where a same-named
+        # file that does exist gets loaded instead, with different
+        # (and non-deterministic) pre-occupied memory content.
+        self.radio = generic_csv.CSVRadio(None)
         self.svc = service.AssistantService(self.radio)
 
     def test_reads_existing_memories(self):

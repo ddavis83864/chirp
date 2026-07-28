@@ -12,17 +12,12 @@ ChannelCandidate metadata -- not just that "something" got built.
 """
 
 import dataclasses
-import os
 import unittest
 
 from chirp import chirp_common
 from chirp.assistant import models
 from chirp.assistant import service
 from chirp.drivers import generic_csv
-
-_TEST_CSV = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(
-        os.path.abspath(__file__)))), 'test.csv')
 
 
 def _assert_universally_valid(testcase, radio, memory):
