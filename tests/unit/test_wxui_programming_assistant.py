@@ -379,12 +379,93 @@ class ReviewPageTest(ProgrammingAssistantWxTestBase):
         candidate = page._row_candidates[0]
         self.assertTrue(candidate.include)
         page.list.CheckItem(0, False)
-
-        class FakeEvent:
-            def GetIndex(self):
-                return 0
-        page._on_check(FakeEvent())
+        page._on_check(_FakeIndexEvent(0))
         self.assertFalse(candidate.include)
+
+    def test_rechecking_row_updates_candidate(self):
+        self.context.plan = self._plan_with_one_ready_one_blocked()
+        page = programming_assistant.ReviewPage(self.context)
+        page._populate()
+        candidate = page._row_candidates[0]
+
+        page.list.CheckItem(0, False)
+        page._on_check(_FakeIndexEvent(0))
+        self.assertFalse(candidate.include)
+
+        page.list.CheckItem(0, True)
+        page._on_check(_FakeIndexEvent(0))
+        self.assertTrue(candidate.include)
+
+    def test_excluding_every_row_disables_next(self):
+        self.context.plan = self._plan_with_one_ready_one_blocked()
+        page = programming_assistant.ReviewPage(self.context)
+        page._populate()
+        self.assertTrue(page._validate_next())
+
+        # Only row 0 is include=True to begin with (row 1 is already
+        # blocked/excluded) -- uncheck it and confirm Next disables.
+        page.list.CheckItem(0, False)
+        page._on_check(_FakeIndexEvent(0))
+        self.assertFalse(page._validate_next())
+
+    def test_warnings_shown_in_details_column(self):
+        warned = models.ChannelCandidate(
+            source='s', service=models.SERVICE_HAM, group='g', label='W',
+            freq=146520000, mode='FM', status=models.STATUS_ADJUSTED,
+            include=True, memory_number=2, name='W1',
+            warnings=('Name truncated to fit this radio',))
+        self.context.plan = models.ChannelPlan(
+            groups=[models.PlanGroup(name='g', candidates=[warned])])
+        page = programming_assistant.ReviewPage(self.context)
+        page._populate()
+
+        details = page.list.GetItemText(0, 9)
+        self.assertIn('Name truncated to fit this radio', details)
+
+    def test_existing_conflict_shown_with_reason(self):
+        conflict = models.ChannelCandidate(
+            source='s', service=models.SERVICE_HAM, group='g', label='C',
+            freq=146520000, mode='FM', status=models.STATUS_EXISTING_CONFLICT,
+            include=True, memory_number=3, name='C1',
+            reason='Will replace existing memory 3 (Old Channel)')
+        self.context.plan = models.ChannelPlan(
+            groups=[models.PlanGroup(name='g', candidates=[conflict])])
+        page = programming_assistant.ReviewPage(self.context)
+        page._populate()
+
+        self.assertEqual(models.STATUS_EXISTING_CONFLICT,
+                         page.list.GetItemText(0, 7))
+        self.assertIn('Will replace existing memory 3',
+                      page.list.GetItemText(0, 9))
+
+    def test_preview_memory_numbers_match_what_apply_would_target(self):
+        # The number shown in the "Loc" column must be exactly what
+        # finalize_for_apply() would target -- if these ever diverged,
+        # the preview would be lying to the user about what Apply does.
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_WEATHER,), channel_limit=20)
+        plan = self.context.service.build_plan(req, network_allowed=False)
+        self.context.service.convert_and_validate(plan)
+        self.context.request = req
+        self.context.plan = plan
+
+        page = programming_assistant.ReviewPage(self.context)
+        page._populate()
+        shown_numbers = {int(page.list.GetItemText(i, 0))
+                         for i in range(page.list.GetItemCount())
+                         if page.list.GetItemText(i, 0)}
+
+        finalized = self.context.service.finalize_for_apply(plan)
+        applied_numbers = {memory.number for _c, memory in finalized}
+        self.assertTrue(applied_numbers.issubset(shown_numbers))
+
+
+class _FakeIndexEvent:
+    def __init__(self, index):
+        self._index = index
+
+    def GetIndex(self):
+        return self._index
 
 
 class ResultPageApplyTest(ProgrammingAssistantWxTestBase):
@@ -604,6 +685,101 @@ class DoProgrammingAssistantTest(ProgrammingAssistantWxTestBase):
 
         run.assert_called_once()
         mock_show_error.assert_not_called()
+
+
+class RealWizardEventFlowTest(ProgrammingAssistantWxTestBase):
+    """Drives the wizard through Describe -> Confirm -> Review ->
+    Result using real wx.adv.Wizard ShowPage() transitions and the
+    exact production event wiring (_wire_wizard_events()), instead of
+    calling each page's internal methods directly the way every other
+    test in this file does.
+
+    That distinction matters: it's what caught a release-blocking
+    defect during review. wx.adv.WizardEvent.GetPage() for
+    EVT_WIZARD_PAGE_CHANGING returns the page being LEFT, so
+    validate_success() only ever fires on the outgoing page of a
+    forward transition. ResultPage has no next page, so
+    ResultPage.validate_success() -- which used to contain the entire
+    _apply() call -- could never fire in the real app; Apply was
+    silently a no-op end to end, and ReviewPage's list, populated the
+    same wrong way, stayed empty until the moment the user clicked
+    Next past it. Confirmed by reverting the page_shown() fix locally
+    and re-running this test: it fails exactly as described (list
+    count 0, result._applied False, nothing written to the radio)
+    before the fix, and passes after.
+    """
+
+    def _click_next(self, wizard, current):
+        next_page = current.GetNext()
+        self.assertIsNotNone(next_page, 'no next page from %r' % current)
+        ok = wizard.ShowPage(next_page, True)
+        self.assertTrue(ok, 'wizard refused to advance past %r' % current)
+        return next_page
+
+    def test_full_wizard_flow_populates_review_and_applies_result(self):
+        wizard = wx.adv.Wizard(self.frame)
+        context = programming_assistant.AssistantContext(
+            wizard, self.chirpmain)
+        programming_assistant._wire_wizard_events(wizard)
+
+        describe = context.get_page(
+            'describe', programming_assistant.DescribePage)
+        wizard.GetPageAreaSizer().Add(describe)
+        wizard.ShowPage(describe)
+
+        describe.services.Check(
+            [i for i, (value, _label) in
+             enumerate(programming_assistant._SERVICE_LABELS)
+             if value == models.SERVICE_WEATHER][0], True)
+
+        confirm = self._click_next(wizard, describe)
+        self.assertIsInstance(confirm, programming_assistant.ConfirmPage)
+        confirm.network_allowed.SetValue(False)
+
+        # The build runs on a real background thread in production;
+        # replace it with one that runs synchronously so this test
+        # doesn't depend on real OS-thread timing or a live wx event
+        # loop -- the actual thing under test here is wizard page
+        # transitions, not threading.
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.PostEvent',
+                side_effect=lambda target, evt: target._build_done(evt)), \
+                mock.patch(
+                    'chirp.wxui.programming_assistant.threading.Thread',
+                    ConfirmPageBuildFreshnessTest._ImmediateThread):
+            # First click starts the build and is vetoed; second
+            # click (now that it's built and nothing changed) proceeds.
+            still_confirm = self._click_next_or_veto(wizard, confirm)
+            self.assertIs(confirm, still_confirm)
+            review = self._click_next(wizard, confirm)
+
+        self.assertIsInstance(review, programming_assistant.ReviewPage)
+        # This is the crux of the regression: the list must already be
+        # populated as soon as Review is shown, not only once the user
+        # tries to leave it.
+        self.assertEqual(7, review.list.GetItemCount())
+        self.assertEqual(7, len(review._row_candidates))
+
+        result = self._click_next(wizard, review)
+        self.assertIsInstance(result, programming_assistant.ResultPage)
+        self.assertTrue(result._applied)
+        self.assertIn('Applied: 7', result.result.GetValue())
+        applied_numbers = [
+            c.memory_number for c in context.plan.all_candidates
+            if c.include]
+        self.assertEqual(7, len(applied_numbers))
+        for n in applied_numbers:
+            self.assertFalse(self.radio.get_memory(n).empty)
+
+    def _click_next_or_veto(self, wizard, current):
+        """Like _click_next(), but for a page (ConfirmPage) whose
+        first click may legitimately veto its own transition (to
+        start an async build) and stay put."""
+        next_page = current.GetNext()
+        wizard.ShowPage(next_page, True)
+        # wx.adv.Wizard doesn't expose "did the last ShowPage veto"
+        # directly in a way independent of GetCurrentPage(), so ask it.
+        return wizard.GetCurrentPage()
 
 
 class MenuIntegrationTest(unittest.TestCase):

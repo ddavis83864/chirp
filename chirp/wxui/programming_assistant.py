@@ -216,6 +216,17 @@ class AssistantPage(wx.adv.WizardPage):
     def validate_success(self, event):
         pass
 
+    def page_shown(self):
+        """Called once, right after this page becomes the wizard's
+        current page -- both on forward and backward navigation, and
+        (unlike validate_success()) for the LAST page in the wizard
+        too. validate_success() only fires on the page being LEFT
+        during a forward transition, so it can never fire for a page
+        with no next page to leave towards; anything that needs to
+        run as soon as a page is actually shown (not as a gate on
+        leaving some other page) belongs here instead."""
+        pass
+
     def GetNext(self):
         return None
 
@@ -709,7 +720,7 @@ class ReviewPage(AssistantPage):
         wx.MessageDialog(self, _DISCLAIMER, _('Regulatory & Privacy Details'),
                          style=wx.OK | wx.ICON_INFORMATION).ShowModal()
 
-    def validate_success(self, event):
+    def page_shown(self):
         self._populate()
 
     def _populate(self):
@@ -790,7 +801,7 @@ class ResultPage(AssistantPage):
         vbox.Add(self.result, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
         self._applied = False
 
-    def validate_success(self, event):
+    def page_shown(self):
         if self._applied:
             return
         self._applied = True
@@ -863,6 +874,33 @@ class ResultPage(AssistantPage):
         return None
 
 
+def _wire_wizard_events(wizard):
+    """Bind the two page-transition events every AssistantPage relies
+    on. Factored out of do_programming_assistant() so tests can drive
+    a real wizard through real ShowPage()/button-click transitions
+    with the exact same wiring production uses, instead of calling
+    page_shown()/validate_success() directly and only ever exercising
+    each page in isolation -- see the "no page can advance..." review
+    finding for why that isolation previously hid a real defect
+    (ResultPage.validate_success() could never fire at all, since it
+    only runs on the page being LEFT during a forward transition, and
+    Result has no next page to leave towards -- Apply never ran)."""
+
+    def _on_page_changed(e):
+        page = e.GetPage()
+        # page_shown() first: it may populate/refresh content
+        # (ReviewPage's list, ResultPage's apply) that validate_next()
+        # -> _validate_next() then needs to inspect to set the
+        # Next/Finish button's initial enabled state correctly.
+        page.page_shown()
+        page.validate_next()
+
+    wizard.Bind(wx.adv.EVT_WIZARD_PAGE_CHANGED, _on_page_changed)
+    wizard.Bind(wx.adv.EVT_WIZARD_PAGE_CHANGING,
+                lambda e: (e.GetPage().validate_success(e)
+                           if e.GetDirection() else None))
+
+
 @common.error_proof()
 def do_programming_assistant(parent, event):
     wizard = wx.adv.Wizard(parent)
@@ -880,11 +918,7 @@ def do_programming_assistant(parent, event):
 
     audit.dialog_opened()
 
-    wizard.Bind(wx.adv.EVT_WIZARD_PAGE_CHANGED,
-                lambda e: e.GetPage().validate_next())
-    wizard.Bind(wx.adv.EVT_WIZARD_PAGE_CHANGING,
-                lambda e: (e.GetPage().validate_success(e)
-                           if e.GetDirection() else None))
+    _wire_wizard_events(wizard)
 
     start = context.get_page('describe', DescribePage)
     wizard.GetPageAreaSizer().Add(start)
