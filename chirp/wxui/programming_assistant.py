@@ -208,6 +208,9 @@ class AssistantPage(wx.adv.WizardPage):
     def _validate_next(self):
         return True
 
+    def _validate_prev(self):
+        return self.GetPrev() is not None
+
     def validate_next(self, *a):
         forward = self.FindWindowById(wx.ID_FORWARD)
         if forward:
@@ -217,10 +220,13 @@ class AssistantPage(wx.adv.WizardPage):
         # (it stays enabled, clickable, with undefined-in-this-app
         # results) -- so pages with no previous page (Describe,
         # Result) must disable it explicitly, the same way _validate_
-        # next() explicitly manages the forward button.
+        # next() explicitly manages the forward button. _validate_prev()
+        # is the override point for that (and for anything else, like
+        # ConfirmPage's in-flight build, that should also block
+        # navigating away from a page).
         backward = self.FindWindowById(wx.ID_BACKWARD)
         if backward:
-            backward.Enable(self.GetPrev() is not None)
+            backward.Enable(self._validate_prev())
 
     def validate_success(self, event):
         pass
@@ -680,6 +686,13 @@ class ConfirmPage(AssistantPage):
         # disabled while a background build is in flight.
         return self._build_thread is None
 
+    def _validate_prev(self):
+        # Also block Back while a build is in flight: if the user
+        # left for Describe mid-build, _build_done()'s auto-advance
+        # (below) would otherwise try to move a page the user is no
+        # longer looking at forward to Review out from under them.
+        return super()._validate_prev() and self._build_thread is None
+
     def _start_build(self):
         self.status.SetLabel(_('Building plan...'))
         req = self.context.request
@@ -728,6 +741,16 @@ class ConfirmPage(AssistantPage):
                     if k not in (models.STATUS_BLOCKED,)),
                 counts.get(models.STATUS_BLOCKED, 0))
         self.validate_next()
+        if not event.error and self.context.wizard.GetCurrentPage() is self:
+            # A single Next click starts the build; once it succeeds,
+            # advance automatically instead of leaving the user to
+            # notice the status text changed and click Next again --
+            # a second click that does nothing new-looking otherwise
+            # reads as broken. Only do this if we're still the page
+            # being shown: the user could have clicked Back while the
+            # build was running (now prevented by _validate_prev()
+            # above, but guard anyway in case that ever changes).
+            self.context.wizard.ShowPage(self.GetNext(), True)
 
     def GetPrev(self):
         return self.context.get_page('describe', DescribePage)

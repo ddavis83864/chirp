@@ -1011,24 +1011,10 @@ class RealWizardEventFlowTest(ProgrammingAssistantWxTestBase):
         self.assertIsInstance(confirm, programming_assistant.ConfirmPage)
         confirm.network_allowed.SetValue(False)
 
-        # The build runs on a real background thread in production;
-        # replace it with one that runs synchronously so this test
-        # doesn't depend on real OS-thread timing or a live wx event
-        # loop -- the actual thing under test here is wizard page
-        # transitions, not threading.
-        with mock.patch(
-                'chirp.wxui.programming_assistant.wx.PostEvent',
-                side_effect=lambda target, evt: target._build_done(evt)), \
-                mock.patch(
-                    'chirp.wxui.programming_assistant.threading.Thread',
-                    ConfirmPageBuildFreshnessTest._ImmediateThread):
-            # First click starts the build and is vetoed; second
-            # click (now that it's built and nothing changed) proceeds.
-            still_confirm = self._click_next_or_veto(wizard, confirm)
-            self.assertIs(confirm, still_confirm)
-            review = self._click_next(wizard, confirm)
-
-        self.assertIsInstance(review, programming_assistant.ReviewPage)
+        # A single click starts the build and -- once it succeeds --
+        # the page advances to Review automatically; no second click
+        # is required.
+        review = self._build_and_advance_to_review(wizard, confirm)
         # This is the crux of the regression: the list must already be
         # populated as soon as Review is shown, not only once the user
         # tries to leave it.
@@ -1073,15 +1059,34 @@ class RealWizardEventFlowTest(ProgrammingAssistantWxTestBase):
         return wizard, context, describe, confirm
 
     def _build_and_advance_to_review(self, wizard, confirm):
+        # The background build thread is replaced with one that runs
+        # synchronously (deterministic), but wx.PostEvent()'s hop back
+        # to the main thread is queued and drained only *after* the
+        # triggering ShowPage() call returns, mirroring real timing:
+        # in production, PostEvent() queues onto the wx event loop for
+        # an independent, later dispatch -- it does not call the
+        # handler inline from within the original transition. Calling
+        # _build_done() (and therefore its auto-advance to Review)
+        # from *inside* the same ShowPage() call that triggered the
+        # build is a test-only artifact that cannot happen in
+        # production and confuses wx.adv.Wizard's own return-value
+        # bookkeeping for that call (observed: the outer ShowPage()
+        # reports failure even though the nested call it triggered
+        # did move the wizard forward).
+        posted = []
         with mock.patch(
                 'chirp.wxui.programming_assistant.wx.PostEvent',
-                side_effect=lambda target, evt: target._build_done(evt)), \
+                side_effect=lambda t, e: posted.append((t, e))), \
                 mock.patch(
                     'chirp.wxui.programming_assistant.threading.Thread',
                     ConfirmPageBuildFreshnessTest._ImmediateThread):
-            still_confirm = self._click_next_or_veto(wizard, confirm)
-            self.assertIs(confirm, still_confirm)
-            review = self._click_next(wizard, confirm)
+            wizard.ShowPage(confirm.GetNext(), True)
+        self.assertEqual(1, len(posted), 'expected exactly one build '
+                         'completion event to be posted')
+        target, evt = posted[0]
+        target._build_done(evt)
+        review = wizard.GetCurrentPage()
+        self.assertIsInstance(review, programming_assistant.ReviewPage)
         return review
 
     def test_confirm_populated_immediately_no_extra_click_required(self):
@@ -1094,21 +1099,135 @@ class RealWizardEventFlowTest(ProgrammingAssistantWxTestBase):
         self.assertIn('Requested services: %s' % models.SERVICE_WEATHER,
                       confirm.summary.GetValue())
 
-    def test_confirm_to_review_first_click_starts_build_second_advances(
+    def test_confirm_to_review_single_click_auto_advances_on_success(
             self):
+        # Windows validation report: the first Next click on Confirm
+        # silently started the build and stayed put, with nothing on
+        # screen indicating why -- the user had to notice the status
+        # text changed and click Next a second time. Preferred fix:
+        # one click starts the build, and once it succeeds the wizard
+        # advances to Review on its own.
         wizard, _context, _describe, confirm = self._drive_to_confirm()
-        with mock.patch(
-                'chirp.wxui.programming_assistant.wx.PostEvent',
-                side_effect=lambda target, evt: target._build_done(evt)), \
+        review = self._build_and_advance_to_review(wizard, confirm)
+        self.assertIsInstance(review, programming_assistant.ReviewPage)
+
+    def test_confirm_duplicate_next_events_do_not_start_duplicate_builds(
+            self):
+        # A build already in flight must veto (not restart) a second
+        # Next event that arrives before it completes -- e.g. a
+        # double-click or a duplicate/queued wx event.
+        wizard, _context, _describe, confirm = self._drive_to_confirm()
+
+        # A controllable stand-in for threading.Thread that does NOT
+        # run its target on start() -- this lets the test simulate a
+        # second Next event arriving while the first build is still
+        # "in flight" (self._build_thread is not None).
+        class _HeldThread:
+            def __init__(self, target=None, args=()):
+                self._target = target
+                self._args = args
+
+            def start(self):
+                pass
+
+            def join(self, timeout=None):
+                pass
+
+        start_build_calls = []
+        real_start_build = confirm._start_build
+
+        def counting_start_build():
+            start_build_calls.append(1)
+            return real_start_build()
+
+        with mock.patch.object(
+                confirm, '_start_build',
+                side_effect=counting_start_build), \
                 mock.patch(
                     'chirp.wxui.programming_assistant.threading.Thread',
-                    ConfirmPageBuildFreshnessTest._ImmediateThread):
-            still_confirm = self._click_next_or_veto(wizard, confirm)
+                    _HeldThread):
+            first_event = _FakeWizardEvent()
+            confirm.validate_success(first_event)
+            self.assertTrue(first_event.vetoed)
+            self.assertEqual(1, len(start_build_calls))
+            held_thread = confirm._build_thread
+            self.assertIsInstance(held_thread, _HeldThread)
+
+            # Second Next event while the first build is still in
+            # flight -- must veto without starting another build.
+            second_event = _FakeWizardEvent()
+            confirm.validate_success(second_event)
+            self.assertTrue(second_event.vetoed)
+            self.assertEqual(
+                1, len(start_build_calls),
+                'a duplicate Next event started a second build')
             self.assertIs(
-                confirm, still_confirm,
-                'first click on a stale/unbuilt Confirm must not '
-                'advance -- it starts the build')
-            review = self._click_next(wizard, confirm)
+                held_thread, confirm._build_thread,
+                'a duplicate Next event replaced the in-flight build')
+
+    def test_confirm_navigation_disabled_while_building(self):
+        # While a build is in flight, both Next and Back must be
+        # disabled -- Next because there's nothing to advance to yet,
+        # Back because leaving would let _build_done()'s auto-advance
+        # (once the build finishes) try to move a page the user is no
+        # longer on.
+        wizard, _context, _describe, confirm = self._drive_to_confirm()
+
+        class _HeldThread:
+            def __init__(self, target=None, args=()):
+                self._target = target
+                self._args = args
+
+            def start(self):
+                pass  # never runs -- build stays "in flight" forever
+
+            def join(self, timeout=None):
+                pass
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.threading.Thread',
+                _HeldThread):
+            wizard.ShowPage(confirm.GetNext(), True)
+
+        forward = confirm.FindWindowById(wx.ID_FORWARD)
+        back = confirm.FindWindowById(wx.ID_BACKWARD)
+        self.assertIn('Building', confirm.status.GetLabel())
+        self.assertFalse(
+            forward.IsEnabled(),
+            'Next must stay disabled while a build is in flight')
+        self.assertFalse(
+            back.IsEnabled(),
+            'Back must be disabled while a build is in flight')
+
+    def test_confirm_build_failure_via_real_wizard_stays_and_retries(self):
+        # The failure path, driven through the real wizard rather than
+        # calling validate_success() directly: a failed build must not
+        # advance, must show a clear error, and must allow a retry
+        # that actually attempts another build.
+        wizard, context, _describe, confirm = self._drive_to_confirm()
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.PostEvent',
+                side_effect=lambda t, e: t._build_done(e)), \
+                mock.patch(
+                    'chirp.wxui.programming_assistant.threading.Thread',
+                    ConfirmPageBuildFreshnessTest._ImmediateThread), \
+                mock.patch.object(
+                    context.service, 'build_plan',
+                    side_effect=RuntimeError('simulated build failure')):
+            still_confirm = self._click_next_or_veto(wizard, confirm)
+        self.assertIs(
+            confirm, still_confirm,
+            'a failed build must not advance to Review')
+        self.assertIn('Error', confirm.status.GetLabel())
+        self.assertIsNone(context.plan)
+        forward = confirm.FindWindowById(wx.ID_FORWARD)
+        self.assertTrue(
+            forward.IsEnabled(),
+            'Next must be re-enabled after a failed build so the '
+            'user can retry')
+
+        # Retry, now succeeding.
+        review = self._build_and_advance_to_review(wizard, confirm)
         self.assertIsInstance(review, programming_assistant.ReviewPage)
 
     def test_review_populated_immediately_on_arrival(self):
@@ -1213,26 +1332,65 @@ class RealWizardEventFlowTest(ProgrammingAssistantWxTestBase):
         self.assertIn('weather', confirm_again.summary.GetValue())
         self.assertNotIn('ham', confirm_again.summary.GetValue())
 
+    @staticmethod
+    def _full_snapshot(mem):
+        return (mem.empty, mem.freq, mem.name, mem.mode, mem.duplex,
+                mem.offset, mem.tmode, mem.rtone, mem.ctone, mem.dtcs)
+
     def test_full_transaction_snapshot_finish_then_undo_restores_exactly(
             self):
+        # Phase 2 of the round-4 Windows validation request: one full
+        # wizard run through Result/Finish must be exactly one Undo
+        # transaction, and undoing it must restore the COMPLETE
+        # editable memory state -- not just the frequencies of the
+        # rows the plan touched -- bit for bit, with nothing left
+        # over and no second Undo needed. Also verifies Redo restores
+        # the exact post-Apply state, via this same real-wizard Finish
+        # path (existing Redo coverage in ResultPageApplyTest drives
+        # ResultPage._apply() directly, not the full wizard flow).
         lo, hi = self.radio.get_features().memory_bounds
-        before = [self.radio.get_memory(n).freq for n in range(lo, hi + 1)]
+        before = {n: self._full_snapshot(self.radio.get_memory(n))
+                  for n in range(lo, hi + 1)}
+        undo_queue_len_before = len(self.editor._undo_queue)
 
         wizard, context, _describe, confirm = self._drive_to_confirm()
         review = self._build_and_advance_to_review(wizard, confirm)
         result = self._click_next(wizard, review)
         self.assertTrue(result._applied)
 
-        after_apply = [
-            self.radio.get_memory(n).freq for n in range(lo, hi + 1)]
+        after_apply = {n: self._full_snapshot(self.radio.get_memory(n))
+                       for n in range(lo, hi + 1)}
         self.assertNotEqual(before, after_apply,
                             'nothing changed -- Apply did not run')
-        self.assertEqual(1, len(self.editor._undo_queue))
+        # Exactly one new transaction was pushed by this one wizard
+        # run -- not zero (Apply silently failing) and not more than
+        # one (a partial/split transaction that would need more than
+        # one Undo to fully unwind).
+        self.assertEqual(undo_queue_len_before + 1,
+                         len(self.editor._undo_queue))
 
         self.editor._undo(None)
-        after_undo = [
-            self.radio.get_memory(n).freq for n in range(lo, hi + 1)]
-        self.assertEqual(before, after_undo)
+        after_undo = {n: self._full_snapshot(self.radio.get_memory(n))
+                      for n in range(lo, hi + 1)}
+        # The complete memory state -- every field, every memory
+        # number in range, including ones the plan never touched --
+        # matches the pre-Apply snapshot exactly after a single Undo.
+        self.assertEqual(before, after_undo,
+                         'one Undo did not restore the exact pre-Apply '
+                         'state -- partial changes remain')
+        self.assertEqual(
+            undo_queue_len_before, len(self.editor._undo_queue),
+            'the one Undo call did not fully drain this transaction')
+
+        # Redo, via the same real-wizard-driven transaction, restores
+        # the exact post-Apply state -- CHIRP's existing Redo
+        # mechanism (_redo/_redo_queue), not a new one.
+        self.editor._redo(None)
+        after_redo = {n: self._full_snapshot(self.radio.get_memory(n))
+                      for n in range(lo, hi + 1)}
+        self.assertEqual(after_apply, after_redo,
+                         'one Redo did not restore the exact post-Apply '
+                         'state produced by this wizard run')
 
 
 class MenuIntegrationTest(unittest.TestCase):
