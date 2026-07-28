@@ -504,6 +504,58 @@ class ResultPageApplyTest(ProgrammingAssistantWxTestBase):
         for n in applied_numbers:
             self.assertTrue(self.radio.get_memory(n).empty)
 
+    def test_redo_restores_exact_post_apply_state(self):
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_WEATHER,), channel_limit=20)
+        plan = self.context.service.build_plan(req, network_allowed=False)
+        self.context.service.convert_and_validate(plan)
+        self.context.request = req
+        self.context.plan = plan
+        applied_numbers = [c.memory_number for c in plan.all_candidates
+                           if c.include]
+
+        page = programming_assistant.ResultPage(self.context)
+        page._apply()
+        after_apply = {
+            n: self.radio.get_memory(n).freq for n in applied_numbers}
+
+        self.editor._undo(None)
+        for n in applied_numbers:
+            self.assertTrue(self.radio.get_memory(n).empty)
+
+        self.editor._redo(None)
+        for n in applied_numbers:
+            mem = self.radio.get_memory(n)
+            self.assertFalse(mem.empty)
+            self.assertEqual(after_apply[n], mem.freq)
+
+    def test_unrelated_edit_before_apply_is_not_touched_by_undo(self):
+        # Undoing the Programming Assistant's transaction must not
+        # affect an edit the user made before running it.
+        lo, _hi = self.radio.get_features().memory_bounds
+        manual_number = lo + 50
+        manual_mem = chirp_common.Memory(number=manual_number, name='MANUAL')
+        manual_mem.freq = 146900000
+        with self.editor.undo_context('manual edit'):
+            self.editor.set_memory(manual_mem)
+        self.assertFalse(self.radio.get_memory(manual_number).empty)
+
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_WEATHER,), channel_limit=20)
+        plan = self.context.service.build_plan(req, network_allowed=False)
+        self.context.service.convert_and_validate(plan)
+        self.context.request = req
+        self.context.plan = plan
+        page = programming_assistant.ResultPage(self.context)
+        page._apply()
+
+        self.editor._undo(None)  # undoes only the assistant's own plan
+
+        manual_after = self.radio.get_memory(manual_number)
+        self.assertFalse(manual_after.empty)
+        self.assertEqual(146900000, manual_after.freq)
+        self.assertEqual('MANUAL', manual_after.name)
+
     def test_apply_never_touches_a_serial_port_or_uploads(self):
         # There is no upload/clone method on AssistantService or the
         # wizard pages at all -- confirm the apply path only calls
