@@ -140,6 +140,16 @@ SUGGESTED_GROUPS = (
     'local-repeaters', 'simplex', 'weather', 'aviation', 'emergency',
 )
 
+#: Per-channel compatibility/adaptation outcome classifications
+#: (section 8). Ordered least to most severe -- see adaptation.SEVERITY.
+CLASS_EXACT = 'exact'
+CLASS_ADAPTED = 'adapted'
+CLASS_DEGRADED = 'degraded'
+CLASS_INCOMPATIBLE = 'incompatible'
+CLASS_UNSAFE = 'unsafe'
+ALL_CLASSIFICATIONS = (CLASS_EXACT, CLASS_ADAPTED, CLASS_DEGRADED,
+                       CLASS_INCOMPATIBLE, CLASS_UNSAFE)
+
 
 class Issue:
     """One validation problem, with a JSON-pointer-ish field path.
