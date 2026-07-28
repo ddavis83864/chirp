@@ -120,12 +120,32 @@ class AssistantService:
         etc.) can change what's valid, so this re-runs conversion and
         validation from scratch rather than trusting an earlier pass.
 
+        Also re-checks each target memory's CURRENT occupancy on the
+        radio against the baseline snapshot this service was
+        constructed with (self.existing_memories): if the slot is
+        occupied now but WASN'T (or held different content) in that
+        baseline, something changed since the plan was built --
+        a manual edit elsewhere, or re-finalizing an already-applied
+        plan -- and the candidate is blocked here rather than
+        silently overwriting whatever is there now. A slot that's
+        occupied but UNCHANGED from the baseline is fine, including
+        the case the planner already explicitly approved: an existing-
+        conflict replacement (allow_duplicate_replacement) targets a
+        slot that was already occupied in that same baseline, by
+        definition unchanged from it at this point. (Checking the
+        baseline directly, rather than candidate.status, is
+        deliberate: convert_and_validate() above unconditionally
+        reclassifies status from validation results and would
+        otherwise clobber the planner's STATUS_EXISTING_CONFLICT
+        marking before this method ever saw it.)
+
         Returns a list of (candidate, chirp_common.Memory) for exactly
         the candidates that are include=True and pass validation with
         no errors -- this is what chirp.wxui.programming_assistant
         should actually apply.
         """
         memories = self.convert_and_validate(plan)
+        baseline_by_number = dict(self.existing_memories)
         result = []
         for c in plan.all_candidates:
             if not c.include or c.errors:
@@ -133,5 +153,21 @@ class AssistantService:
             memory = memories.get(id(c))
             if memory is None:
                 continue
+            current = self.radio.get_memory(memory.number)
+            if not current.empty:
+                baseline = baseline_by_number.get(memory.number)
+                unchanged = (
+                    baseline is not None and not baseline.empty and
+                    baseline.freq == current.freq and
+                    baseline.name == current.name)
+                if not unchanged:
+                    c.status = models.STATUS_BLOCKED
+                    c.include = False
+                    c.errors = c.errors + (
+                        'Memory %s is now occupied and was not approved '
+                        'for replacement -- skipped rather than '
+                        'overwritten. Rebuild the plan to include it.' %
+                        memory.number,)
+                    continue
             result.append((c, memory))
         return result

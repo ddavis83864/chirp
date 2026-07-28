@@ -69,6 +69,94 @@ class AssistantServiceTest(unittest.TestCase):
             self.assertEqual((), candidate.errors)
             self.assertEqual(candidate.memory_number, memory.number)
 
+    def test_finalize_blocks_slot_occupied_since_plan_was_built(self):
+        # Edge case: something else (a manual edit, or re-finalizing an
+        # already-applied plan) occupies a candidate's target memory
+        # AFTER the plan was built but BEFORE finalize_for_apply()
+        # actually runs -- it must be blocked, not silently
+        # overwritten when applied.
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_WEATHER,), channel_limit=2)
+        plan = self.svc.build_plan(req, network_allowed=False)
+        self.svc.convert_and_validate(plan)
+        targets = [
+            c.memory_number for c in plan.all_candidates if c.include]
+        self.assertEqual(2, len(targets))
+
+        manual = self.radio.get_memory(targets[0])
+        manual.name = 'MANUAL'
+        manual.freq = 442000000
+        manual.empty = False
+        self.radio.set_memory(manual)
+
+        finalized = self.svc.finalize_for_apply(plan)
+        finalized_numbers = {memory.number for _c, memory in finalized}
+        self.assertNotIn(targets[0], finalized_numbers)
+        self.assertIn(targets[1], finalized_numbers)
+
+        blocked = [
+            c for c in plan.all_candidates
+            if c.memory_number == targets[0]][0]
+        self.assertFalse(blocked.include)
+        self.assertTrue(blocked.errors)
+
+        # And the manual edit itself is provably untouched.
+        still_manual = self.radio.get_memory(targets[0])
+        self.assertEqual('MANUAL', still_manual.name)
+        self.assertEqual(442000000, still_manual.freq)
+
+    def test_reapplying_the_same_plan_is_blocked_not_silently_repeated(self):
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_WEATHER,), channel_limit=20)
+        plan = self.svc.build_plan(req, network_allowed=False)
+        self.svc.convert_and_validate(plan)
+        first = self.svc.finalize_for_apply(plan)
+        self.assertEqual(7, len(first))
+        for _c, memory in first:
+            self.radio.set_memory(memory)
+
+        second = self.svc.finalize_for_apply(plan)
+        self.assertEqual(
+            [], second,
+            'finalize_for_apply() let an already-applied plan through '
+            'a second time instead of blocking the now-occupied slots')
+
+    def test_approved_existing_conflict_replacement_still_allowed(self):
+        # The occupancy re-check must NOT block a candidate the
+        # planner already flagged as an approved replacement -- that
+        # would defeat "allow duplicate replacement" entirely.
+        existing_number = 5
+        existing = self.radio.get_memory(existing_number)
+        existing.freq = 162400000  # matches NOAA Weather 1
+        existing.name = 'OLDWX'
+        existing.mode = 'FM'
+        existing.empty = False
+        self.radio.set_memory(existing)
+        svc = service.AssistantService(
+            self.radio,
+            existing_memories=[(existing_number,
+                                self.radio.get_memory(existing_number))])
+
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_WEATHER,), channel_limit=20,
+            allow_duplicate_replacement=True)
+        plan = svc.build_plan(req, network_allowed=False)
+        # Right after planning (before convert_and_validate() below
+        # reclassifies .status from validation results -- a separate,
+        # pre-existing quirk where STATUS_EXISTING_CONFLICT doesn't
+        # survive that pass), confirm the planner did flag this as an
+        # approved replacement in the first place.
+        conflict = [
+            c for c in plan.all_candidates
+            if c.memory_number == existing_number]
+        self.assertEqual(1, len(conflict))
+        self.assertIn('replace existing memory', conflict[0].reason.lower())
+
+        svc.convert_and_validate(plan)
+        finalized = svc.finalize_for_apply(plan)
+        finalized_numbers = {memory.number for _c, memory in finalized}
+        self.assertIn(existing_number, finalized_numbers)
+
     def test_protected_ranges_never_allocated(self):
         req = models.ProgrammingRequest(
             requested_services=(models.SERVICE_WEATHER,),
