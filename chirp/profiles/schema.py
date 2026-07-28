@@ -150,6 +150,51 @@ CLASS_UNSAFE = 'unsafe'
 ALL_CLASSIFICATIONS = (CLASS_EXACT, CLASS_ADAPTED, CLASS_DEGRADED,
                        CLASS_INCOMPATIBLE, CLASS_UNSAFE)
 
+#: Existing-memory match outcomes (section 11).
+MATCH_EXACT = 'exact'
+MATCH_UPDATE_CANDIDATE = 'update_candidate'
+MATCH_AMBIGUOUS = 'ambiguous'
+MATCH_NONE = 'none'
+
+#: Placement strategies (section 12). "Update matching channels" and
+#: "preserve existing memories" are not separate selectable strategies
+#: here -- they are always-on behaviors: a channel with an existing
+#: match always keeps that memory's number regardless of strategy, and
+#: FILL_EMPTY/APPEND never claim an already-occupied, unmatched memory
+#: (only REPLACE_RANGE can, and only because the user explicitly chose
+#: that range).
+PLACEMENT_FILL_EMPTY = 'fill_empty'
+PLACEMENT_APPEND = 'append'
+PLACEMENT_REPLACE_RANGE = 'replace_range'
+VALID_PLACEMENT_STRATEGIES = (PLACEMENT_FILL_EMPTY, PLACEMENT_APPEND,
+                              PLACEMENT_REPLACE_RANGE)
+
+#: Structured conflict types (section 13).
+CONFLICT_LOCATION_OCCUPIED = 'location_occupied'
+CONFLICT_DUPLICATE_TARGET = 'duplicate_target_location'
+CONFLICT_CAPACITY_EXCEEDED = 'capacity_exceeded'
+CONFLICT_AMBIGUOUS_MATCH = 'ambiguous_match'
+CONFLICT_NAME_COLLISION = 'name_collision'
+CONFLICT_IMMUTABLE_MEMORY = 'immutable_memory'
+
+#: Change-set item actions (section 14).
+ACTION_ADD = 'add'
+ACTION_MODIFY = 'modify'
+ACTION_KEEP = 'keep'
+ACTION_SKIP = 'skip'
+ACTION_MOVE = 'move'
+ACTION_CONFLICT = 'conflict'
+ACTION_BLOCKED = 'blocked'
+
+#: Per-item user approval state in the apply preview (section 14/15).
+APPROVAL_PENDING = 'pending'
+APPROVAL_APPROVED = 'approved'
+APPROVAL_REJECTED = 'rejected'
+#: Not user-decidable: Unsafe items are never offered an approve
+#: control at all (section 8: "not... a normal warning that users can
+#: casually dismiss").
+APPROVAL_BLOCKED = 'blocked'
+
 
 class Issue:
     """One validation problem, with a JSON-pointer-ish field path.
