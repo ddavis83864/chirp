@@ -109,6 +109,44 @@ class HelperFunctionTest(unittest.TestCase):
     def test_freq_str_none(self):
         self.assertEqual('', programming_assistant._freq_str(None))
 
+    def test_safe_post_event_survives_destroyed_target(self):
+        # Regression coverage for a use-after-close review finding:
+        # _interpret_worker()/_build_worker() run on a background
+        # thread and post their result back to a wizard page via
+        # wx.PostEvent -- if the user cancelled/closed the wizard
+        # while that thread was still running, the target page (and
+        # its wx C++ object) may already be destroyed. Confirmed
+        # empirically that wx.PostEvent on a destroyed window raises
+        # RuntimeError (not a silent no-op) -- _safe_post_event must
+        # swallow that rather than letting it escape a worker thread.
+        frame = wx.Frame(None)
+        frame.Destroy()
+        wx.GetApp().Yield()
+
+        try:
+            programming_assistant._safe_post_event(
+                frame, wx.CommandEvent(wx.EVT_MENU.typeId, 1))
+        except RuntimeError:
+            self.fail('_safe_post_event let RuntimeError escape for a '
+                      'destroyed target window')
+
+    def test_safe_post_event_delivers_to_live_target(self):
+        # Deliberately not relying on a real wx event-loop round trip
+        # (PostEvent + Yield()) here -- that's timing-sensitive and
+        # this only needs to confirm _safe_post_event doesn't swallow
+        # events for a live (non-destroyed) target, which is the
+        # actual behavior under test.
+        frame = wx.Frame(None)
+        self.addCleanup(frame.Destroy)
+        evt = wx.CommandEvent(wx.EVT_MENU.typeId, 1)
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.PostEvent'
+                ) as mock_post:
+            programming_assistant._safe_post_event(frame, evt)
+
+        mock_post.assert_called_once_with(frame, evt)
+
 
 class AssistantContextTest(ProgrammingAssistantWxTestBase):
     def test_finds_memedit_from_current_editor(self):
@@ -131,6 +169,167 @@ class AssistantContextTest(ProgrammingAssistantWxTestBase):
         p2 = self.context.get_page(
             'describe', programming_assistant.DescribePage)
         self.assertIs(p1, p2)
+
+
+class _FakeWizardEvent:
+    """Stands in for the wx.adv.WizardEvent passed to validate_success()
+    -- just enough to record whether the page vetoed the transition."""
+
+    def __init__(self):
+        self.vetoed = False
+
+    def Veto(self):
+        self.vetoed = True
+
+
+class ConfirmPageBuildFreshnessTest(ProgrammingAssistantWxTestBase):
+    """Regression coverage for a defect found reviewing wizard
+    navigation: ConfirmPage built its plan once, eagerly, using
+    whatever request/checkbox state happened to exist the instant the
+    page became current, then cached it forever -- so going Back to
+    Describe and changing services/location, or toggling this page's
+    own "network allowed"/"share precise location" checkboxes, had no
+    effect on the plan actually used, contradicting the page's own
+    text ("Nothing is queried or built until you continue -- go back
+    to correct anything.").
+
+    These tests run the build synchronously -- both the background
+    thread (real OS threading.Thread is replaced with one that just
+    calls its target immediately, in-line) and the wx.PostEvent
+    round-trip (replaced with a direct call to _build_done()) -- so
+    they're deterministic and don't depend on real cross-thread wx
+    event delivery, which other test modules in this suite are not
+    always careful to leave in a clean, real (non-mocked) state for
+    whichever test file happens to be collected after them.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.context.request.requested_services = (models.SERVICE_HAM,)
+        self.page = self.context.get_page(
+            'confirm', programming_assistant.ConfirmPage)
+
+    class _ImmediateThread:
+        """Stands in for threading.Thread: runs its target immediately,
+        in the calling thread, instead of spawning a real OS thread."""
+
+        def __init__(self, target=None, args=()):
+            self._target = target
+            self._args = args
+
+        def start(self):
+            self._target(*self._args)
+
+        def join(self, timeout=None):
+            pass
+
+    def _run_build_synchronously(self, captured_network_allowed):
+        def fake_post_event(target, event):
+            target._build_done(event)
+
+        real_build_plan = self.context.service.build_plan
+
+        def fake_build_plan(request, network_allowed=True):
+            captured_network_allowed.append(network_allowed)
+            # Stay offline in tests regardless of what the checkbox
+            # said -- only the *value passed through* is under test.
+            return real_build_plan(request, network_allowed=False)
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.PostEvent',
+                side_effect=fake_post_event), \
+                mock.patch.object(
+                    self.context.service, 'build_plan',
+                    side_effect=fake_build_plan), \
+                mock.patch(
+                    'chirp.wxui.programming_assistant.threading.Thread',
+                    self._ImmediateThread):
+            event = _FakeWizardEvent()
+            self.page.validate_success(event)
+        return event
+
+    def test_first_click_builds_and_vetoes_once(self):
+        event = self._run_build_synchronously([])
+        self.assertTrue(event.vetoed)
+        self.assertTrue(self.page._built)
+        self.assertIsNotNone(self.context.plan)
+
+        # A second click, with nothing changed, must NOT veto again --
+        # it should just let the wizard proceed to Review.
+        event2 = self._run_build_synchronously([])
+        self.assertFalse(event2.vetoed)
+
+    def test_remote_checkbox_read_at_click_time_not_page_arrival(self):
+        # Simulate the user unchecking "Allow network source queries"
+        # AFTER the page is shown but BEFORE clicking Next.
+        self.page.network_allowed.SetValue(True)
+        self.page.validate_next()  # page just became current
+        self.page.network_allowed.SetValue(False)
+
+        captured = []
+        self._run_build_synchronously(captured)
+
+        self.assertEqual([False], captured)
+
+    def test_editing_describe_after_back_rebuilds_plan(self):
+        captured = []
+        self._run_build_synchronously(captured)
+        self.assertEqual(1, len(captured))
+        first_plan = self.context.plan
+        self.assertTrue(
+            any(c.service == models.SERVICE_HAM
+                for c in first_plan.all_candidates))
+
+        # Simulate Back to Describe, changing the request, then
+        # forward to Confirm again -- DescribePage.validate_success is
+        # what actually mutates context.request in the real wizard.
+        self.context.request.requested_services = (models.SERVICE_WEATHER,)
+
+        captured2 = []
+        event2 = self._run_build_synchronously(captured2)
+
+        self.assertTrue(event2.vetoed,
+                        'stale plan was reused instead of rebuilding '
+                        'after the request changed')
+        second_plan = self.context.plan
+        self.assertIsNot(first_plan, second_plan)
+        self.assertTrue(
+            any(c.service == models.SERVICE_WEATHER
+                for c in second_plan.all_candidates))
+
+    def test_build_failure_allows_retry_not_silent_advance(self):
+        # A failed build must never be treated as "successfully built"
+        # -- that would let the wizard proceed to Review with
+        # context.plan still None (nothing to show, nothing to apply)
+        # instead of giving the user a chance to fix the problem and
+        # retry.
+        def fake_post_event(target, event):
+            target._build_done(event)
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.PostEvent',
+                side_effect=fake_post_event), \
+                mock.patch.object(
+                    self.context.service, 'build_plan',
+                    side_effect=RuntimeError('simulated build failure')), \
+                mock.patch(
+                    'chirp.wxui.programming_assistant.threading.Thread',
+                    self._ImmediateThread):
+            event = _FakeWizardEvent()
+            self.page.validate_success(event)
+
+        self.assertTrue(event.vetoed)
+        self.assertIsNone(self.context.plan)
+        self.assertFalse(self.page._built)
+
+        # Retrying (e.g. after the user notices the error and clicks
+        # Next again) must attempt another build, not silently pass
+        # through with the still-None plan.
+        captured = []
+        event2 = self._run_build_synchronously(captured)
+        self.assertTrue(event2.vetoed)
+        self.assertEqual(1, len(captured))
+        self.assertIsNotNone(self.context.plan)
 
 
 class ReviewPageTest(ProgrammingAssistantWxTestBase):

@@ -27,6 +27,7 @@ result is a single undoable action on the already-open image. The user
 must still use CHIRP's normal Radio > Upload afterward.
 """
 
+import dataclasses
 import logging
 import threading
 
@@ -87,6 +88,22 @@ _DISCLAIMER = _(
     'business, and railroad channels are always programmed as '
     'receive-only in this release.'
 )
+
+
+def _safe_post_event(window, event):
+    """wx.PostEvent(window, event) from a background worker thread,
+    tolerant of the target page/wizard having already been destroyed
+    (the user cancelled or closed the wizard while
+    _interpret_worker()/_build_worker() was still in flight). wx's
+    SWIG-wrapped C++ objects raise RuntimeError once deleted -- rely
+    on that directly (confirmed empirically) rather than a truthiness
+    pre-check on @window, which isn't a reliable liveness test for
+    every wx object in every embedding context."""
+    try:
+        wx.PostEvent(window, event)
+    except RuntimeError:
+        LOG.debug('Dropping event for %s: window already destroyed',
+                  event.__class__.__name__)
 
 
 def _find_memedit(editorset):
@@ -348,10 +365,10 @@ class DescribePage(AssistantPage):
     def _interpret_worker(self, provider, text):
         try:
             request = provider.extract_intent(text)
-            wx.PostEvent(self, InterpretThreadEvent(
+            _safe_post_event(self, InterpretThreadEvent(
                 self.GetId(), request=request, error=None))
         except providers.ProviderError as e:
-            wx.PostEvent(self, InterpretThreadEvent(
+            _safe_post_event(self, InterpretThreadEvent(
                 self.GetId(), request=None, error=str(e)))
 
     def _interpret_done(self, event):
@@ -530,6 +547,7 @@ class ConfirmPage(AssistantPage):
         self.Bind(EVT_BUILD_THREAD, self._build_done)
         self._build_thread = None
         self._built = False
+        self._built_signature = None
 
         self.summary = wx.TextCtrl(
             self, style=wx.TE_MULTILINE | wx.TE_READONLY)
@@ -567,45 +585,74 @@ class ConfirmPage(AssistantPage):
         ]
         self.summary.SetValue('\n'.join(lines))
 
+    def _current_signature(self):
+        """A snapshot of everything that affects what build_plan()
+        would produce: the request as of right now (a value-equal
+        copy, since self.context.request is mutated in place -- a
+        stored reference would always compare equal to itself) plus
+        this page's own two checkboxes, which build_plan() also
+        depends on but which live here, not on the request."""
+        return (dataclasses.replace(self.context.request),
+                self.network_allowed.GetValue(),
+                self.share_precise.GetValue())
+
+    def _is_stale(self):
+        return (not self._built or
+                self._current_signature() != self._built_signature)
+
     def validate_success(self, event):
-        if not self._built:
-            self._refresh_summary()
+        self._refresh_summary()
+        if self._build_thread:
+            event.Veto()
+            return
+        if self._is_stale():
+            event.Veto()
+            self._start_build()
 
     def _validate_next(self):
-        if not self._built:
-            if not self._build_thread:
-                self._start_build()
-            return False
-        return self.context.plan is not None
+        # Gating/rebuilding happens in validate_success() (fired on an
+        # actual Next click), not here (fired whenever this page merely
+        # becomes current) -- this only needs to keep the button
+        # disabled while a background build is in flight.
+        return self._build_thread is None
 
     def _start_build(self):
         self.status.SetLabel(_('Building plan...'))
         req = self.context.request
         req.share_precise_location = self.share_precise.GetValue()
         network_allowed = self.network_allowed.GetValue()
+        self._built_signature = self._current_signature()
         self._build_thread = threading.Thread(
             target=self._build_worker, args=(network_allowed,))
         self._build_thread.start()
+        self.validate_next()
 
     def _build_worker(self, network_allowed):
         try:
             plan = self.context.service.build_plan(
                 self.context.request, network_allowed=network_allowed)
             self.context.service.convert_and_validate(plan)
-            wx.PostEvent(self, BuildThreadEvent(
+            _safe_post_event(self, BuildThreadEvent(
                 self.GetId(), plan=plan, error=None))
         except Exception as e:
             LOG.exception('Failed to build assistant plan: %s', e)
-            wx.PostEvent(self, BuildThreadEvent(
+            _safe_post_event(self, BuildThreadEvent(
                 self.GetId(), plan=None, error=str(e)))
 
     def _build_done(self, event):
         self._build_thread = None
-        self._built = True
         if event.error:
+            # Deliberately NOT setting self._built here: context.plan
+            # stays None, and leaving _built False means the next
+            # click retries the build (using whatever the user may
+            # have changed in the meantime) instead of being
+            # permanently stuck, or -- worse -- treating this failed
+            # attempt as "fresh" and letting the wizard proceed to
+            # Review with no plan at all.
             self.status.SetLabel(_('Error: %s') % event.error)
             self.context.plan = None
         else:
+            self._built = True
             self.context.plan = event.plan
             counts = event.plan.counts()
             self.status.SetLabel(
@@ -818,12 +865,10 @@ class ResultPage(AssistantPage):
 
 @common.error_proof()
 def do_programming_assistant(parent, event):
-    context_holder = {}
     wizard = wx.adv.Wizard(parent)
     wizard.SetPageSize((620, 520))
 
     context = AssistantContext(wizard, parent)
-    context_holder['context'] = context
 
     if context.memedit is None:
         wx.MessageDialog(
@@ -843,5 +888,17 @@ def do_programming_assistant(parent, event):
 
     start = context.get_page('describe', DescribePage)
     wizard.GetPageAreaSizer().Add(start)
-    wizard.RunWizard(start)
-    wizard.Destroy()
+    try:
+        wizard.RunWizard(start)
+    finally:
+        # Always destroy the wizard, even if something in a page's
+        # event handler raised -- @common.error_proof() above will
+        # still catch and report the exception, but only after this
+        # function returns, so it must not skip cleanup on the way
+        # out. A background _build_worker()/_interpret_worker() thread
+        # may still be in flight at this point if the user cancelled
+        # or closed the wizard early; each posts its result via
+        # _safe_post_event() below rather than directly, so a stale
+        # post to an already-destroyed page is dropped instead of
+        # raising into the worker thread.
+        wizard.Destroy()
