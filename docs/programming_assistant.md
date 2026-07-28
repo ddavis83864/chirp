@@ -162,6 +162,18 @@ and refuses the candidate rather than let Apply attempt an invalid
 write (`test_immutable_memory_blocked_before_apply_not_silently_written`
 in the same file).
 
+If a target memory becomes occupied after the plan was built but
+before Apply actually runs (a manual edit elsewhere, or clicking
+Apply a second time on an already-applied plan), that candidate is
+blocked rather than silently overwritten — see
+`AssistantService.finalize_for_apply()` and
+`test_finalize_blocks_slot_occupied_since_plan_was_built` /
+`test_reapplying_the_same_plan_is_blocked_not_silently_repeated` in
+`tests/unit/test_assistant_service.py`. Applied memories persist
+correctly through a normal File > Save and reopen, including
+receive-only duplex settings and excluded candidates staying absent
+(`tests/unit/test_assistant_save_reopen.py`).
+
 ## Enabling/disabling
 
 The Programming Assistant is **disabled by default** (`[assistant]
