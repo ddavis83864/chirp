@@ -295,9 +295,24 @@ class DescribePage(AssistantPage):
 
         self.services = wx.CheckListBox(
             self, choices=[label for _id, label in _SERVICE_LABELS])
+        # _validate_next() depends entirely on this control, but
+        # nothing re-evaluates the wizard's Next button just because
+        # the page is sitting there being interacted with -- only
+        # page_shown()/validate_next(), called once when the page
+        # becomes current, does that. Without this binding, Next stays
+        # stuck at whatever it was when the page was first shown (no
+        # services checked yet, so disabled) no matter what the user
+        # subsequently checks.
+        self.services.Bind(wx.EVT_CHECKLISTBOX, self._on_services_changed)
         grid.Add(wx.StaticText(self, label=_('Requested services:')), 0,
                  wx.TOP)
         grid.Add(self.services, 1, wx.EXPAND)
+
+        self.services_status = wx.StaticText(
+            self, label=_('Check at least one requested service to '
+                          'continue.'))
+        grid.Add(wx.StaticText(self), 0)
+        grid.Add(self.services_status, 0)
 
         self.channel_limit = wx.SpinCtrl(
             self, min=models.MIN_CHANNEL_LIMIT,
@@ -409,9 +424,25 @@ class DescribePage(AssistantPage):
         for i, (value, _label) in enumerate(_NAMING_LABELS):
             if value == request.naming_style:
                 self.naming_choice.SetSelection(i)
+        # Checking services programmatically here (as opposed to a
+        # real user click) does not fire EVT_CHECKLISTBOX, so the
+        # Next button/status message need an explicit refresh too.
+        self._refresh_services_status()
+
+    def _refresh_services_status(self):
+        self.validate_next()
+        if self._validate_next():
+            self.services_status.SetLabel('')
+        else:
+            self.services_status.SetLabel(
+                _('Check at least one requested service to continue.'))
 
     def _validate_next(self):
         return bool(self.services.GetCheckedItems())
+
+    def _on_services_changed(self, event):
+        self._refresh_services_status()
+        event.Skip()
 
     def validate_success(self, event):
         req = self.context.request

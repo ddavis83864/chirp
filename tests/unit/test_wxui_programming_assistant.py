@@ -83,7 +83,27 @@ class ProgrammingAssistantWxTestBase(unittest.TestCase):
             self.wizard, self.chirpmain)
 
     def tearDown(self):
+        # Explicitly destroy the wizard rather than relying on
+        # frame.Destroy() to cascade to it -- wx.adv.Wizard is a
+        # top-level window in its own right (passing frame as
+        # "parent" only sets ownership for modal/z-order purposes).
+        # wx.Window.Destroy() defers the actual C++-level deletion to
+        # the next idle/event-loop pass rather than freeing it
+        # immediately, and nothing here ever runs an event loop
+        # between tests -- so without wx.Yield() below, an
+        # un-destroyed-but-not-yet-actually-freed wizard's
+        # wx.ID_FORWARD button (a wx *stock* ID, shared by every
+        # wizard instance) can still be found by a LATER test's
+        # FindWindowById(wx.ID_FORWARD) instead of that test's own
+        # fresh one -- confirmed empirically (a trivial two-wizards-
+        # in-a-row repro shows the second FindWindowById() returning
+        # the FIRST wizard's button, whose GetTopLevelParent() isn't
+        # even the second wizard) and confirmed to cause exactly this
+        # failure mode when the whole suite runs together, despite
+        # passing every time in isolation, before this fix.
+        self.wizard.Destroy()
         self.frame.Destroy()
+        wx.Yield()
 
 
 class HelperFunctionTest(unittest.TestCase):
@@ -787,6 +807,156 @@ class DoProgrammingAssistantTest(ProgrammingAssistantWxTestBase):
         mock_show_error.assert_not_called()
 
 
+class DescribePageServiceValidationTest(ProgrammingAssistantWxTestBase):
+    """Regression coverage for a Windows validation report:
+    DescribePage._validate_next() depends entirely on
+    self.services.GetCheckedItems(), but self.services had no event
+    binding at all -- toggling a checkbox via a real user click never
+    re-evaluated the wizard's Next button, which stayed stuck disabled
+    from when the page was first shown (nothing checked yet yet), no
+    matter what the user subsequently checked or how many other
+    fields were correctly filled in.
+
+    Confirmed empirically that wx.CheckListBox.Check() alone does NOT
+    fire EVT_CHECKLISTBOX (only a genuine UI toggle, or an explicitly
+    constructed and dispatched one, does) -- a test that only called
+    .Check() would not have caught this bug, which is exactly why the
+    original RealWizardEventFlowTest (which calls .Check() directly)
+    missed it. These tests fire a real EVT_CHECKLISTBOX via
+    ProcessEvent() instead, against a real wx.adv.Wizard using the
+    production event wiring, and check the actual wx.ID_FORWARD
+    button's real IsEnabled() state -- not just _validate_next()'s
+    return value -- since the bug was specifically that the button
+    itself never got re-Enable()'d.
+    """
+
+    def _setup_describe_page(self):
+        # Reuse self.wizard/self.context from setUp() rather than
+        # constructing a second, separate wizard: with two wizard
+        # instances simultaneously alive, FindWindowById(wx.ID_FORWARD)
+        # -- a wx *stock* ID, shared by every wizard's Next button --
+        # does not reliably scope to the calling page's own wizard in
+        # this environment and can return the OTHER wizard's button
+        # instead (confirmed empirically: btn.GetTopLevelParent() is
+        # not even the wizard that owns the page that found it). Since
+        # every page in a test only ever needs one live wizard at a
+        # time, avoiding a redundant second one sidesteps the problem
+        # entirely rather than fighting wx's window-lookup internals.
+        wizard = self.wizard
+        programming_assistant._wire_wizard_events(wizard)
+        describe = self.context.get_page(
+            'describe', programming_assistant.DescribePage)
+        wizard.GetPageAreaSizer().Add(describe)
+        wizard.ShowPage(describe)
+        return wizard, describe
+
+    def _check_service(self, describe, index, checked):
+        describe.services.Check(index, checked)
+        evt = wx.CommandEvent(wx.EVT_CHECKLISTBOX.typeId,
+                              describe.services.GetId())
+        evt.SetInt(index)
+        describe.services.GetEventHandler().ProcessEvent(evt)
+
+    def _service_index(self, service):
+        return [
+            i for i, (value, _label) in
+            enumerate(programming_assistant._SERVICE_LABELS)
+            if value == service][0]
+
+    def test_next_disabled_with_nothing_checked(self):
+        _wizard, describe = self._setup_describe_page()
+        forward = describe.FindWindowById(wx.ID_FORWARD)
+        self.assertFalse(forward.IsEnabled())
+        self.assertTrue(describe.services_status.GetLabel())
+
+    def test_checking_a_service_via_real_event_enables_next(self):
+        _wizard, describe = self._setup_describe_page()
+        forward = describe.FindWindowById(wx.ID_FORWARD)
+        self.assertFalse(forward.IsEnabled())
+
+        self._check_service(describe, self._service_index(
+            models.SERVICE_HAM), True)
+
+        self.assertTrue(forward.IsEnabled())
+        self.assertEqual('', describe.services_status.GetLabel())
+
+    def test_invalid_to_valid_to_invalid_cycle(self):
+        _wizard, describe = self._setup_describe_page()
+        forward = describe.FindWindowById(wx.ID_FORWARD)
+        ham = self._service_index(models.SERVICE_HAM)
+        weather = self._service_index(models.SERVICE_WEATHER)
+
+        self.assertFalse(forward.IsEnabled())
+
+        self._check_service(describe, ham, True)
+        self.assertTrue(forward.IsEnabled())
+
+        self._check_service(describe, ham, False)
+        self.assertFalse(forward.IsEnabled())
+        self.assertTrue(describe.services_status.GetLabel())
+
+        self._check_service(describe, weather, True)
+        self.assertTrue(forward.IsEnabled())
+        self.assertEqual('', describe.services_status.GetLabel())
+
+    def test_ai_populated_services_also_enable_next(self):
+        # _apply_request_to_fields() checks services programmatically
+        # (as if the AI interpreter populated them), which also
+        # doesn't fire EVT_CHECKLISTBOX -- must be refreshed
+        # explicitly rather than relying on the (nonexistent) event.
+        _wizard, describe = self._setup_describe_page()
+        forward = describe.FindWindowById(wx.ID_FORWARD)
+        self.assertFalse(forward.IsEnabled())
+
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_HAM,))
+        describe._apply_request_to_fields(req)
+
+        self.assertTrue(forward.IsEnabled())
+
+    def test_reproduces_exact_windows_report_form(self):
+        # The precise field values from the Windows validation report
+        # that could never advance past Describe.
+        wizard, describe = self._setup_describe_page()
+
+        describe.text.SetValue(
+            "I use my Yaesu FT-60 amateur radio in the Coeur d'Alene "
+            "area for listening to local repeater")
+        describe.location.SetValue('83815')
+        describe.radius.SetValue(50)
+        describe.license_choice.SetSelection([
+            i for i, (v, _l) in
+            enumerate(programming_assistant._LICENSE_LABELS)
+            if v == models.LICENSE_TECHNICIAN][0])
+        describe.gmrs_chk.SetValue(True)
+        describe.activities.SetValue('Local Repeaters')
+        for service in (models.SERVICE_HAM, models.SERVICE_GMRS,
+                        models.SERVICE_FRS, models.SERVICE_MURS,
+                        models.SERVICE_WEATHER, models.SERVICE_AVIATION):
+            self._check_service(describe, self._service_index(service),
+                                True)
+        describe.channel_limit.SetValue(100)
+        describe.naming_choice.SetSelection([
+            i for i, (v, _l) in
+            enumerate(programming_assistant._NAMING_LABELS)
+            if v == models.NAMING_SHORT][0])
+        describe.preserve_existing.SetValue(True)
+        describe.allow_replace.SetValue(False)
+        describe.use_range.SetValue(False)
+        describe.protected.SetValue('')
+
+        forward = describe.FindWindowById(wx.ID_FORWARD)
+        self.assertTrue(
+            forward.IsEnabled(),
+            'Next stayed disabled with a fully valid, populated form '
+            '-- reproduces the Windows validation report exactly')
+
+        next_page = describe.GetNext()
+        ok = wizard.ShowPage(next_page, True)
+        self.assertTrue(ok, 'wizard refused to advance past Describe')
+        self.assertIsInstance(next_page, programming_assistant.ConfirmPage)
+
+
 class RealWizardEventFlowTest(ProgrammingAssistantWxTestBase):
     """Drives the wizard through Describe -> Confirm -> Review ->
     Result using real wx.adv.Wizard ShowPage() transitions and the
@@ -817,9 +987,14 @@ class RealWizardEventFlowTest(ProgrammingAssistantWxTestBase):
         return next_page
 
     def test_full_wizard_flow_populates_review_and_applies_result(self):
-        wizard = wx.adv.Wizard(self.frame)
-        context = programming_assistant.AssistantContext(
-            wizard, self.chirpmain)
+        # Reuse self.wizard/self.context from setUp() -- see the
+        # comment on DescribePageServiceValidationTest._setup_describe_
+        # page() for why a second, separate wizard instance is best
+        # avoided here (FindWindowById(wx.ID_FORWARD) does not
+        # reliably scope to the correct wizard when more than one is
+        # simultaneously alive).
+        wizard = self.wizard
+        context = self.context
         programming_assistant._wire_wizard_events(wizard)
 
         describe = context.get_page(
