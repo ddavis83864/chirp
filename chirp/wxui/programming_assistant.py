@@ -212,6 +212,15 @@ class AssistantPage(wx.adv.WizardPage):
         forward = self.FindWindowById(wx.ID_FORWARD)
         if forward:
             forward.Enable(self._validate_next())
+        # wx.adv.Wizard does not automatically disable the Back button
+        # just because GetPrev() returns None -- confirmed empirically
+        # (it stays enabled, clickable, with undefined-in-this-app
+        # results) -- so pages with no previous page (Describe,
+        # Result) must disable it explicitly, the same way _validate_
+        # next() explicitly manages the forward button.
+        backward = self.FindWindowById(wx.ID_BACKWARD)
+        if backward:
+            backward.Enable(self.GetPrev() is not None)
 
     def validate_success(self, event):
         pass
@@ -627,6 +636,19 @@ class ConfirmPage(AssistantPage):
         ]
         self.summary.SetValue('\n'.join(lines))
 
+    def page_shown(self):
+        # Populate immediately, not only when the user first attempts
+        # to leave -- see validate_success() below, which _also_ calls
+        # this (harmlessly redundant on a fresh arrival, but necessary
+        # to reflect an edit made after Back) since it's the point
+        # that decides whether to veto/rebuild. Calling it here too is
+        # what makes the summary visible the instant Confirm is shown,
+        # rather than only after a first (silently absorbed) Next
+        # click -- the request is already fully populated by
+        # DescribePage.validate_success() by the time this page
+        # becomes current, so there's nothing to wait for.
+        self._refresh_summary()
+
     def _current_signature(self):
         """A snapshot of everything that affects what build_plan()
         would produce: the request as of right now (a value-equal
@@ -899,9 +921,28 @@ class ResultPage(AssistantPage):
         memedit_editor.refresh()
 
     def _validate_next(self):
-        return False
+        # wx relabels this button "Finish" on its own, since GetNext()
+        # is None -- but never enables it on its own; that's this
+        # page's job, same as every other page's Next button. Gate on
+        # _applied (set by page_shown(), which runs before
+        # validate_next() -- see _wire_wizard_events()) rather than
+        # unconditional True/False, so Finish never becomes clickable
+        # before the apply it's supposed to be confirming has actually
+        # happened.
+        return self._applied
 
     def GetPrev(self):
+        # Deliberately no way back from Result: Apply already ran
+        # (page_shown(), one-shot) by the time this page is visible,
+        # and it is not itself undoable-and-rebuildable via wizard
+        # navigation -- only via the editor's own Undo afterward. Back
+        # returning "to Review" would misleadingly suggest re-applying
+        # is possible/safe. GetPrev() alone doesn't disable the Back
+        # button in this wx binding (confirmed empirically -- it stays
+        # enabled and clicking it does something undefined, observed
+        # as closing the wizard); AssistantPage.validate_next() now
+        # explicitly disables it whenever GetPrev() is None, which is
+        # what actually prevents that here.
         return None
 
 

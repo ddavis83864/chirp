@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: CHIRP\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-27 19:15-0700\n"
+"POT-Creation-Date: 2026-07-27 20:38-0700\n"
 "PO-Revision-Date: 2026-02-04 22:11+0100\n"
 "Last-Translator: Dieter Kuhnke (d.kuhnke@gmail.com)\n"
 "Language-Team: German\n"
@@ -50,7 +50,7 @@ msgstr[1] "%i Speicher und Block nach oben schieben"
 msgid "%i memories failed validation for this radio (see details below). Add them anyway?"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:772
+#: ../wxui/programming_assistant.py:794
 #, python-format
 msgid "%i total, %i included: "
 msgstr ""
@@ -725,11 +725,11 @@ msgstr ""
 msgid "A new CHIRP version is available. Please visit the website as soon as possible to download it!"
 msgstr "Neue Version verfügbar. Bitte so bald wie möglich herunterladen!"
 
-#: ../wxui/programming_assistant.py:503
+#: ../wxui/programming_assistant.py:512
 msgid "AI Provider Configuration"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:509
+#: ../wxui/programming_assistant.py:518
 msgid "AI is used ONLY to turn your typed description into the structured fields above -- it never supplies frequencies, tones, or any other technical channel data, and no call is made until you click \"Interpret with AI\"."
 msgstr ""
 
@@ -737,7 +737,7 @@ msgstr ""
 msgid "AM mode does not allow duplex or tone"
 msgstr "AM-Modus erlaubt kein Duplex oder Ton"
 
-#: ../wxui/programming_assistant.py:548
+#: ../wxui/programming_assistant.py:557
 msgid "API key (session/optional):"
 msgstr ""
 
@@ -753,11 +753,11 @@ msgstr "Über"
 msgid "About CHIRP"
 msgstr "Über CHIRP"
 
-#: ../wxui/programming_assistant.py:292
+#: ../wxui/programming_assistant.py:301
 msgid "Activities (comma-separated):"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:620
+#: ../wxui/programming_assistant.py:629
 #, python-format
 msgid "Activities: %s"
 msgstr ""
@@ -791,7 +791,7 @@ msgstr ""
 msgid "Add..."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:883
+#: ../wxui/programming_assistant.py:905
 #, python-format
 msgid "Adjusted for this radio: %i"
 msgstr ""
@@ -818,16 +818,16 @@ msgstr "Alle Dateien"
 msgid "All supported formats"
 msgstr "Alle unterstützten Formate"
 
-#: ../wxui/programming_assistant.py:625
+#: ../wxui/programming_assistant.py:634
 #, python-format
 msgid "Allow duplicate replacement: %s"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:605
+#: ../wxui/programming_assistant.py:614
 msgid "Allow network source queries (RepeaterBook, satellites)"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:338
+#: ../wxui/programming_assistant.py:347
 msgid "Allow replacing conflicting existing memories"
 msgstr ""
 
@@ -851,11 +851,11 @@ msgstr ""
 msgid "Amateur allocation, no specific subtype."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:281
+#: ../wxui/programming_assistant.py:290
 msgid "Amateur license class:"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:618
+#: ../wxui/programming_assistant.py:627
 #, python-format
 msgid "Amateur license: %s"
 msgstr ""
@@ -880,7 +880,7 @@ msgstr ""
 msgid "An error has occurred"
 msgstr "Ein Fehler ist aufgetreten"
 
-#: ../wxui/programming_assistant.py:880
+#: ../wxui/programming_assistant.py:902
 #, python-format
 msgid "Applied: %i"
 msgstr ""
@@ -942,7 +942,7 @@ msgstr "Speicherbänke"
 msgid "Bin"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:882
+#: ../wxui/programming_assistant.py:904
 #, python-format
 msgid "Blocked by validation: %i"
 msgstr ""
@@ -984,7 +984,7 @@ msgstr "Fehler-Thema:"
 msgid "Building Radio Browser"
 msgstr "Bilde Browser"
 
-#: ../wxui/programming_assistant.py:662
+#: ../wxui/programming_assistant.py:684
 msgid "Building plan..."
 msgstr ""
 
@@ -1033,7 +1033,7 @@ msgstr ""
 msgid "Changing this setting requires refreshing the settings from the image, which will happen now."
 msgstr "Um diese Einstellung zu ändern, müssen die Einstellungen aus dem Image aktualisiert werden. Dies geschieht jetzt."
 
-#: ../wxui/programming_assistant.py:622
+#: ../wxui/programming_assistant.py:631
 #, python-format
 msgid "Channel limit: %i"
 msgstr ""
@@ -1043,7 +1043,7 @@ msgstr ""
 msgid "Channels with equivalent TX and RX %s are represented by tone mode of \"%s\""
 msgstr "Kanäle mit gleichem TX und RX %s werden durch den Tonmodus \"%s\" dargestellt"
 
-#: ../wxui/programming_assistant.py:312 ../wxui/programming_assistant.py:438
+#: ../wxui/programming_assistant.py:321 ../wxui/programming_assistant.py:447
 msgid "Check at least one requested service to continue."
 msgstr ""
 
@@ -1213,11 +1213,11 @@ msgstr "Komplexer oder nicht standardmäßiger Tonrauschmodus (startet den Tonmo
 msgid "Conditions"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:256
+#: ../wxui/programming_assistant.py:265
 msgid "Configure AI Provider..."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:582
+#: ../wxui/programming_assistant.py:591
 msgid "Confirm your request"
 msgstr ""
 
@@ -1360,11 +1360,11 @@ msgstr "Speicher löschen"
 msgid "Delete rule \"%s\"?"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:238
+#: ../wxui/programming_assistant.py:247
 msgid "Describe what you want programmed"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:240
+#: ../wxui/programming_assistant.py:249
 msgid "Describe your request in plain language, or just fill in the fields below directly -- AI is entirely optional and nothing here requires it."
 msgstr ""
 
@@ -1376,7 +1376,7 @@ msgstr ""
 msgid "Detailed information"
 msgstr "Detail-Information"
 
-#: ../wxui/programming_assistant.py:721
+#: ../wxui/programming_assistant.py:743
 msgid "Details"
 msgstr ""
 
@@ -1409,7 +1409,7 @@ msgstr "Digital-Modi"
 msgid "Disable reporting"
 msgstr "Berichte ausschalten"
 
-#: ../wxui/memedit.py:594 ../wxui/programming_assistant.py:519
+#: ../wxui/memedit.py:594 ../wxui/programming_assistant.py:528
 msgid "Disabled"
 msgstr "Deaktiviert"
 
@@ -1532,7 +1532,7 @@ msgstr "Aktiviert"
 msgid "Enabled:"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:530
+#: ../wxui/programming_assistant.py:539
 msgid "Endpoint URL:"
 msgstr ""
 
@@ -1548,7 +1548,7 @@ msgstr "Offset (MHz) eingeben"
 msgid "Enter TX Frequency (MHz)"
 msgstr "Sende-Frequenz (MHz) eingeben"
 
-#: ../wxui/programming_assistant.py:381
+#: ../wxui/programming_assistant.py:390
 msgid "Enter a description first."
 msgstr ""
 
@@ -1617,7 +1617,7 @@ msgstr "Fehler beim Anwenden der Einstellungen"
 msgid "Error communicating with radio"
 msgstr "Kommunikationsfehler"
 
-#: ../wxui/programming_assistant.py:406 ../wxui/programming_assistant.py:694
+#: ../wxui/programming_assistant.py:415 ../wxui/programming_assistant.py:716
 #, python-format
 msgid "Error: %s"
 msgstr ""
@@ -1658,7 +1658,7 @@ msgstr "Beispiel: name~\"myrepea\""
 msgid "Exclude private and closed repeaters"
 msgstr "Private und geschlossene Repeater ausschließen"
 
-#: ../wxui/programming_assistant.py:884
+#: ../wxui/programming_assistant.py:906
 #, python-format
 msgid "Existing memories replaced: %i"
 msgstr ""
@@ -1716,7 +1716,7 @@ msgstr ""
 msgid "FRS"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:887
+#: ../wxui/programming_assistant.py:909
 #, python-format
 msgid "Failed to apply: %i"
 msgstr ""
@@ -2059,7 +2059,7 @@ msgstr "Frequenzen außerhalb der TX-Bänder brauchen \"duplex = off\""
 msgid "GMRS"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:619
+#: ../wxui/programming_assistant.py:628
 #, python-format
 msgid "GMRS license declared: %s"
 msgstr ""
@@ -2088,7 +2088,7 @@ msgstr "Gehe zu Speicher:"
 msgid "Goto..."
 msgstr "Gehe zu..."
 
-#: ../wxui/programming_assistant.py:718
+#: ../wxui/programming_assistant.py:740
 msgid "Group"
 msgstr ""
 
@@ -2165,7 +2165,7 @@ msgstr "Lesbarer Kommentar (wird nicht im Funkgerät gespeichert)"
 msgid "I have"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:286
+#: ../wxui/programming_assistant.py:295
 msgid "I have a GMRS license"
 msgstr ""
 
@@ -2249,15 +2249,15 @@ msgstr "Interner Treiber-Fehler"
 msgid "Internal driver error: Attempt to modify frozen memory; Please report this as a bug using \"Report or update a bug\" in the Help menu"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:253
+#: ../wxui/programming_assistant.py:262
 msgid "Interpret with AI"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:409
+#: ../wxui/programming_assistant.py:418
 msgid "Interpreted -- review the fields below before continuing."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:385
+#: ../wxui/programming_assistant.py:394
 msgid "Interpreting..."
 msgstr ""
 
@@ -2292,7 +2292,7 @@ msgstr "Ungültiger Locator"
 msgid "Invalid or unsupported module file"
 msgstr "Ungültige oder nicht unterstützte Moduldatei"
 
-#: ../wxui/programming_assistant.py:476
+#: ../wxui/programming_assistant.py:485
 msgid "Invalid request"
 msgstr ""
 
@@ -2365,7 +2365,7 @@ msgstr "Ergebnisse auf diese Entfernung (km) von den Koordinaten beschränken"
 msgid "Limit results to this distance (mi) from coordinates"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:349
+#: ../wxui/programming_assistant.py:358
 msgid "Limit to memory range:"
 msgstr ""
 
@@ -2403,15 +2403,15 @@ msgstr ""
 msgid "Loading settings"
 msgstr "Lade Einstellungen"
 
-#: ../wxui/programming_assistant.py:718
+#: ../wxui/programming_assistant.py:740
 msgid "Loc"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:268
+#: ../wxui/programming_assistant.py:277
 msgid "Location:"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:616
+#: ../wxui/programming_assistant.py:625
 #, python-format
 msgid "Location: %s"
 msgstr ""
@@ -2462,7 +2462,7 @@ msgstr ""
 msgid "Match ALL of these conditions:"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:320
+#: ../wxui/programming_assistant.py:329
 msgid "Maximum channels:"
 msgstr ""
 
@@ -2505,7 +2505,7 @@ msgstr "Speicher muss sich in einer Speicherbank befinden, um bearbeitet zu werd
 msgid "Memory {num} not in bank {bank}"
 msgstr "Speicher {num} ist nicht in Speicherbank {bank}"
 
-#: ../wxui/memedit.py:673 ../wxui/programming_assistant.py:720
+#: ../wxui/memedit.py:673 ../wxui/programming_assistant.py:742
 #: ../wxui/memcolordialog.py:285 ../wxui/query_sources.py:626
 #: ../wxui/query_sources.py:779
 msgid "Mode"
@@ -2515,7 +2515,7 @@ msgstr "Modus"
 msgid "Model"
 msgstr "Modell"
 
-#: ../wxui/programming_assistant.py:535
+#: ../wxui/programming_assistant.py:544
 msgid "Model name:"
 msgstr ""
 
@@ -2581,7 +2581,7 @@ msgstr ""
 msgid "NOAA/Weather"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:718 ../wxui/memcolordialog.py:287
+#: ../wxui/programming_assistant.py:740 ../wxui/memcolordialog.py:287
 #: ../wxui/memcolordialog.py:455
 msgid "Name"
 msgstr ""
@@ -2590,11 +2590,11 @@ msgstr ""
 msgid "Name:"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:327
+#: ../wxui/programming_assistant.py:336
 msgid "Naming style:"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:623
+#: ../wxui/programming_assistant.py:632
 #, python-format
 msgid "Naming style: %s"
 msgstr ""
@@ -2611,7 +2611,7 @@ msgstr "Neue Version verfügbar"
 msgid "No"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:367
+#: ../wxui/programming_assistant.py:376
 msgid "No AI provider configured -- fill in the fields below directly, or configure a provider above."
 msgstr ""
 
@@ -2628,11 +2628,11 @@ msgstr "Keine leeren Zeilen unten!"
 msgid "No example for %s"
 msgstr "Kein Beispiel für %s"
 
-#: ../wxui/programming_assistant.py:944
+#: ../wxui/programming_assistant.py:985
 msgid "No memory editor is available for the current tab."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:846
+#: ../wxui/programming_assistant.py:868
 msgid "No memory editor tab is available for this radio; nothing was applied."
 msgstr ""
 
@@ -2703,7 +2703,7 @@ msgstr ""
 "Offset/\n"
 "TX-Freq"
 
-#: ../wxui/programming_assistant.py:519
+#: ../wxui/programming_assistant.py:528
 msgid "Ollama (local)"
 msgstr ""
 
@@ -2773,7 +2773,7 @@ msgstr "Nur Repeater öffnen"
 msgid "Open stock config directory"
 msgstr "Standard-Konfiguration öffnen"
 
-#: ../wxui/programming_assistant.py:519
+#: ../wxui/programming_assistant.py:528
 msgid "OpenAI-compatible"
 msgstr ""
 
@@ -2870,7 +2870,7 @@ msgstr "Eingefügte Speicher werden Speicher %s überschreiben"
 msgid "Pasted memory will overwrite memory %s"
 msgstr "Eingefügter Speicher wird Speicher %s überschreiben"
 
-#: ../wxui/programming_assistant.py:701
+#: ../wxui/programming_assistant.py:723
 #, python-format
 msgid "Plan built: %i candidate(s) ready to review."
 msgstr ""
@@ -2911,11 +2911,11 @@ msgstr "Leistung"
 msgid "Prefixes"
 msgstr "Präfixe"
 
-#: ../wxui/programming_assistant.py:332
+#: ../wxui/programming_assistant.py:341
 msgid "Preserve existing memories (recommended)"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:624
+#: ../wxui/programming_assistant.py:633
 #, python-format
 msgid "Preserve existing memories: %s"
 msgstr ""
@@ -2932,7 +2932,7 @@ msgstr "Druckvorschau"
 msgid "Printing"
 msgstr "Drucke"
 
-#: ../wxui/programming_assistant.py:945
+#: ../wxui/programming_assistant.py:986
 msgid "Programming Assistant"
 msgstr ""
 
@@ -2941,7 +2941,7 @@ msgstr ""
 msgid "Programming Assistant is now %s. CHIRP must be restarted to take effect"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:853
+#: ../wxui/programming_assistant.py:875
 msgid "Programming Assistant plan"
 msgstr ""
 
@@ -2969,11 +2969,11 @@ msgstr "Eigenschaftsname"
 msgid "Property Value"
 msgstr "Eigenschaftswert"
 
-#: ../wxui/programming_assistant.py:355
+#: ../wxui/programming_assistant.py:364
 msgid "Protected ranges (e.g. 0-9, 90-99):"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:525
+#: ../wxui/programming_assistant.py:534
 msgid "Provider:"
 msgstr ""
 
@@ -3023,7 +3023,7 @@ msgstr "Abfrage"
 msgid "RX DTCS"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:719
+#: ../wxui/programming_assistant.py:741
 msgid "RX Freq"
 msgstr ""
 
@@ -3060,11 +3060,11 @@ msgid ""
 "<small>Premium account required</small>"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:274
+#: ../wxui/programming_assistant.py:283
 msgid "Radius (miles):"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:617
+#: ../wxui/programming_assistant.py:626
 #, python-format
 msgid "Radius: %s miles"
 msgstr ""
@@ -3089,7 +3089,7 @@ msgstr "Empfangs-DTCS-Code"
 msgid "Receive frequency"
 msgstr "Empfangsfrequenz"
 
-#: ../wxui/memcolorlegend.py:37 ../wxui/programming_assistant.py:785
+#: ../wxui/memcolorlegend.py:37 ../wxui/programming_assistant.py:807
 #: ../wxui/memcolordialog.py:290
 msgid "Receive-only"
 msgstr ""
@@ -3119,11 +3119,11 @@ msgstr "Aktualisierung erforderlich"
 msgid "Refreshed memory %s"
 msgstr "Speicher %s aktualisiert"
 
-#: ../wxui/programming_assistant.py:751
+#: ../wxui/programming_assistant.py:773
 msgid "Regulatory & Privacy Details"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:743
+#: ../wxui/programming_assistant.py:765
 msgid "Regulatory && Privacy Details..."
 msgstr ""
 
@@ -3139,7 +3139,7 @@ msgstr "Treiber und Datei neu laden"
 msgid "Reload required"
 msgstr "Neuladen erforderlich"
 
-#: ../wxui/programming_assistant.py:553
+#: ../wxui/programming_assistant.py:562
 msgid "Remember API key on this computer (obfuscated, NOT securely encrypted -- no OS keyring is available)"
 msgstr ""
 
@@ -3191,11 +3191,11 @@ msgstr "Berichtsfunktion aktiviert"
 msgid "Reporting helps the CHIRP project know which radio models and OS platforms to spend our limited efforts on. We would really appreciate if you left it enabled. Really disable reporting?"
 msgstr "Die Berichtsfunktion hilft dem CHIRP-Projekt dabei, die Funkmodelle und Betriebssystemplattformen zu identifizieren, auf die wir unsere begrenzten Ressourcen konzentrieren sollten. Wir würden uns sehr freuen, wenn diese Funktion aktiviert bleibt. Berichtsfunktion wirklich deaktivieren?"
 
-#: ../wxui/programming_assistant.py:307
+#: ../wxui/programming_assistant.py:316
 msgid "Requested services:"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:621
+#: ../wxui/programming_assistant.py:630
 #, python-format
 msgid "Requested services: %s"
 msgstr ""
@@ -3231,7 +3231,7 @@ msgstr[1] "%i Tabs wiederherstellen"
 msgid "Restore tabs on start"
 msgstr "Tabs beim Start wiederherstellen"
 
-#: ../wxui/programming_assistant.py:827
+#: ../wxui/programming_assistant.py:849
 msgid "Result"
 msgstr ""
 
@@ -3243,11 +3243,11 @@ msgstr "Ergebnisse aus anderen Bereichen"
 msgid "Retrieved settings"
 msgstr "Einstellungen abgerufen"
 
-#: ../wxui/programming_assistant.py:584
+#: ../wxui/programming_assistant.py:593
 msgid "Review the interpreted request below. Nothing is queried or built until you continue -- go back to correct anything."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:726
+#: ../wxui/programming_assistant.py:748
 msgid "Review the proposed plan"
 msgstr ""
 
@@ -3384,7 +3384,7 @@ msgstr "Einstellungen"
 msgid "Settings are read-only due to unsupported firmware version"
 msgstr "Die Einstellungen sind aufgrund einer nicht unterstützten Firmware-Version schreibgeschützt"
 
-#: ../wxui/programming_assistant.py:599
+#: ../wxui/programming_assistant.py:608
 msgid "Share precise coordinates with network sources (off = distance sorting is skipped; only your entered state/location text is used)"
 msgstr ""
 
@@ -3428,7 +3428,7 @@ msgstr "Zeige Extra-Felder"
 msgid "Show image backup location"
 msgstr "Speicherort der Image-Sicherungen anzeigen"
 
-#: ../wxui/programming_assistant.py:789
+#: ../wxui/programming_assistant.py:811
 msgid "Simplex"
 msgstr ""
 
@@ -3440,7 +3440,7 @@ msgstr "Überspringen"
 msgid "Skip state"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:881
+#: ../wxui/programming_assistant.py:903
 #, python-format
 msgid "Skipped (not included or invalid): %i"
 msgstr ""
@@ -3504,11 +3504,11 @@ msgstr "Sortiere Speicher"
 msgid "Sorting"
 msgstr "Sortiere"
 
-#: ../wxui/programming_assistant.py:721
+#: ../wxui/programming_assistant.py:743
 msgid "Source"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:891
+#: ../wxui/programming_assistant.py:913
 #, python-format
 msgid "Sources with no data: %s"
 msgstr ""
@@ -3521,7 +3521,7 @@ msgstr "Bundesland"
 msgid "State/Province"
 msgstr "Bundesland/Provinz"
 
-#: ../wxui/programming_assistant.py:720
+#: ../wxui/programming_assistant.py:742
 msgid "Status"
 msgstr ""
 
@@ -3533,7 +3533,7 @@ msgstr "Erfolgreich"
 msgid "Successfully sent bug report:"
 msgstr "Fehlerbericht erfolgreich gesendet:"
 
-#: ../wxui/programming_assistant.py:719
+#: ../wxui/programming_assistant.py:741
 msgid "TX Freq / RX-only"
 msgstr ""
 
@@ -3625,7 +3625,7 @@ msgstr ""
 msgid "The memory editor requires a reload in order to change the workflow. That will happen now. Any other open tabs will be updated the next time they are loaded."
 msgstr "Der Speichereditor muss neu geladen werden, um den Arbeitsablauf zu ändern. Dies geschieht jetzt. Alle anderen geöffneten Tabs werden beim nächsten Laden aktualisiert."
 
-#: ../wxui/programming_assistant.py:895
+#: ../wxui/programming_assistant.py:917
 msgid "The open image has been updated. Nothing has been uploaded to a radio -- use Radio > Upload to Radio when you are ready."
 msgstr ""
 
@@ -3740,7 +3740,7 @@ msgstr "Dieses Tool lädt Details zu Ihrem System in ein bestehendes Ticket im C
 msgid "This will load a module from a website issue"
 msgstr "Ein Modul von einer Website laden"
 
-#: ../wxui/memedit.py:523 ../wxui/programming_assistant.py:720
+#: ../wxui/memedit.py:523 ../wxui/programming_assistant.py:742
 msgid "Tone"
 msgstr "Ton"
 
@@ -3916,7 +3916,7 @@ msgstr "Größere Schrift"
 msgid "Username"
 msgstr "Benutzername"
 
-#: ../wxui/programming_assistant.py:542
+#: ../wxui/programming_assistant.py:551
 msgid "Using CHIRP_ASSISTANT_API_KEY environment variable"
 msgstr ""
 
@@ -4082,7 +4082,7 @@ msgstr ""
 msgid "starts with"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:346
+#: ../wxui/programming_assistant.py:355
 msgid "to"
 msgstr ""
 

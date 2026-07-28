@@ -1056,6 +1056,184 @@ class RealWizardEventFlowTest(ProgrammingAssistantWxTestBase):
         # directly in a way independent of GetCurrentPage(), so ask it.
         return wizard.GetCurrentPage()
 
+    def _drive_to_confirm(self, service=models.SERVICE_WEATHER):
+        wizard = self.wizard
+        context = self.context
+        programming_assistant._wire_wizard_events(wizard)
+        describe = context.get_page(
+            'describe', programming_assistant.DescribePage)
+        wizard.GetPageAreaSizer().Add(describe)
+        wizard.ShowPage(describe)
+        describe.services.Check(
+            [i for i, (value, _label) in
+             enumerate(programming_assistant._SERVICE_LABELS)
+             if value == service][0], True)
+        confirm = self._click_next(wizard, describe)
+        confirm.network_allowed.SetValue(False)
+        return wizard, context, describe, confirm
+
+    def _build_and_advance_to_review(self, wizard, confirm):
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.PostEvent',
+                side_effect=lambda target, evt: target._build_done(evt)), \
+                mock.patch(
+                    'chirp.wxui.programming_assistant.threading.Thread',
+                    ConfirmPageBuildFreshnessTest._ImmediateThread):
+            still_confirm = self._click_next_or_veto(wizard, confirm)
+            self.assertIs(confirm, still_confirm)
+            review = self._click_next(wizard, confirm)
+        return review
+
+    def test_confirm_populated_immediately_no_extra_click_required(self):
+        # Windows validation report: the Confirm summary was blank on
+        # arrival and only populated as a side effect of a first,
+        # silently-vetoed Next click -- the user had to click twice
+        # to advance, with no indication why the first click "did
+        # nothing" visible.
+        wizard, _context, describe, confirm = self._drive_to_confirm()
+        self.assertIn('Requested services: %s' % models.SERVICE_WEATHER,
+                      confirm.summary.GetValue())
+
+    def test_confirm_to_review_first_click_starts_build_second_advances(
+            self):
+        wizard, _context, _describe, confirm = self._drive_to_confirm()
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.PostEvent',
+                side_effect=lambda target, evt: target._build_done(evt)), \
+                mock.patch(
+                    'chirp.wxui.programming_assistant.threading.Thread',
+                    ConfirmPageBuildFreshnessTest._ImmediateThread):
+            still_confirm = self._click_next_or_veto(wizard, confirm)
+            self.assertIs(
+                confirm, still_confirm,
+                'first click on a stale/unbuilt Confirm must not '
+                'advance -- it starts the build')
+            review = self._click_next(wizard, confirm)
+        self.assertIsInstance(review, programming_assistant.ReviewPage)
+
+    def test_review_populated_immediately_on_arrival(self):
+        wizard, _context, _describe, confirm = self._drive_to_confirm()
+        review = self._build_and_advance_to_review(wizard, confirm)
+        self.assertEqual(7, review.list.GetItemCount())
+        self.assertEqual(7, len(review._row_candidates))
+
+    def test_result_populated_immediately_apply_occurs_once(self):
+        wizard, context, _describe, confirm = self._drive_to_confirm()
+        review = self._build_and_advance_to_review(wizard, confirm)
+        result = self._click_next(wizard, review)
+
+        self.assertIsInstance(result, programming_assistant.ResultPage)
+        self.assertTrue(result._applied)
+        self.assertIn('Applied: 7', result.result.GetValue())
+        applied_numbers = [
+            c.memory_number for c in context.plan.all_candidates
+            if c.include]
+        for n in applied_numbers:
+            self.assertFalse(self.radio.get_memory(n).empty)
+
+    def test_finish_enabled_and_back_disabled_on_result(self):
+        # Windows validation report: Finish was unavailable, and Back
+        # closed the wizard entirely instead of being disabled.
+        wizard, _context, _describe, confirm = self._drive_to_confirm()
+        review = self._build_and_advance_to_review(wizard, confirm)
+        result = self._click_next(wizard, review)
+
+        finish = result.FindWindowById(wx.ID_FORWARD)
+        back = result.FindWindowById(wx.ID_BACKWARD)
+        self.assertEqual('&Finish', finish.GetLabel())
+        self.assertTrue(
+            finish.IsEnabled(),
+            'Finish must be enabled once Apply has completed')
+        self.assertFalse(
+            back.IsEnabled(),
+            'Back must be disabled on Result -- GetPrev() is None and '
+            'there is no safe way back after Apply already ran')
+
+    def test_describe_back_also_disabled(self):
+        # Same underlying fix (AssistantPage.validate_next() now
+        # manages the Back button, not just Forward) -- Describe has
+        # no previous page either. Checked while Describe is still the
+        # CURRENT page: the Back button is one shared wizard control,
+        # so checking it after already advancing to Confirm (which
+        # legitimately has a previous page) would just observe
+        # Confirm's state instead.
+        wizard = self.wizard
+        context = self.context
+        programming_assistant._wire_wizard_events(wizard)
+        describe = context.get_page(
+            'describe', programming_assistant.DescribePage)
+        wizard.GetPageAreaSizer().Add(describe)
+        wizard.ShowPage(describe)
+
+        back = describe.FindWindowById(wx.ID_BACKWARD)
+        self.assertFalse(back.IsEnabled())
+
+    def test_page_shown_apply_is_idempotent_across_repeated_calls(self):
+        # Duplicate-event protection: nothing in the real wizard should
+        # ever call page_shown() twice for the same visit to Result,
+        # but if it did (or some other navigation path re-triggered
+        # it), Apply must not run twice.
+        wizard, _context, _describe, confirm = self._drive_to_confirm()
+        review = self._build_and_advance_to_review(wizard, confirm)
+        result = self._click_next(wizard, review)
+        self.assertTrue(result._applied)
+
+        applied_calls = []
+        real_apply = result._apply
+
+        def counting_apply():
+            applied_calls.append(1)
+            return real_apply()
+        result._apply = counting_apply
+        result.page_shown()
+        result.page_shown()
+        self.assertEqual(0, len(applied_calls))
+
+    def test_back_from_confirm_to_describe_then_forward_updates_confirm(
+            self):
+        wizard, context, describe, confirm = self._drive_to_confirm(
+            service=models.SERVICE_HAM)
+        self.assertIn('ham', confirm.summary.GetValue())
+
+        # Real Back navigation, not a direct method call.
+        back_to_describe = wizard.ShowPage(describe, False)
+        self.assertTrue(back_to_describe)
+
+        describe.services.Check(
+            [i for i, (value, _label) in
+             enumerate(programming_assistant._SERVICE_LABELS)
+             if value == models.SERVICE_WEATHER][0], True)
+        describe.services.Check(
+            [i for i, (value, _label) in
+             enumerate(programming_assistant._SERVICE_LABELS)
+             if value == models.SERVICE_HAM][0], False)
+
+        confirm_again = self._click_next(wizard, describe)
+        self.assertIs(confirm, confirm_again)
+        self.assertIn('weather', confirm_again.summary.GetValue())
+        self.assertNotIn('ham', confirm_again.summary.GetValue())
+
+    def test_full_transaction_snapshot_finish_then_undo_restores_exactly(
+            self):
+        lo, hi = self.radio.get_features().memory_bounds
+        before = [self.radio.get_memory(n).freq for n in range(lo, hi + 1)]
+
+        wizard, context, _describe, confirm = self._drive_to_confirm()
+        review = self._build_and_advance_to_review(wizard, confirm)
+        result = self._click_next(wizard, review)
+        self.assertTrue(result._applied)
+
+        after_apply = [
+            self.radio.get_memory(n).freq for n in range(lo, hi + 1)]
+        self.assertNotEqual(before, after_apply,
+                            'nothing changed -- Apply did not run')
+        self.assertEqual(1, len(self.editor._undo_queue))
+
+        self.editor._undo(None)
+        after_undo = [
+            self.radio.get_memory(n).freq for n in range(lo, hi + 1)]
+        self.assertEqual(before, after_undo)
+
 
 class MenuIntegrationTest(unittest.TestCase):
     def test_assistant_disabled_by_default(self):
