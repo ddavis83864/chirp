@@ -1,0 +1,169 @@
+{
+  "channels": [
+    {
+      "category": "Repeater",
+      "comment": "Example 2m repeater serving the Coeur d'Alene area",
+      "cross_mode": "Tone->Tone",
+      "ctone": 88.5,
+      "dtcs": 23,
+      "dtcs_polarity": "NN",
+      "groups": [
+        "local-repeaters"
+      ],
+      "logical_id": "local-cda-2m-repeater-01",
+      "mode": null,
+      "name": "CDA 2M RPTR",
+      "overrides": [],
+      "power_preference": {},
+      "priority": 1,
+      "rtone": 100.0,
+      "rx_dtcs": 23,
+      "rx_freq_hz": 146940000,
+      "scan_intent": null,
+      "source": {},
+      "tags": [],
+      "tone_mode": "Tone",
+      "transmit": {
+        "duplex": "-",
+        "mode": "enabled",
+        "offset_hz": 600000
+      }
+    },
+    {
+      "category": "Simplex",
+      "comment": "National 2m FM simplex calling frequency",
+      "cross_mode": "Tone->Tone",
+      "ctone": 88.5,
+      "dtcs": 23,
+      "dtcs_polarity": "NN",
+      "groups": [
+        "simplex"
+      ],
+      "logical_id": "national-2m-simplex-calling",
+      "mode": null,
+      "name": "2M CALL",
+      "overrides": [],
+      "power_preference": {},
+      "priority": null,
+      "rtone": 88.5,
+      "rx_dtcs": 23,
+      "rx_freq_hz": 146520000,
+      "scan_intent": null,
+      "source": {},
+      "tags": [],
+      "tone_mode": "",
+      "transmit": {
+        "duplex": "",
+        "mode": "enabled",
+        "offset_hz": 0
+      }
+    },
+    {
+      "category": "Weather",
+      "comment": "NOAA Weather Radio -- receive-only",
+      "cross_mode": "Tone->Tone",
+      "ctone": 88.5,
+      "dtcs": 23,
+      "dtcs_polarity": "NN",
+      "groups": [
+        "weather"
+      ],
+      "logical_id": "noaa-weather-01",
+      "mode": null,
+      "name": "NOAA WX1",
+      "overrides": [],
+      "power_preference": {},
+      "priority": null,
+      "rtone": 88.5,
+      "rx_dtcs": 23,
+      "rx_freq_hz": 162550000,
+      "scan_intent": "priority",
+      "source": {},
+      "tags": [],
+      "tone_mode": "",
+      "transmit": {
+        "duplex": "",
+        "mode": "receive_only",
+        "offset_hz": 0
+      }
+    },
+    {
+      "category": "Aviation",
+      "comment": "Aviation emergency/guard frequency -- receive-only monitoring example",
+      "cross_mode": "Tone->Tone",
+      "ctone": 88.5,
+      "dtcs": 23,
+      "dtcs_polarity": "NN",
+      "groups": [
+        "emergency"
+      ],
+      "logical_id": "aviation-emergency-guard",
+      "mode": "AM",
+      "name": "AVIATION GD",
+      "overrides": [
+        {
+          "fields": {
+            "name": "AV GUARD"
+          },
+          "selector": {
+            "scope": "model",
+            "value": "Yaesu_FT-60"
+          }
+        }
+      ],
+      "power_preference": {},
+      "priority": null,
+      "rtone": 88.5,
+      "rx_dtcs": 23,
+      "rx_freq_hz": 121500000,
+      "scan_intent": null,
+      "source": {},
+      "tags": [],
+      "tone_mode": "",
+      "transmit": {
+        "duplex": "",
+        "mode": "receive_only",
+        "offset_hz": 0
+      }
+    }
+  ],
+  "created_at": "2026-07-28T17:18:45.256698+00:00",
+  "defaults": {
+    "duplicate_policy": "prompt",
+    "mode": "FM",
+    "naming_style": "abbreviate",
+    "power_preference": {
+      "tier": "high"
+    },
+    "region": null,
+    "scan_intent": null
+  },
+  "description": "A fictionalized example profile for car camping and travel in the North Idaho / Coeur d'Alene area. Frequencies here are for illustration only -- verify any real repeater, simplex, or monitoring frequency against a current, authoritative source (e.g. RepeaterBook, ARRL band plan, or your local club) before programming a real radio.",
+  "groups": [
+    {
+      "description": "Coeur d'Alene area ham repeaters",
+      "id": "local-repeaters",
+      "name": "Local Repeaters"
+    },
+    {
+      "description": "Calling and travel simplex channels",
+      "id": "simplex",
+      "name": "Simplex"
+    },
+    {
+      "description": "NOAA weather radio (receive-only)",
+      "id": "weather",
+      "name": "Weather"
+    },
+    {
+      "description": "Emergency/monitoring channels",
+      "id": "emergency",
+      "name": "Emergency"
+    }
+  ],
+  "modified_at": "2026-07-28T17:18:45.256738+00:00",
+  "name": "North Idaho Camping",
+  "profile_id": "30a5a69f-deb3-4d00-a943-4981f3de3b70",
+  "region": "US",
+  "schema_version": "1.0"
+}
