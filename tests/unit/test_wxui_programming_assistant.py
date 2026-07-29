@@ -505,6 +505,49 @@ class ReviewPageTest(ProgrammingAssistantWxTestBase):
         details = page.list.GetItemText(0, 9)
         self.assertIn('Name truncated to fit this radio', details)
 
+    def test_source_warnings_shown_before_apply_not_only_on_result(self):
+        # Phase 5: plan.warnings previously only ever reached the user
+        # via plan.skipped_sources' bare source names on the post-
+        # Apply Result page -- never here, where the user actually
+        # decides what to approve.
+        ready = models.ChannelCandidate(
+            source='s', service=models.SERVICE_HAM, group='g', label='R',
+            freq=146520000, status=models.STATUS_READY, include=True,
+            memory_number=1, name='R1')
+        plan = models.ChannelPlan(
+            groups=[models.PlanGroup(name='g', candidates=[ready])],
+            warnings=[models.PlanWarning(
+                severity='warning',
+                message='RepeaterBook (amateur) unavailable: could not '
+                        'connect (network unreachable or offline)')])
+        self.context.plan = plan
+        page = programming_assistant.ReviewPage(self.context)
+        page._populate()
+
+        self.assertTrue(page.source_details_btn.IsShown())
+        self.assertIn('1', page.source_status.GetLabel())
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls:
+            page._on_source_details(None)
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('RepeaterBook (amateur) unavailable',
+                      mock_dialog_cls.call_args[0][1])
+
+    def test_no_warnings_hides_source_details_button(self):
+        ready = models.ChannelCandidate(
+            source='s', service=models.SERVICE_HAM, group='g', label='R',
+            freq=146520000, status=models.STATUS_READY, include=True,
+            memory_number=1, name='R1')
+        self.context.plan = models.ChannelPlan(
+            groups=[models.PlanGroup(name='g', candidates=[ready])])
+        page = programming_assistant.ReviewPage(self.context)
+        page._populate()
+
+        self.assertFalse(page.source_details_btn.IsShown())
+        self.assertEqual('', page.source_status.GetLabel())
+
     def test_existing_conflict_shown_with_reason(self):
         conflict = models.ChannelCandidate(
             source='s', service=models.SERVICE_HAM, group='g', label='C',
@@ -541,6 +584,200 @@ class ReviewPageTest(ProgrammingAssistantWxTestBase):
         finalized = self.context.service.finalize_for_apply(plan)
         applied_numbers = {memory.number for _c, memory in finalized}
         self.assertTrue(applied_numbers.issubset(shown_numbers))
+
+
+class ReviewPageRealEventNextButtonTest(ProgrammingAssistantWxTestBase):
+    """Regression coverage for a Windows validation report: on first
+    arrival at Review, selecting a candidate did not enable Next --
+    the user had to go Back to Confirm and Next to Review again before
+    the button reflected their selection.
+
+    Root cause, confirmed by reading the code (the same class of
+    defect ReviewPageTest's own sibling, DescribePageServiceValidationTest,
+    already documents and fixed for DescribePage.services, but the
+    identical fix was never applied to ReviewPage.list): _on_check()
+    updates candidate.include in the model but never calls
+    self.validate_next() -- the AssistantPage method that actually
+    re-Enable()s the real wx.ID_FORWARD button. Only page_shown(),
+    called once when the page becomes current (including via the
+    Back-then-Next workaround, which re-triggers EVT_WIZARD_PAGE_
+    CHANGED), ever calls validate_next() before this fix.
+
+    The existing ReviewPageTest coverage (test_unchecking_row_updates_
+    candidate etc.) called page._on_check(_FakeIndexEvent(idx)) and
+    checked page._validate_next()'s return value directly -- exactly
+    the same test-shape gap that let the original DescribePage version
+    of this bug through, since neither exercises the real wx event
+    path or the real button. These tests fire a genuine
+    EVT_LIST_ITEM_CHECKED/UNCHECKED via ProcessEvent() against a real
+    wx.adv.Wizard using the production event wiring, and check the
+    actual wx.ID_FORWARD button's real IsEnabled() state.
+    """
+
+    def _plan_with_two_ready_candidates(self):
+        a = models.ChannelCandidate(
+            source='RepeaterBook', service=models.SERVICE_HAM,
+            group='Local Amateur Repeaters', label='W7ABC', freq=146880000,
+            tx_freq=146280000, status=models.STATUS_READY, include=True,
+            memory_number=1, name='W7ABC')
+        b = models.ChannelCandidate(
+            source='static_ham_calling', service=models.SERVICE_HAM,
+            group='Amateur Simplex', label='Calling 146.520',
+            freq=146520000, status=models.STATUS_READY, include=True,
+            memory_number=2, name='CALL')
+        return models.ChannelPlan(groups=[
+            models.PlanGroup(name='Local Amateur Repeaters', candidates=[a]),
+            models.PlanGroup(name='Amateur Simplex', candidates=[b]),
+        ])
+
+    def _setup_review_page(self, plan):
+        self.context.plan = plan
+        wizard = self.wizard
+        programming_assistant._wire_wizard_events(wizard)
+        review = self.context.get_page(
+            'review', programming_assistant.ReviewPage)
+        wizard.GetPageAreaSizer().Add(review)
+        wizard.ShowPage(review)
+        return wizard, review
+
+    def _toggle_row(self, review, index, checked):
+        review.list.CheckItem(index, checked)
+        event_type = (wx.EVT_LIST_ITEM_CHECKED if checked
+                      else wx.EVT_LIST_ITEM_UNCHECKED)
+        evt = wx.ListEvent(event_type.typeId, review.list.GetId())
+        evt.SetIndex(index)
+        review.list.GetEventHandler().ProcessEvent(evt)
+
+    def test_first_arrival_matches_candidate_include_state(self):
+        # Both candidates default to include=True (the planner's own
+        # default-selection policy -- see policies.py/validator.py:
+        # only candidates that fail radio validation get include=False)
+        # -- first arrival must show them checked and Next enabled
+        # without any interaction at all.
+        _wizard, review = self._setup_review_page(
+            self._plan_with_two_ready_candidates())
+        self.assertTrue(review.list.IsItemChecked(0))
+        self.assertTrue(review.list.IsItemChecked(1))
+        forward = review.FindWindowById(wx.ID_FORWARD)
+        self.assertTrue(forward.IsEnabled())
+
+    def test_unchecking_the_only_selection_disables_next_immediately(self):
+        blocked = models.ChannelCandidate(
+            source='s', service=models.SERVICE_HAM, group='g', label='Bad',
+            freq=1, include=False, status=models.STATUS_BLOCKED)
+        ready = models.ChannelCandidate(
+            source='s', service=models.SERVICE_HAM, group='g', label='Good',
+            freq=146520000, include=True, status=models.STATUS_READY,
+            memory_number=1, name='GOOD')
+        plan = models.ChannelPlan(groups=[
+            models.PlanGroup(name='g', candidates=[ready, blocked])])
+        _wizard, review = self._setup_review_page(plan)
+        forward = review.FindWindowById(wx.ID_FORWARD)
+        self.assertTrue(forward.IsEnabled())
+
+        self._toggle_row(review, 0, False)
+
+        self.assertFalse(forward.IsEnabled(),
+                         'unchecking the only selected candidate must '
+                         'immediately disable Next -- no Back/Next '
+                         'navigation should be required')
+
+    def test_rechecking_immediately_enables_next_no_back_and_forward(self):
+        # The exact reported sequence: uncheck everything (Next
+        # disables, covered above), then select a candidate -- Next
+        # must enable right away, not only after Back then Next.
+        plan = self._plan_with_two_ready_candidates()
+        _wizard, review = self._setup_review_page(plan)
+        forward = review.FindWindowById(wx.ID_FORWARD)
+
+        self._toggle_row(review, 0, False)
+        self._toggle_row(review, 1, False)
+        self.assertFalse(forward.IsEnabled())
+
+        self._toggle_row(review, 0, True)
+
+        self.assertTrue(
+            forward.IsEnabled(),
+            'selecting a candidate must immediately enable Next -- '
+            'reproduces the reported defect where only a Back-then-Next '
+            'round trip refreshed the button state')
+
+    def test_selection_persists_across_back_and_forward_navigation(self):
+        # Deliberately exercises ReviewPage's own re-entry path
+        # directly (the same page_shown() + validate_next() calls
+        # _on_page_changed makes on every real transition -- see
+        # _wire_wizard_events) rather than round-tripping through a
+        # real Confirm page: Confirm's own build-freshness gate
+        # (ConfirmPageBuildFreshnessTest) would kick off a real
+        # background rebuild here with this test's minimal/empty
+        # context.request, replacing context.plan with an unrelated
+        # empty one -- a separate concern from what this test is
+        # about, which is purely whether Review's OWN re-population
+        # preserves candidate.include state correctly.
+        plan = self._plan_with_two_ready_candidates()
+        _wizard, review = self._setup_review_page(plan)
+
+        self._toggle_row(review, 0, False)
+        self.assertFalse(review._row_candidates[0].include)
+        self.assertTrue(review._row_candidates[1].include)
+
+        # Simulates arriving at Review again (e.g. after Back then
+        # Next) -- same calls _on_page_changed makes on every real
+        # transition.
+        review.page_shown()
+        review.validate_next()
+
+        self.assertFalse(review.list.IsItemChecked(0))
+        self.assertTrue(review.list.IsItemChecked(1))
+        forward = review.FindWindowById(wx.ID_FORWARD)
+        self.assertTrue(forward.IsEnabled())
+
+    def test_checking_a_blocked_candidate_does_not_enable_next(self):
+        # A candidate with validation errors is blocked and can never
+        # be included, regardless of the checkbox -- see
+        # AssistantService.finalize_for_apply()'s own authoritative
+        # re-check, which skips anything with errors independent of
+        # include. The Review page itself must not let a user think
+        # they successfully selected one either.
+        blocked = models.ChannelCandidate(
+            source='s', service=models.SERVICE_HAM, group='g', label='Bad',
+            freq=99999999999, status=models.STATUS_BLOCKED, include=False,
+            errors=('out of range',))
+        plan = models.ChannelPlan(
+            groups=[models.PlanGroup(name='g', candidates=[blocked])])
+        _wizard, review = self._setup_review_page(plan)
+        forward = review.FindWindowById(wx.ID_FORWARD)
+        self.assertFalse(forward.IsEnabled())
+        self.assertFalse(review.list.IsItemChecked(0))
+
+        self._toggle_row(review, 0, True)
+
+        self.assertFalse(
+            review.list.IsItemChecked(0),
+            'checking a blocked candidate must revert, not stick')
+        self.assertFalse(blocked.include)
+        self.assertFalse(
+            forward.IsEnabled(),
+            'a blocked candidate must never be able to enable Next')
+
+    def test_toggling_does_not_duplicate_rows_or_recurse(self):
+        plan = self._plan_with_two_ready_candidates()
+        _wizard, review = self._setup_review_page(plan)
+        row_count_before = review.list.GetItemCount()
+        candidate_count_before = len(review._row_candidates)
+
+        for _ in range(3):
+            self._toggle_row(review, 0, False)
+            self._toggle_row(review, 0, True)
+
+        self.assertEqual(row_count_before, review.list.GetItemCount())
+        self.assertEqual(candidate_count_before,
+                         len(review._row_candidates))
+        # _on_check() only ever sets candidate.include and calls
+        # validate_next() -- it never re-populates the list -- so
+        # repeated toggling can't recurse into _populate() and can't
+        # accumulate duplicate row entries.
+        self.assertTrue(review._row_candidates[0].include)
 
 
 class _FakeIndexEvent:

@@ -58,7 +58,18 @@ that you approve before anything is written to the open image.
 3. **Review** — a checkable table of every proposed channel with its
    status (Ready / Adjusted / Warning / Blocked / Receive-only /
    Duplicate / Existing conflict / Source unavailable / Unsupported by
-   radio), source, and details. Uncheck anything you don't want.
+   radio), source, and details. Every candidate that isn't blocked by
+   radio validation is **checked (selected) by default** when the page
+   first appears — this is a preselection policy, not a requirement to
+   manually pick anything; uncheck what you don't want. Checking or
+   unchecking updates whether Next/Finish is available immediately, no
+   navigation required. A blocked candidate's checkbox can't be turned
+   on at all — checking one reverts it and explains why in that row's
+   Details column, rather than letting it look selected. If any
+   requested source returned a warning (unavailable, no matches,
+   location not resolved, etc. — see "Data sources and provenance"
+   above), a "Source Details..." button appears here, before you
+   approve anything, listing exactly what happened.
 4. **Result** — after Apply, a count of applied/skipped/blocked/
    adjusted/replaced entries, and a reminder that the image has not
    been uploaded to a radio.
@@ -80,6 +91,15 @@ underlying data is. Nothing is ever presented as more current or
 authoritative than it actually is. Network source failures produce a
 warning and an empty contribution for that source — they never crash
 the assistant or fall back to guessed data.
+
+Requesting the ham service always includes both a real RepeaterBook
+query (when a state resolves and network sources are allowed) *and*
+the static calling-frequency table — these are additive, not
+either/or, and stay visually distinguishable in Review by their Group
+column: RepeaterBook results with a real transmit offset group under
+"Local Amateur Repeaters", while the static calling table always
+groups under "Amateur Simplex" — so a plan that includes both never
+misrepresents a simplex suggestion as a local repeater.
 
 ## Receive-only and transmit policy
 
@@ -246,11 +266,32 @@ disappear.
   international guard/emergency frequencies.
 - No source for FRS, MURS, marine, public safety, business, or railroad
   channels in this release.
-- Location resolution from free text (e.g. "Coeur d'Alene") to a US
-  state/coordinates is not implemented in this release; enter the state
-  name and/or coordinates directly, or have an AI provider extract
-  `location_text` and confirm/correct it before building the plan.
-  RepeaterBook queries require a resolvable US state name.
+- Location resolution is text parsing, not geocoding: RepeaterBook
+  queries require a resolvable US state, and `location_text` is parsed
+  for a bare state name (e.g. "Idaho"), a standard 2-letter
+  abbreviation (e.g. "ID"), or one of those as the trailing part of a
+  "City, State" or "City, ST" description (e.g. "Coeur d'Alene, Idaho"
+  or "Coeur d'Alene, ID" both resolve to Idaho). No coordinates are
+  ever derived from a city name — there is no geocoding dependency
+  anywhere in this codebase — so a resolved state narrows the query to
+  that whole state's repeater dataset, not specifically to the named
+  city; only real, explicitly-provided coordinates (`latitude`/
+  `longitude` on the request, not populated by any UI or AI path in
+  this release) narrow it further by distance. A location with no
+  state name or abbreviation anywhere in it (e.g. just "Coeur
+  d'Alene") cannot be resolved at all, and produces a clear message
+  explaining why, on the Review page's "Source Details..." button,
+  rather than a silent simplex-only fallback (see "Data sources and
+  provenance" above).
+- Band selection (e.g. "2-meter and 70-centimeter bands only") is
+  supported end to end at the model and source-query level
+  (`ProgrammingRequest.requested_bands`) but has no dedicated UI
+  control or AI-extractable field yet in this release — set it
+  programmatically, or treat this as a natural next step once a UI
+  affordance is designed for it. Omitting it (the only path currently
+  reachable from the wizard or an AI-interpreted request) preserves
+  today's behavior exactly: every band RepeaterBook returns for the
+  resolved state is included, unfiltered.
 - RepeaterBook-sourced candidates don't carry a per-candidate distance
   value in the preview (the adapter sorts by distance internally, but
   `chirp_common.Memory` has no field to carry the source coordinates

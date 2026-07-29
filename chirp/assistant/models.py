@@ -35,6 +35,14 @@ LICENSE_EXTRA = 'extra'
 AMATEUR_LICENSES = (LICENSE_NONE, LICENSE_TECHNICIAN, LICENSE_GENERAL,
                     LICENSE_EXTRA)
 
+BAND_6M = '6m'
+BAND_2M = '2m'
+BAND_222 = '222'
+BAND_70CM = '70cm'
+BAND_33CM = '33cm'
+BAND_23CM = '23cm'
+ALL_BANDS = (BAND_6M, BAND_2M, BAND_222, BAND_70CM, BAND_33CM, BAND_23CM)
+
 SERVICE_HAM = 'ham'
 SERVICE_GMRS = 'gmrs'
 SERVICE_FRS = 'frs'
@@ -101,6 +109,12 @@ class ProgrammingRequest:
     has_gmrs_license: bool = False
     activities: tuple = ()
     requested_services: tuple = ()
+    # Optional -- an empty tuple means "no band restriction requested",
+    # preserving every existing request's behavior exactly. Only
+    # narrows a repeater-source query (see chirp.assistant.sources);
+    # has no effect on static-table sources (weather, aviation,
+    # calling frequencies), which aren't organized by band selection.
+    requested_bands: tuple = ()
     receive_only_services: tuple = ()
     channel_limit: int = 40
     preserve_existing: bool = True
@@ -135,6 +149,11 @@ class ProgrammingRequest:
         if unknown_rx_services:
             errors.append('Unknown receive-only service(s): %s' %
                           ', '.join(sorted(unknown_rx_services)))
+
+        unknown_bands = set(self.requested_bands) - set(ALL_BANDS)
+        if unknown_bands:
+            errors.append('Unknown requested band(s): %s' %
+                          ', '.join(sorted(unknown_bands)))
 
         if not isinstance(self.radius_miles, (int, float)):
             errors.append('radius_miles must be a number')
@@ -191,7 +210,7 @@ class ProgrammingRequest:
                 continue
             value = data[key]
             if key in ('activities', 'requested_services',
-                       'receive_only_services'):
+                       'receive_only_services', 'requested_bands'):
                 if isinstance(value, (list, tuple)):
                     kwargs[key] = tuple(str(v) for v in value)
             elif key == 'protected_memory_ranges':

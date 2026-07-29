@@ -1051,14 +1051,29 @@ class ReviewPage(AssistantPage):
         details_btn = wx.Button(
             self, label=_('Regulatory && Privacy Details...'))
         details_btn.Bind(wx.EVT_BUTTON, self._on_details)
-        btn_row.Add(details_btn, 0)
+        btn_row.Add(details_btn, 0, wx.RIGHT, 10)
+        self.source_details_btn = wx.Button(
+            self, label=_('Source Details...'))
+        self.source_details_btn.Bind(wx.EVT_BUTTON, self._on_source_details)
+        self.source_details_btn.Hide()
+        btn_row.Add(self.source_details_btn, 0)
         vbox.Add(btn_row, 0, wx.ALL, 10)
+
+        self.source_status = wx.StaticText(self, label='')
+        vbox.Add(self.source_status, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
         self._row_candidates = []
 
     def _on_details(self, event):
         wx.MessageDialog(self, _DISCLAIMER, _('Regulatory & Privacy Details'),
                          style=wx.OK | wx.ICON_INFORMATION).ShowModal()
+
+    def _on_source_details(self, event):
+        plan = self.context.plan
+        messages = [w.message for w in plan.warnings] if plan else []
+        wx.MessageDialog(
+            self, '\n\n'.join(messages), _('Source Details'),
+            style=wx.OK | wx.ICON_INFORMATION).ShowModal()
 
     def page_shown(self):
         self._populate()
@@ -1081,6 +1096,26 @@ class ReviewPage(AssistantPage):
             _('%i total, %i included: ') % (
                 len(plan.all_candidates), sum(counts.values())) +
             ', '.join('%s=%i' % (k, v) for k, v in sorted(counts.items())))
+
+        # plan.warnings (source-unavailable, location-not-resolved,
+        # zero-matching-records, unsupported-service, etc. -- see
+        # chirp.assistant.sources.build_candidates) previously only
+        # ever reached the user on the post-Apply Result page, via
+        # plan.skipped_sources' bare source names with no explanation.
+        # Surfacing them here means a request that fell back to
+        # simplex-only results (e.g. because a repeater source
+        # returned nothing) says so before the user reviews/approves
+        # the list, instead of the list silently looking like a fully
+        # satisfied repeater request.
+        if plan.warnings:
+            self.source_status.SetLabel(
+                _('%i source note(s) -- some requested data may be '
+                  'incomplete.') % len(plan.warnings))
+            self.source_details_btn.Show()
+        else:
+            self.source_status.SetLabel('')
+            self.source_details_btn.Hide()
+        self.Layout()
 
     def _add_row(self, row, group, candidate):
         idx = self.list.InsertItem(row, str(candidate.memory_number
@@ -1114,7 +1149,28 @@ class ReviewPage(AssistantPage):
         if idx >= len(self._row_candidates):
             return
         candidate = self._row_candidates[idx]
-        candidate.include = self.list.IsItemChecked(idx)
+        checked = self.list.IsItemChecked(idx)
+        if checked and candidate.errors:
+            # A candidate with validation errors is blocked and can
+            # never be included -- finalize_for_apply() re-checks and
+            # would silently skip it at apply time regardless, but
+            # reverting the checkbox here instead gives immediate
+            # feedback that this row can't be selected, rather than
+            # letting Next look enabled for a selection that would
+            # silently do nothing.
+            self.list.CheckItem(idx, False)
+            candidate.include = False
+        else:
+            candidate.include = checked
+        # Nothing else re-evaluates the wizard's Next button just
+        # because the page is sitting there being interacted with --
+        # see AssistantPage.validate_next()'s own docstring, and
+        # DescribePage._on_services_changed() for the identical fix
+        # applied there. Without this call, Next stayed stuck at
+        # whatever it was when the page first became current until
+        # the user navigated away and back (which re-triggers
+        # page_shown() + validate_next() via _wire_wizard_events).
+        self.validate_next()
 
     def _validate_next(self):
         return any(c.include for c in self._row_candidates)

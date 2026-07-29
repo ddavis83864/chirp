@@ -29,6 +29,22 @@ class ProgrammingRequestValidationTest(unittest.TestCase):
         errors = req.validate()
         self.assertTrue(any('receive-only service' in e for e in errors))
 
+    def test_requested_bands_defaults_to_no_restriction(self):
+        req = models.ProgrammingRequest()
+        self.assertEqual((), req.requested_bands)
+        self.assertEqual([], req.validate())
+
+    def test_valid_requested_bands(self):
+        req = models.ProgrammingRequest(
+            requested_services=('ham',),
+            requested_bands=(models.BAND_2M, models.BAND_70CM))
+        self.assertEqual([], req.validate())
+
+    def test_invalid_requested_band(self):
+        req = models.ProgrammingRequest(requested_bands=('11m-cb',))
+        errors = req.validate()
+        self.assertTrue(any('band' in e for e in errors))
+
     def test_excessive_radius(self):
         req = models.ProgrammingRequest(
             radius_miles=models.MAX_RADIUS_MILES + 1)
@@ -105,6 +121,11 @@ class ProgrammingRequestFromDictTest(unittest.TestCase):
     def test_non_dict_input(self):
         req = models.ProgrammingRequest.from_dict('not a dict')
         self.assertEqual([], req.validate())
+
+    def test_requested_bands_round_trips(self):
+        req = models.ProgrammingRequest.from_dict({
+            'requested_bands': ['2m', '70cm']})
+        self.assertEqual(('2m', '70cm'), req.requested_bands)
 
     def test_no_reorder_field_exists(self):
         # allow_reordering was removed during remediation review: it
