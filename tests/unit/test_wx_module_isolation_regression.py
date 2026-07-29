@@ -1,5 +1,8 @@
 """Regression coverage for the wx sys.modules isolation defect fixed
-in test_wxui_linux_launcher.py and test_wxui_radiothread.py.
+in test_wxui_linux_launcher.py, test_wxui_radiothread.py, and (the
+same latent defect, confirmed present but not yet triggered by any
+CI-observed collection order) test_wxui_memcolors.py and
+test_wxui_memquery.py.
 
 Both of those files mock sys.modules['wx'] (and related entries) at
 module import time, to let their own tests run without a real wx
@@ -162,3 +165,61 @@ class WxModuleIsolationRegressionTest(unittest.TestCase):
             'TestStartup or DoInstallLinuxLauncherTest or '
             'ReportOutcomeTest or MenuWiringSourceTest')
         self._assert_clean_pass(result, 'full tests/unit collection order')
+
+    def test_memcolors_individually(self):
+        result = self._run_pytest('tests/unit/test_wxui_memcolors.py')
+        self._assert_clean_pass(result, 'memcolors alone')
+
+    def test_memquery_individually(self):
+        result = self._run_pytest('tests/unit/test_wxui_memquery.py')
+        self._assert_clean_pass(result, 'memquery alone')
+
+    def test_memquery_then_real_memedit_import_succeeds(self):
+        # test_wxui_memquery.py's own module, chirp.wxui.memquery,
+        # defines classes (SearchHelp, SearchBox) that subclass real wx
+        # types directly -- unlike linux_launcher/radiothread, whose
+        # risk is transitive (via chirp.wxui.common), memquery's own
+        # module is itself exactly as exposed to this defect as
+        # chirp.wxui.common is elsewhere. Confirmed by direct
+        # reproduction against the pre-fix file that a real chirp.wxui.
+        # memedit import afterward fails with "ModuleNotFoundError:
+        # No module named 'wx.lib'; 'wx' is not a package", since the
+        # leaked mock 'wx' sys.modules entry is not a real package.
+        result = subprocess.run(
+            [sys.executable, '-c',
+             'import sys\n'
+             'import tests.unit.test_wxui_memquery\n'
+             'from chirp.wxui import memedit\n'
+             'assert "MagicMock" not in repr(type(memedit.common.'
+             'ChirpEditor)), memedit.common.ChirpEditor\n'
+             'sys.stdout.write("OK\\n")'],
+            cwd=_REPO_ROOT,
+            env=dict(os.environ, CHIRP_TESTENV='1', PYTHONPATH=_REPO_ROOT),
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+            timeout=60)
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertIn('OK', result.stdout)
+
+    def test_memcolors_and_memquery_together_both_orders(self):
+        result = self._run_pytest(
+            'tests/unit/test_wxui_memcolors.py',
+            'tests/unit/test_wxui_memquery.py')
+        self._assert_clean_pass(result, 'memcolors, then memquery')
+
+        result = self._run_pytest(
+            'tests/unit/test_wxui_memquery.py',
+            'tests/unit/test_wxui_memcolors.py')
+        self._assert_clean_pass(result, 'memquery, then memcolors')
+
+    def test_memcolors_memquery_and_linux_launcher_all_orders(self):
+        # The two newly-fixed files alongside the originally-fixed one,
+        # confirming none of the three leaks state that affects either
+        # of the other two, in either direction.
+        files = ('tests/unit/test_wxui_memcolors.py',
+                 'tests/unit/test_wxui_memquery.py',
+                 'tests/unit/test_wxui_linux_launcher.py')
+        result = self._run_pytest(*files)
+        self._assert_clean_pass(result, 'memcolors, memquery, linux_launcher')
+
+        result = self._run_pytest(*reversed(files))
+        self._assert_clean_pass(result, 'linux_launcher, memquery, memcolors')
