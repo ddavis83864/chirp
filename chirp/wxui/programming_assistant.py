@@ -1411,38 +1411,130 @@ def _wire_wizard_events(wizard):
                            if e.GetDirection() else None))
 
 
+_LAUNCH_IN_PROGRESS = set()
+
+_NO_EDITOR_ERROR = _(
+    'Programming Assistant could not create a new memory editor.\n\n'
+    'No compatible memory editor is currently available. Create a new '
+    'radio image manually and try again.'
+)
+
+
+def _show_no_editor_error(parent):
+    wx.MessageDialog(
+        parent, _NO_EDITOR_ERROR, _('Programming Assistant'),
+        style=wx.OK | wx.ICON_ERROR).ShowModal()
+
+
+def _ensure_blank_memory_document(chirpmain):
+    """Creates a new blank memory document through CHIRP's normal
+    New-document workflow -- the same chirpmain.open_file('Untitled.
+    csv', exists=False) call Radio > New uses -- and leaves it as the
+    active tab, so a subsequent AssistantContext(...) construction
+    resolves a real, already-initialized memory editor from it rather
+    than a stale reference to whatever tab was active before.
+
+    This is a synchronous call: open_file() constructs a real
+    generic_csv.CSVRadio(None) (a blank, in-memory-only radio -- the
+    same one this project's tests, and CSVRadio(None) callers
+    generally, already rely on: no file I/O, no serial port, no
+    hardware detection), builds a real ChirpEditorSet around it
+    (which synchronously constructs and refreshes its
+    memedit.ChirpMemEdit inside its own __init__ -- confirmed by
+    reading chirp.wxui.main.ChirpEditorSet.__init__, which has no
+    thread, timer, or deferred (wx.CallAfter-style) step anywhere in
+    this path), and registers+selects it as a normal tab via
+    add_editorset(). By the time this function returns, there is
+    nothing left to wait for.
+
+    Returns True if a compatible memory editor is present on the
+    (now current) tab afterward, False otherwise -- covering both a
+    raised exception during creation and the -- unreachable via this
+    exact call, but checked defensively rather than assumed -- case
+    of creation completing without leaving a usable editor behind.
+    Never raises: do_programming_assistant() below treats False as an
+    actionable, sanitized error condition, not an unhandled exception.
+    """
+    try:
+        chirpmain.open_file('Untitled.csv', exists=False)
+    except Exception as e:
+        LOG.exception(
+            'Failed to create a blank memory document for Programming '
+            'Assistant launch: %s', e)
+        return False
+    return _find_memedit(chirpmain.current_editorset) is not None
+
+
 @common.error_proof()
 def do_programming_assistant(parent, event):
-    wizard = wx.adv.Wizard(parent)
-    wizard.SetPageSize((620, 520))
-
-    context = AssistantContext(wizard, parent)
-
-    if context.memedit is None:
-        wx.MessageDialog(
-            parent, _('No memory editor is available for the current '
-                      'tab.'), _('Programming Assistant'),
-            style=wx.OK | wx.ICON_WARNING).ShowModal()
-        wizard.Destroy()
+    # A modal wx.adv.Wizard (below) blocks this window's own event
+    # loop for as long as it's open, so in practice a second EVT_MENU
+    # for this same command cannot be dispatched while one is already
+    # running against the same @parent -- but a stale queued event or
+    # a programmatic re-entry could still reach here before the first
+    # call's own `finally` clears this, so the guard is real, not
+    # decorative. Keyed by id(parent) (not a single flag) since CHIRP
+    # supports more than one top-level main window (see
+    # _menu_new_window) -- launching in one window must not block
+    # launching in another.
+    launch_key = id(parent)
+    if launch_key in _LAUNCH_IN_PROGRESS:
         return
+    _LAUNCH_IN_PROGRESS.add(launch_key)
 
-    audit.dialog_opened()
-
-    _wire_wizard_events(wizard)
-
-    start = context.get_page('describe', DescribePage)
-    wizard.GetPageAreaSizer().Add(start)
+    wizard = None
     try:
+        wizard = wx.adv.Wizard(parent)
+        wizard.SetPageSize((620, 520))
+
+        context = AssistantContext(wizard, parent)
+
+        if context.memedit is None:
+            # The normal case for a freshly launched CHIRP, or a
+            # non-memory (Settings/Banks-only, or no image at all) tab
+            # active -- no longer a dead end: create a new blank
+            # memory document through the same workflow Radio > New
+            # uses, exactly as if the user had done so manually, then
+            # continue with that as the target.
+            if not _ensure_blank_memory_document(parent):
+                _show_no_editor_error(parent)
+                return
+            # Re-resolve against whatever is now the active tab -- the
+            # document just created, not the (possibly still-absent-a-
+            # memedit) tab that was active when this function started.
+            context = AssistantContext(wizard, parent)
+            if context.memedit is None:
+                # Reachable only if a future change breaks the
+                # invariant _ensure_blank_memory_document's own
+                # docstring proves today -- kept as a real check
+                # rather than an assumption, per the same "do not
+                # leave a partially initialized assistant open"
+                # principle as the branch above.
+                LOG.error(
+                    'Blank memory document created but no compatible '
+                    'memory editor was found on the resulting tab')
+                _show_no_editor_error(parent)
+                return
+
+        audit.dialog_opened()
+
+        _wire_wizard_events(wizard)
+
+        start = context.get_page('describe', DescribePage)
+        wizard.GetPageAreaSizer().Add(start)
         wizard.RunWizard(start)
     finally:
-        # Always destroy the wizard, even if something in a page's
-        # event handler raised -- @common.error_proof() above will
-        # still catch and report the exception, but only after this
-        # function returns, so it must not skip cleanup on the way
-        # out. A background _build_worker()/_interpret_worker() thread
-        # may still be in flight at this point if the user cancelled
-        # or closed the wizard early; each posts its result via
-        # _safe_post_event() below rather than directly, so a stale
-        # post to an already-destroyed page is dropped instead of
-        # raising into the worker thread.
-        wizard.Destroy()
+        # Always cleared/destroyed, on every exit path -- success,
+        # cancellation, the no-editor-available error returns above,
+        # or an exception @common.error_proof() will catch after this
+        # function returns -- so a failed or cancelled launch never
+        # leaves the menu command permanently unusable. A background
+        # _build_worker()/_interpret_worker() thread may still be in
+        # flight at this point if the user cancelled or closed the
+        # wizard early; each posts its result via _safe_post_event()
+        # below rather than directly, so a stale post to an
+        # already-destroyed page is dropped instead of raising into
+        # the worker thread.
+        _LAUNCH_IN_PROGRESS.discard(launch_key)
+        if wizard is not None:
+            wizard.Destroy()

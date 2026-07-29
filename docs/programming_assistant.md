@@ -46,6 +46,31 @@ that you approve before anything is written to the open image.
 - It does not overwrite existing, populated memories by default, and
   never touches protected or immutable memories.
 
+## Launching without an open memory editor
+
+The Programming Assistant needs a memory editor to preview and apply
+candidates against — it always targets the currently active tab's
+memory editor, the same one Radio menu commands like Apply act on.
+
+If the active tab already has one, it's reused exactly as before —
+opening the assistant never creates a new document, switches tabs, or
+touches your existing memory data just because you launched it.
+
+If there's no compatible memory editor available for the active tab —
+no radio image is open yet, or the active tab is a Settings/Banks-only
+tab with no memory sub-editor of its own — CHIRP automatically creates
+a new blank memory document (the same as using Radio > New) and opens
+the assistant against that, instead of stopping with an error. The new
+document behaves exactly like one you created manually: it stays open
+if you cancel the assistant, nothing is written to it just by opening
+the assistant (Apply is still the only thing that ever adds memories),
+and you can edit, save, or discard it like any other tab.
+
+If CHIRP genuinely cannot create the new document (a real failure, not
+the normal case above), a short, specific message is shown instead of
+a raw error — create a new radio image yourself (Radio > New) and try
+again.
+
 ## The deterministic wizard (no AI required)
 
 1. **Describe** — optional free-text box, plus the same structured

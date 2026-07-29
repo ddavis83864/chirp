@@ -1052,25 +1052,60 @@ class ResultPageApplyTest(ProgrammingAssistantWxTestBase):
         self.assertTrue(self.radio.get_memory(first_number).empty)
 
 
+def _install_fake_open_file(chirpmain, radio, editor, succeeds=True):
+    """Stands in for the real ChirpMain.open_file(): when called,
+    simulates a new blank memory document becoming the active tab --
+    exactly the observable effect _ensure_blank_memory_document()
+    depends on (chirpmain.current_editorset resolving a compatible
+    memedit afterward) -- without needing this test file's lightweight
+    fixtures to also reproduce the real wx.Notebook/ChirpEditorSet
+    construction, which is chirp.wxui.main's own, separately covered,
+    responsibility. Returns the calls list so a test can assert
+    open_file was invoked exactly once, with the expected arguments.
+    """
+    calls = []
+
+    def fake_open_file(filename, exists=True, select=True, rclass=None,
+                       atindex=None):
+        calls.append((filename, exists))
+        if succeeds:
+            chirpmain.current_editorset = _FakeEditorSet(radio, editor)
+
+    chirpmain.open_file = fake_open_file
+    return calls
+
+
 class DoProgrammingAssistantTest(ProgrammingAssistantWxTestBase):
-    """Regression coverage for a Windows validation finding: selecting
-    Radio > Programming Assistant with no radio image open at all (no
-    ChirpEditorSet tab exists yet, so ChirpMain.current_editorset is
-    None) raised 'NoneType' object has no attribute 'current_editor'
-    from AssistantContext.__init__ -> _find_memedit(), instead of the
-    friendly "No memory editor is available" dialog that
-    do_programming_assistant() already intended to show for this exact
-    situation. common.error_proof() caught the AttributeError and
-    displayed it verbatim as a raw exception dialog rather than letting
-    it crash the app outright, which is why the report described a
-    Python exception dialog rather than a hard crash.
+    """Regression coverage for two Windows validation findings:
+
+    1. (Historical) Selecting Radio > Programming Assistant with no
+       radio image open at all (no ChirpEditorSet tab exists yet, so
+       ChirpMain.current_editorset is None) raised 'NoneType' object
+       has no attribute 'current_editor' from AssistantContext.
+       __init__ -> _find_memedit(), instead of a friendly message.
+       common.error_proof() caught the AttributeError and displayed it
+       verbatim as a raw exception dialog rather than letting it crash
+       the app outright, which is why the report described a Python
+       exception dialog rather than a hard crash.
+
+    2. (Current) The friendly message itself -- "No memory editor is
+       available for the current tab" -- was later identified as an
+       unnecessary dead end for entirely normal use (a freshly opened
+       CHIRP, or a Settings/Banks-only tab active): see
+       ProgrammingAssistantLaunchTest below for the replacement
+       automatic-blank-document behavior. This class now covers the
+       two boundary cases that behavior itself must still handle
+       cleanly: blank-document creation genuinely failing (still no
+       crash, still no raw exception), and the pre-existing "editor
+       already available" path (unchanged, still reaches the wizard
+       directly, still creates nothing new).
     """
 
-    def test_no_editor_open_shows_friendly_message_not_a_crash(self):
-        # Simulate CHIRP freshly launched: no ChirpEditorSet tab exists
-        # yet, so current_editorset is None -- distinct from "a tab is
-        # open but it's Settings/Banks, not Memories", which was
-        # already handled correctly before this fix.
+    def test_creation_failure_shows_actionable_message_not_a_crash(self):
+        # No open_file() at all on this bare wx.Frame stand-in --
+        # calling it raises AttributeError, exercising exactly the
+        # "blank-document creation failed" path from a real exception,
+        # not a mock standing in for one.
         self.frame.current_editorset = None
 
         with mock.patch(
@@ -1083,17 +1118,26 @@ class DoProgrammingAssistantTest(ProgrammingAssistantWxTestBase):
             programming_assistant.do_programming_assistant(
                 self.frame, None)
 
-        # The intended friendly message fired exactly once...
         mock_dialog_cls.assert_called_once()
-        self.assertIn('No memory editor',
-                      mock_dialog_cls.call_args[0][1])
+        message = mock_dialog_cls.call_args[0][1]
+        self.assertIn('could not create a new memory editor', message)
+        # The old, no-longer-applicable wording is gone.
+        self.assertNotIn('No memory editor is available', message)
+        # Sanitized -- no raw Python exception text (AttributeError,
+        # a module path, etc.) leaked into the user-facing dialog.
+        self.assertNotIn('AttributeError', message)
+        self.assertNotIn('.py', message)
         # ...and error_proof() never had to catch an unhandled
-        # exception to get there.
+        # exception to get there -- do_programming_assistant() handled
+        # the failure itself.
         mock_show_error.assert_not_called()
 
     def test_active_editor_reaches_wizard_run(self):
         self.frame.current_editorset = _FakeEditorSet(
             self.radio, self.editor)
+        # No open_file on this fixture at all -- if the existing-editor
+        # path incorrectly tried to create a new document, this would
+        # raise AttributeError instead of reaching RunWizard().
 
         with mock.patch.object(wx.adv.Wizard, 'RunWizard',
                                return_value=True) as run, \
@@ -1105,6 +1149,375 @@ class DoProgrammingAssistantTest(ProgrammingAssistantWxTestBase):
 
         run.assert_called_once()
         mock_show_error.assert_not_called()
+
+    def test_active_editor_path_creates_no_new_document(self):
+        original_editorset = _FakeEditorSet(self.radio, self.editor)
+        self.frame.current_editorset = original_editorset
+        open_file_calls = _install_fake_open_file(
+            self.frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True):
+            programming_assistant.do_programming_assistant(
+                self.frame, None)
+
+        self.assertEqual([], open_file_calls)
+        self.assertIs(original_editorset, self.frame.current_editorset)
+
+    def test_active_editor_path_leaves_existing_memory_data_unchanged(self):
+        self.frame.current_editorset = _FakeEditorSet(
+            self.radio, self.editor)
+        before = self._full_snapshot(self.radio.get_memory(1))
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True):
+            programming_assistant.do_programming_assistant(
+                self.frame, None)
+
+        after = self._full_snapshot(self.radio.get_memory(1))
+        self.assertEqual(before, after)
+
+    @staticmethod
+    def _full_snapshot(mem):
+        return (mem.empty, mem.freq, mem.name, mem.mode, mem.duplex,
+                mem.offset, mem.tmode, mem.rtone, mem.ctone, mem.dtcs)
+
+
+class ProgrammingAssistantLaunchTest(ProgrammingAssistantWxTestBase):
+    """Coverage for the automatic blank-memory-document launch
+    workflow: selecting Programming Assistant with no compatible
+    memory editor active no longer dead-ends on an error message --
+    chirp.wxui.main.ChirpMain.open_file('Untitled.csv', exists=False)
+    (the same call Radio > New uses) is invoked to create one, exactly
+    as if the user had done so manually, and the assistant opens
+    against the result.
+
+    chirp.wxui.main.ChirpEditorSet.__init__ constructs and refreshes
+    its memedit.ChirpMemEdit synchronously, with no thread, timer, or
+    wx.CallAfter-style deferred step anywhere in this path (confirmed
+    by reading it directly) -- so unlike some other parts of this
+    file, these tests never need a background-thread stand-in or a
+    _safe_post_event()-style round trip: by the time open_file()
+    returns, there is nothing left to wait for.
+    """
+
+    def _no_editor_frame(self):
+        self.frame.current_editorset = None
+        return self.frame
+
+    @staticmethod
+    def _full_snapshot(mem):
+        return (mem.empty, mem.freq, mem.name, mem.mode, mem.duplex,
+                mem.offset, mem.tmode, mem.rtone, mem.ctone, mem.dtcs)
+
+    def test_no_editor_creates_document_exactly_once(self):
+        frame = self._no_editor_frame()
+        calls = _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertEqual([('Untitled.csv', False)], calls)
+
+    def test_new_document_becomes_the_active_tab(self):
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertIsNotNone(frame.current_editorset)
+        self.assertIsInstance(frame.current_editorset.current_editor,
+                              memedit.ChirpMemEdit)
+
+    def test_assistant_opens_against_the_new_editor(self):
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True) as run, \
+                mock.patch(
+                    'chirp.wxui.common.error_proof.show_error'
+                    ) as mock_show_error:
+            programming_assistant.do_programming_assistant(frame, None)
+
+        run.assert_called_once()
+        mock_show_error.assert_not_called()
+
+    def test_obsolete_error_message_not_shown_for_normal_use(self):
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True), \
+                mock.patch(
+                    'chirp.wxui.programming_assistant.wx.MessageDialog'
+                    ) as mock_dialog_cls:
+            programming_assistant.do_programming_assistant(frame, None)
+
+        mock_dialog_cls.assert_not_called()
+
+    def test_new_editor_bound_not_a_stale_prior_reference(self):
+        # A DIFFERENT editorset was "active" only in the sense of being
+        # the object identity present before open_file() ran --
+        # confirms the assistant's context is built from whatever
+        # open_file() actually left as current, not captured earlier.
+        frame = self._no_editor_frame()
+        new_radio = generic_csv.CSVRadio(None)
+        new_editor = memedit.ChirpMemEdit(new_radio, self.frame)
+        self.addCleanup(_safe_destroy, new_editor)
+        new_editor.refresh()
+        _install_fake_open_file(frame, new_radio, new_editor)
+
+        captured_context = {}
+        real_init = programming_assistant.AssistantContext.__init__
+
+        def capturing_init(self, wizard, chirpmain):
+            real_init(self, wizard, chirpmain)
+            captured_context['memedit'] = self.memedit
+
+        with mock.patch.object(
+                programming_assistant.AssistantContext, '__init__',
+                capturing_init), \
+                mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                                  return_value=True):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertIs(new_editor, captured_context['memedit'])
+
+    def test_cancel_leaves_new_document_open(self):
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=False):  # Cancel
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertIsNotNone(frame.current_editorset)
+
+    def test_cancel_adds_no_memories(self):
+        # generic_csv.CSVRadio(None) is not fully empty by construction
+        # -- it pre-populates memory 0 with a default placeholder
+        # frequency (see CSVRadio._blank(setDefault=True)) -- so this
+        # compares a before/after snapshot of every slot, the same
+        # pattern DoProgrammingAssistantTest.test_active_editor_path_
+        # leaves_existing_memory_data_unchanged above uses, rather
+        # than asserting the (for this radio, false) premise that a
+        # freshly created document starts with literally nothing in it.
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor)
+        lo, hi = self.radio.get_features().memory_bounds
+        before = [self._full_snapshot(self.radio.get_memory(n))
+                  for n in range(lo, hi + 1)]
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=False):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        after = [self._full_snapshot(self.radio.get_memory(n))
+                 for n in range(lo, hi + 1)]
+        self.assertEqual(before, after)
+
+    def test_cancel_does_not_modify_a_different_open_document(self):
+        other_radio = generic_csv.CSVRadio(None)
+        mem = other_radio.get_memory(0)
+        mem.freq = 146520000
+        other_radio.set_memory(mem)
+        before = other_radio.get_memory(0).freq
+
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=False):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertEqual(before, other_radio.get_memory(0).freq)
+
+    def test_launch_guard_cleared_after_success(self):
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertNotIn(id(frame),
+                         programming_assistant._LAUNCH_IN_PROGRESS)
+
+    def test_second_launch_after_success_works_normally(self):
+        frame = self._no_editor_frame()
+        calls = _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True):
+            programming_assistant.do_programming_assistant(frame, None)
+            # Second, independent launch -- editor already active this
+            # time, so no second document should be created.
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertEqual(1, len(calls))
+
+    def test_reentrant_launch_while_pending_creates_one_document(self):
+        # Simulates a launch reaching RunWizard() while, for whatever
+        # reason, the module-level guard has not yet been cleared --
+        # the realistic trigger (per do_programming_assistant's own
+        # comment) is a stale queued event or programmatic re-entry,
+        # not a genuine UI race, since RunWizard() itself is modal and
+        # blocks this window's event loop for any real second click.
+        frame = self._no_editor_frame()
+        calls = _install_fake_open_file(frame, self.radio, self.editor)
+        reentrant_calls = []
+
+        def reentrant_run_wizard(self_wizard, start):
+            reentrant_calls.append(1)
+            programming_assistant.do_programming_assistant(frame, None)
+            return True
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               reentrant_run_wizard):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertEqual(1, len(calls))
+        self.assertEqual(1, len(reentrant_calls))
+
+    def test_launch_guard_cleared_after_creation_failure(self):
+        frame = self._no_editor_frame()
+        # No open_file at all -- creation raises.
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertNotIn(id(frame),
+                         programming_assistant._LAUNCH_IN_PROGRESS)
+
+    def test_later_launch_works_after_an_earlier_failure(self):
+        frame = self._no_editor_frame()
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        # Now give it a working open_file and try again.
+        calls = _install_fake_open_file(frame, self.radio, self.editor)
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True) as run:
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertEqual(1, len(calls))
+        run.assert_called_once()
+
+    def test_creation_exception_produces_actionable_error(self):
+        frame = self._no_editor_frame()
+
+        def raising_open_file(filename, exists=True, select=True,
+                              rclass=None, atindex=None):
+            raise RuntimeError('simulated disk error: /some/local/path')
+
+        frame.open_file = raising_open_file
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls:
+            mock_dialog_cls.return_value.ShowModal.return_value = wx.ID_OK
+            programming_assistant.do_programming_assistant(frame, None)
+
+        mock_dialog_cls.assert_called_once()
+        message = mock_dialog_cls.call_args[0][1]
+        self.assertIn('could not create a new memory editor', message)
+        self.assertNotIn('simulated disk error', message)
+        self.assertNotIn('/some/local/path', message)
+        self.assertNotIn('RuntimeError', message)
+
+    def test_creation_exception_is_logged(self):
+        frame = self._no_editor_frame()
+
+        def raising_open_file(filename, exists=True, select=True,
+                              rclass=None, atindex=None):
+            raise RuntimeError('simulated failure')
+
+        frame.open_file = raising_open_file
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'), \
+                mock.patch.object(
+                    programming_assistant.LOG, 'exception') as mock_log:
+            programming_assistant.do_programming_assistant(frame, None)
+
+        mock_log.assert_called_once()
+        self.assertIn('simulated failure', str(mock_log.call_args))
+
+    def test_initialization_failure_produces_actionable_error_not_open(
+            self):
+        # open_file() "succeeds" (raises nothing) but does not leave a
+        # compatible memedit behind -- the defensively-checked, not
+        # assumed-unreachable, case _ensure_blank_memory_document's
+        # docstring describes.
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor,
+                                succeeds=False)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True) as run, \
+                mock.patch(
+                    'chirp.wxui.programming_assistant.wx.MessageDialog'
+                    ) as mock_dialog_cls:
+            mock_dialog_cls.return_value.ShowModal.return_value = wx.ID_OK
+            programming_assistant.do_programming_assistant(frame, None)
+
+        run.assert_not_called()
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('could not create a new memory editor',
+                      mock_dialog_cls.call_args[0][1])
+
+    def test_no_unrelated_document_modified_on_failure(self):
+        other_radio = generic_csv.CSVRadio(None)
+        mem = other_radio.get_memory(0)
+        mem.freq = 146520000
+        other_radio.set_memory(mem)
+        before = other_radio.get_memory(0).freq
+
+        frame = self._no_editor_frame()
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertEqual(before, other_radio.get_memory(0).freq)
+
+    def test_creation_and_lookup_complete_before_wizard_construction_returns(
+            self):
+        # Direct evidence of the synchronous claim in this class's own
+        # docstring: no thread is started, and the editor is already
+        # resolvable via a plain, immediate call -- nothing here
+        # required a background thread, a timer, or an event round
+        # trip the way _interpret_worker()/_build_worker() elsewhere
+        # in this file do.
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch('threading.Thread') as mock_thread, \
+                mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                                  return_value=True):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        mock_thread.assert_not_called()
+
+    def test_tab_change_during_creation_binds_the_new_editor_not_stale(
+            self):
+        # _ensure_blank_memory_document() itself changes the active
+        # tab as an intentional side effect (open_file(..., select=
+        # True), matching Radio > New) -- confirms the context built
+        # afterward reflects that, not whatever was active when
+        # do_programming_assistant() started.
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertIs(self.editor, frame.current_editorset.current_editor)
 
 
 class DescribePageServiceValidationTest(ProgrammingAssistantWxTestBase):
