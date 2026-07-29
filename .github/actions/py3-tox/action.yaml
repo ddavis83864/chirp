@@ -15,6 +15,21 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Cache pip downloads
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        # A cache MISS here only costs the normal, uncached download
+        # time (pip re-populates its cache from scratch); it can never
+        # cause an incorrect install, since pip always re-validates
+        # package integrity regardless of what's in the cache. Keyed
+        # on Python version (wheel tags differ, e.g. cp310 vs cp312)
+        # and a hash of the files that pin dependency versions, so a
+        # version bump in any of them naturally invalidates the cache
+        # instead of silently reusing stale wheels.
+        key: pip-${{ runner.os }}-py${{ inputs.py_version }}-${{ hashFiles('requirements.txt', 'test-requirements.txt', 'tox.ini') }}
+        restore-keys: |
+          pip-${{ runner.os }}-py${{ inputs.py_version }}-
     - name: Install dependencies
       shell: bash
       run: |
