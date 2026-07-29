@@ -4,6 +4,31 @@ from unittest import mock
 
 from chirp import chirp_common
 
+# Snapshot sys.modules before mocking, and evict any already-imported
+# chirp.wxui.* submodule, so this file's mock 'wx' can't leak into (or
+# inherit stale state from) a real-wx test collected before or after
+# it in the same pytest session. Same pattern as, and adapted from,
+# tests/unit/test_wxui_linux_launcher.py -- see that file's own
+# comments for the full rationale and confirmed-by-reproduction
+# details; this file only needs the short version.
+_PRE_MOCK_SYS_MODULES = dict(sys.modules)
+
+
+def _evict_chirp_wxui_modules():
+    for name in list(sys.modules):
+        if name != 'chirp.wxui' and not name.startswith('chirp.wxui.'):
+            continue
+        if name == 'chirp.wxui':
+            continue
+        del sys.modules[name]
+        parent_name, _, attr = name.rpartition('.')
+        parent = sys.modules.get(parent_name)
+        if parent is not None:
+            vars(parent).pop(attr, None)
+
+
+_evict_chirp_wxui_modules()
+
 sys.modules['wx'] = wx = mock.MagicMock()
 sys.modules['wx.adv'] = mock.MagicMock()
 # wx.Colour is normally a real color object; make it a passthrough so
@@ -17,6 +42,24 @@ from chirp.memcolors import rules  # noqa
 from chirp.wxui import config  # noqa
 from chirp.wxui import memcolors  # noqa
 from tests.unit import base  # noqa
+
+# Restore sys.modules immediately (synchronously, during this file's
+# own collection -- see test_wxui_linux_launcher.py's comments for why
+# a pytest fixture's teardown would run too late to help).
+_affected = {n for n in set(_PRE_MOCK_SYS_MODULES) | set(sys.modules)
+             if n == 'wx' or n.startswith('wx.') or
+             n.startswith('chirp.wxui.')}
+for _name in _affected:
+    _parent_name, _, _attr = _name.rpartition('.')
+    _parent = sys.modules.get(_parent_name)
+    if _name in _PRE_MOCK_SYS_MODULES:
+        sys.modules[_name] = _PRE_MOCK_SYS_MODULES[_name]
+        if _parent is not None:
+            setattr(_parent, _attr, _PRE_MOCK_SYS_MODULES[_name])
+    else:
+        sys.modules.pop(_name, None)
+        if _parent is not None:
+            vars(_parent).pop(_attr, None)
 
 
 def _mem(freq, duplex='', offset=600000, mode='FM', name=''):
