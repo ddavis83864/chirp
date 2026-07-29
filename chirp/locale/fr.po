@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: CHIRP\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-29 11:53-0700\n"
+"POT-Creation-Date: 2026-07-29 12:36-0700\n"
 "PO-Revision-Date: 2025-05-29 11:07-0400\n"
 "Last-Translator: Alexandre J. Raymond <alexandre.j.raymond@gmail.com>\n"
 "Language-Team: French\n"
@@ -3255,10 +3255,6 @@ msgstr "Pas de ligne vide dessous!"
 msgid "No example for %s"
 msgstr "Aucun exemple pour %s"
 
-#: ../wxui/programming_assistant.py:1423
-msgid "No memory editor is available for the current tab."
-msgstr ""
-
 #: ../wxui/programming_assistant.py:1306
 msgid "No memory editor tab is available for this radio; nothing was applied."
 msgstr ""
@@ -3574,8 +3570,15 @@ msgstr "Apercu avant impression"
 msgid "Printing"
 msgstr "Impression"
 
-#: ../wxui/programming_assistant.py:1424
+#: ../wxui/programming_assistant.py:1425
 msgid "Programming Assistant"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:1417
+msgid ""
+"Programming Assistant could not create a new memory editor.\n"
+"\n"
+"No compatible memory editor is currently available. Create a new radio image manually and try again."
 msgstr ""
 
 #: ../wxui/main.py:2208
