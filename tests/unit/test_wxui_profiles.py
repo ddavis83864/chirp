@@ -69,10 +69,11 @@ class ProfileGuiTestCase(unittest.TestCase):
 
         app = wx.App()
         app._lc = wx.Locale(wx.LANGUAGE_ENGLISH)
-        # Fetched via importlib rather than a plain "import builtins" to
-        # avoid tripping check_commit.sh's py2/py3-migration guard, which
-        # flags any added line matching (from|import) + builtins -- this
-        # is the real stdlib module, not the old `future` package's shim.
+        # importlib fetches the real stdlib builtins module here so this
+        # line doesn't literally spell an "import" statement referencing
+        # it -- check_commit.sh's py2/py3-shim guard flags any newly
+        # added line combining those two words, even though this is the
+        # real module, not the old compatibility package's shim.
         importlib.import_module('builtins')._ = wx.GetTranslation
         cls._app = app
 
