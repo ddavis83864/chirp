@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: CHIRP\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-29 08:37-0700\n"
+"POT-Creation-Date: 2026-07-29 10:54-0700\n"
 "PO-Revision-Date: 2026-06-17 14:30+0200\n"
 "Last-Translator: Martin Macko <martin.macko@email.cz>\n"
 "Language-Team: Czech\n"
@@ -56,7 +56,12 @@ msgstr[2] "%i pamětí a posunout blok nahoru"
 msgid "%i memories failed validation for this radio (see details below). Add them anyway?"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1081
+#: ../wxui/programming_assistant.py:1112
+#, python-format
+msgid "%i source note(s) -- some requested data may be incomplete."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:1096
 #, python-format
 msgid "%i total, %i included: "
 msgstr ""
@@ -1272,7 +1277,7 @@ msgstr ""
 msgid "Add..."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1192
+#: ../wxui/programming_assistant.py:1248
 #, python-format
 msgid "Adjusted for this radio: %i"
 msgstr ""
@@ -1380,7 +1385,7 @@ msgstr ""
 msgid "Application menu launcher"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1189
+#: ../wxui/programming_assistant.py:1245
 #, python-format
 msgid "Applied: %i"
 msgstr ""
@@ -1443,7 +1448,7 @@ msgstr "Banky"
 msgid "Bin"
 msgstr "Bin"
 
-#: ../wxui/programming_assistant.py:1191
+#: ../wxui/programming_assistant.py:1247
 #, python-format
 msgid "Blocked by validation: %i"
 msgstr ""
@@ -2207,7 +2212,7 @@ msgstr "Příklad: name~\"myrepea\""
 msgid "Exclude private and closed repeaters"
 msgstr "Vyloučit soukromé a uzavřené převaděče"
 
-#: ../wxui/programming_assistant.py:1193
+#: ../wxui/programming_assistant.py:1249
 #, python-format
 msgid "Existing memories replaced: %i"
 msgstr ""
@@ -2267,7 +2272,7 @@ msgstr "BEZPLATNÁ databáze převaděčů, která poskytuje nejaktuálnější 
 msgid "FRS"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1196
+#: ../wxui/programming_assistant.py:1252
 #, python-format
 msgid "Failed to apply: %i"
 msgstr ""
@@ -3357,11 +3362,11 @@ msgstr "Níže nejsou žádné prázdné řádky!"
 msgid "No example for %s"
 msgstr "Žádný příklad pro %s"
 
-#: ../wxui/programming_assistant.py:1272
+#: ../wxui/programming_assistant.py:1328
 msgid "No memory editor is available for the current tab."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1155
+#: ../wxui/programming_assistant.py:1211
 msgid "No memory editor tab is available for this radio; nothing was applied."
 msgstr ""
 
@@ -3679,7 +3684,7 @@ msgstr "Náhled tisku"
 msgid "Printing"
 msgstr "Tisk"
 
-#: ../wxui/programming_assistant.py:1273
+#: ../wxui/programming_assistant.py:1329
 msgid "Programming Assistant"
 msgstr ""
 
@@ -3688,7 +3693,7 @@ msgstr ""
 msgid "Programming Assistant is now %s. CHIRP must be restarted to take effect"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1162
+#: ../wxui/programming_assistant.py:1218
 msgid "Programming Assistant plan"
 msgstr ""
 
@@ -3843,7 +3848,7 @@ msgstr "Přijímaný DTCS kód"
 msgid "Receive frequency"
 msgstr "Přijímaná frekvence"
 
-#: ../wxui/memcolorlegend.py:37 ../wxui/programming_assistant.py:1094
+#: ../wxui/memcolorlegend.py:37 ../wxui/programming_assistant.py:1129
 #: ../wxui/memcolordialog.py:290
 msgid "Receive-only"
 msgstr ""
@@ -3875,7 +3880,7 @@ msgstr "Je vyžadováno obnovení"
 msgid "Refreshed memory %s"
 msgstr "Obnovena paměť %s"
 
-#: ../wxui/programming_assistant.py:1060
+#: ../wxui/programming_assistant.py:1068
 msgid "Regulatory & Privacy Details"
 msgstr ""
 
@@ -4001,7 +4006,7 @@ msgstr[2] "Obnovit %i záložek"
 msgid "Restore tabs on start"
 msgstr "Obnovit záložky při spuštění"
 
-#: ../wxui/programming_assistant.py:1136
+#: ../wxui/programming_assistant.py:1192
 msgid "Result"
 msgstr ""
 
@@ -4213,7 +4218,7 @@ msgstr "Zobrazit rozšiřující pole"
 msgid "Show image backup location"
 msgstr "Zobrazit umístění zálohy obrazu paměti"
 
-#: ../wxui/programming_assistant.py:1098
+#: ../wxui/programming_assistant.py:1133
 msgid "Simplex"
 msgstr ""
 
@@ -4225,7 +4230,7 @@ msgstr "Přeskočit"
 msgid "Skip state"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1190
+#: ../wxui/programming_assistant.py:1246
 #, python-format
 msgid "Skipped (not included or invalid): %i"
 msgstr ""
@@ -4301,7 +4306,15 @@ msgstr "Třídění"
 msgid "Source"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1200
+#: ../wxui/programming_assistant.py:1075
+msgid "Source Details"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:1056
+msgid "Source Details..."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:1256
 #, python-format
 msgid "Sources with no data: %s"
 msgstr ""
@@ -4459,7 +4472,7 @@ msgstr ""
 msgid "The memory editor requires a reload in order to change the workflow. That will happen now. Any other open tabs will be updated the next time they are loaded."
 msgstr "Editor paměti vyžaduje znovunačtení, aby se změnil postup úprav. To se nyní provede. Ostatní otevřené karty se aktualizují při jejich příštím načtení."
 
-#: ../wxui/programming_assistant.py:1204
+#: ../wxui/programming_assistant.py:1260
 msgid "The open image has been updated. Nothing has been uploaded to a radio -- use Radio > Upload to Radio when you are ready."
 msgstr ""
 
