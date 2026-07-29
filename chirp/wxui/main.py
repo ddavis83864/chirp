@@ -58,6 +58,7 @@ from chirp.wxui import report
 from chirp.wxui import serialtrace
 from chirp.wxui import settingsedit
 from chirp import CHIRP_VERSION
+from chirp import CHIRP_VERSION_IS_DEV
 
 EditorSetChanged, EVT_EDITORSET_CHANGED = wx.lib.newevent.NewCommandEvent()
 CONF = config.get()
@@ -2339,7 +2340,7 @@ def display_update_notice(version, manual=False):
         if CONF.get_bool("skip_update_check", "state"):
             return
 
-        if CHIRP_VERSION.endswith('dev'):
+        if CHIRP_VERSION_IS_DEV:
             return
 
         # Report new updates occasionally
