@@ -11,8 +11,11 @@ to run (it already does, per tox.ini's [testenv:unit] sitepackages).
 
 import sys
 import tempfile
+import threading
 import unittest
 from unittest import mock
+
+import requests
 
 # Other test modules (e.g. test_wxui_memquery.py) mock sys.modules['wx']
 # at import time to test wx.* code without a real wx runtime. Since
@@ -30,6 +33,7 @@ import wx.adv  # noqa: E402
 
 from chirp import chirp_common  # noqa: E402
 from chirp.assistant import models  # noqa: E402
+from chirp.assistant import providers  # noqa: E402
 from chirp.drivers import generic_csv  # noqa: E402
 from chirp.wxui import config  # noqa: E402
 from chirp.wxui import memedit  # noqa: E402
@@ -69,6 +73,23 @@ def _ensure_wx_app():
         raise unittest.SkipTest(
             'no display available for wx GUI tests: %s' % e)
     return _APP
+
+
+def _safe_destroy(window):
+    """addCleanup(window.Destroy) target for a standalone top-level
+    window (e.g. a wx.Dialog constructed but never Show()n/ShowModal()
+    ed) that may already be gone by cleanup time -- same tolerance as
+    _safe_post_event() above, for the same reason: wx.Window.Destroy()
+    defers actual C++-level deletion, and this file's own tearDown()
+    already documents that a not-yet-actually-freed top-level window
+    can end up torn down as a side effect of unrelated event
+    processing elsewhere in the same run. Calling Destroy() again here
+    is only ever cleanup, never a correctness assertion, so tolerating
+    "already gone" is correct, not a defect being papered over."""
+    try:
+        window.Destroy()
+    except RuntimeError:
+        pass
 
 
 class _FakeEditorSet:
@@ -1451,6 +1472,446 @@ class MenuIntegrationTest(unittest.TestCase):
 
         programming_assistant.set_assistant_enabled(False)
         self.assertFalse(programming_assistant.assistant_enabled())
+
+
+class AssistantProviderDialogSizingTest(ProgrammingAssistantWxTestBase):
+    """Windows validation finding: the dialog opened smaller than its
+    own contents needed, with OK/Cancel not visible without a manual
+    resize -- see AssistantProviderDialog.__init__'s vbox.Fit(self)/
+    SetMinSize() call."""
+
+    def _make_dialog(self):
+        dlg = programming_assistant.AssistantProviderDialog(self.frame)
+        self.addCleanup(_safe_destroy, dlg)
+        return dlg
+
+    def test_ok_and_cancel_fit_within_initial_client_area(self):
+        dlg = self._make_dialog()
+        client = dlg.GetClientSize()
+        for btn_id in (wx.ID_OK, wx.ID_CANCEL):
+            btn = dlg.FindWindowById(btn_id)
+            self.assertIsNotNone(btn, 'button %r not found' % btn_id)
+            rect = btn.GetRect()
+            self.assertLessEqual(
+                rect.GetBottom(), client.height,
+                '%r extends below the dialog\'s client area' % btn_id)
+            self.assertLessEqual(
+                rect.GetRight(), client.width,
+                '%r extends past the dialog\'s client area' % btn_id)
+
+    def test_validate_button_also_fits(self):
+        dlg = self._make_dialog()
+        client = dlg.GetClientSize()
+        rect = dlg.validate_btn.GetRect()
+        self.assertLessEqual(rect.GetBottom(), client.height)
+        self.assertLessEqual(rect.GetRight(), client.width)
+
+    def test_min_size_matches_initial_fitted_size(self):
+        dlg = self._make_dialog()
+        # RESIZE_BORDER still lets the user grow the dialog further,
+        # but it must never be resizable BELOW what Fit() determined
+        # its contents need, which is what caused controls to be
+        # clipped in the original report.
+        self.assertEqual(dlg.GetSize(), dlg.GetMinSize())
+        self.assertGreater(dlg.GetMinSize().GetWidth(), 0)
+        self.assertGreater(dlg.GetMinSize().GetHeight(), 0)
+
+
+class AssistantProviderDialogValidateTest(ProgrammingAssistantWxTestBase):
+    """Coverage for the "Validate AI Config" button (Issue 2): it must
+    exercise the exact same provider.extract_intent() path "Interpret
+    with AI" uses -- create_provider() -> HTTP request -> response
+    parsing -> schema validation -- so only the network transport
+    (requests.post) is mocked here, never provider logic itself,
+    matching the pattern test_assistant_providers.py's HTTPProviderTest
+    already uses for the same reason.
+    """
+
+    class _ImmediateThread:
+        """Stands in for threading.Thread: runs its target immediately,
+        in the calling thread -- same pattern as
+        ConfirmPageBuildFreshnessTest._ImmediateThread."""
+
+        def __init__(self, target=None, args=()):
+            self._target = target
+            self._args = args
+
+        def start(self):
+            self._target(*self._args)
+
+        def join(self, timeout=None):
+            pass
+
+    def _make_dialog(self):
+        dlg = programming_assistant.AssistantProviderDialog(self.frame)
+        self.addCleanup(_safe_destroy, dlg)
+        return dlg
+
+    def _configure_ollama(self, dlg):
+        dlg.kind_choice.SetSelection(
+            providers.ALL_PROVIDER_KINDS.index(providers.PROVIDER_OLLAMA))
+        dlg.endpoint.SetValue('http://localhost:11434/api/chat')
+        dlg.model.SetValue('llama3')
+
+    def _run_validate_synchronously(self, dlg):
+        def fake_post_event(target, event):
+            target._on_validate_done(event)
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.PostEvent',
+                side_effect=fake_post_event), \
+                mock.patch(
+                    'chirp.wxui.programming_assistant.threading.Thread',
+                    self._ImmediateThread), \
+                mock.patch(
+                    'chirp.wxui.programming_assistant.wx.MessageDialog'
+                    ) as mock_dialog_cls:
+            dlg._on_validate(None)
+        return mock_dialog_cls
+
+    def test_success_exercises_real_provider_path_with_dialog_values(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+
+        fake_response = mock.Mock()
+        fake_response.status_code = 200
+        fake_response.json.return_value = {
+            'message': {'content':
+                        '{"location_text": "Boise", '
+                        '"requested_services": ["ham"]}'}}
+        with mock.patch('requests.post',
+                        return_value=fake_response) as post:
+            mock_dialog_cls = self._run_validate_synchronously(dlg)
+
+        # Real OllamaProvider._build_payload()/extract_intent() ran --
+        # not a stand-in "connectivity check" -- confirmed by checking
+        # what was actually posted: the real payload shape (model,
+        # messages, format=json), to the exact URL entered above.
+        post.assert_called_once()
+        self.assertEqual('http://localhost:11434/api/chat',
+                         post.call_args[0][0])
+        payload = post.call_args.kwargs['json']
+        self.assertEqual('llama3', payload['model'])
+        self.assertEqual('json', payload['format'])
+        self.assertNotIn('/api/tags', post.call_args[0][0])
+
+        mock_dialog_cls.assert_called_once()
+        self.assertEqual('AI Configuration Valid',
+                         mock_dialog_cls.call_args[0][2])
+        self.assertEqual('Configuration is valid.',
+                         dlg.validate_status.GetLabel())
+
+    def test_never_saves_configuration_or_settings(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        CONF = programming_assistant.CONF
+        CONF.set('endpoint', 'http://should-not-change.invalid')
+        CONF.set('model', 'should-not-change')
+        CONF.set('provider_kind', providers.PROVIDER_DISABLED)
+
+        fake_response = mock.Mock()
+        fake_response.status_code = 200
+        fake_response.json.return_value = {'message': {'content': '{}'}}
+        with mock.patch('requests.post', return_value=fake_response):
+            self._run_validate_synchronously(dlg)
+
+        self.assertEqual('http://should-not-change.invalid',
+                         CONF.get('endpoint'))
+        self.assertEqual('should-not-change', CONF.get('model'))
+        self.assertEqual(providers.PROVIDER_DISABLED,
+                         CONF.get('provider_kind'))
+
+    def test_uses_unsaved_dialog_edits_not_conf(self):
+        dlg = self._make_dialog()
+        CONF = programming_assistant.CONF
+        CONF.set('provider_kind', providers.PROVIDER_DISABLED)
+        CONF.set('endpoint', 'http://old.invalid')
+        CONF.set('model', 'old-model')
+        self._configure_ollama(dlg)
+        dlg.endpoint.SetValue('http://new.invalid/api/chat')
+        dlg.model.SetValue('new-model')
+
+        fake_response = mock.Mock()
+        fake_response.status_code = 200
+        fake_response.json.return_value = {'message': {'content': '{}'}}
+        with mock.patch('requests.post',
+                        return_value=fake_response) as post:
+            self._run_validate_synchronously(dlg)
+
+        self.assertEqual('http://new.invalid/api/chat',
+                         post.call_args[0][0])
+        self.assertEqual('new-model', post.call_args.kwargs['json']['model'])
+
+    def test_timeout_shows_meaningful_error(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        with mock.patch('requests.post',
+                        side_effect=requests.exceptions.Timeout):
+            mock_dialog_cls = self._run_validate_synchronously(dlg)
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('timed out', mock_dialog_cls.call_args[0][1])
+        self.assertEqual('Validation failed.',
+                         dlg.validate_status.GetLabel())
+
+    def test_connection_refused_shows_meaningful_error(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        with mock.patch(
+                'requests.post',
+                side_effect=requests.exceptions.ConnectionError):
+            mock_dialog_cls = self._run_validate_synchronously(dlg)
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('Could not reach', mock_dialog_cls.call_args[0][1])
+
+    def test_http_405_reproduces_original_report_and_is_detected(self):
+        # The exact defect this feature exists to catch before use: an
+        # Ollama endpoint missing the /api/chat path segment.
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        dlg.endpoint.SetValue('http://localhost:11434')
+        fake_response = mock.Mock()
+        fake_response.status_code = 405
+        with mock.patch('requests.post', return_value=fake_response):
+            mock_dialog_cls = self._run_validate_synchronously(dlg)
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('405', mock_dialog_cls.call_args[0][1])
+
+    def test_model_not_found_http_error(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        fake_response = mock.Mock()
+        fake_response.status_code = 404
+        with mock.patch('requests.post', return_value=fake_response):
+            mock_dialog_cls = self._run_validate_synchronously(dlg)
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('404', mock_dialog_cls.call_args[0][1])
+
+    def test_malformed_json_response(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        fake_response = mock.Mock()
+        fake_response.status_code = 200
+        fake_response.json.return_value = {
+            'message': {'content': 'not json at all'}}
+        with mock.patch('requests.post', return_value=fake_response):
+            mock_dialog_cls = self._run_validate_synchronously(dlg)
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('valid JSON', mock_dialog_cls.call_args[0][1])
+
+    def test_schema_validation_failure(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        fake_response = mock.Mock()
+        fake_response.status_code = 200
+        fake_response.json.return_value = {
+            'message': {'content': '{"channel_limit": 999999}'}}
+        with mock.patch('requests.post', return_value=fake_response):
+            mock_dialog_cls = self._run_validate_synchronously(dlg)
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('validation',
+                      mock_dialog_cls.call_args[0][1].lower())
+
+    def test_unexpected_response_shape(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        fake_response = mock.Mock()
+        fake_response.status_code = 200
+        fake_response.json.return_value = {'unexpected': 'shape'}
+        with mock.patch('requests.post', return_value=fake_response):
+            mock_dialog_cls = self._run_validate_synchronously(dlg)
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('Unexpected', mock_dialog_cls.call_args[0][1])
+
+    def test_disabled_provider_shows_message_posts_nothing(self):
+        dlg = self._make_dialog()
+        dlg.kind_choice.SetSelection(
+            providers.ALL_PROVIDER_KINDS.index(providers.PROVIDER_DISABLED))
+        with mock.patch('requests.post') as post:
+            dlg._on_validate(None)
+        post.assert_not_called()
+        self.assertIn('Disabled', dlg.validate_status.GetLabel())
+
+    def test_error_message_never_leaks_api_key(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        dlg.kind_choice.SetSelection(providers.ALL_PROVIDER_KINDS.index(
+            providers.PROVIDER_OPENAI_COMPATIBLE))
+        dlg.endpoint.SetValue('https://example.invalid/v1/chat/completions')
+        dlg.api_key.SetValue('sk-super-secret-value')
+        fake_response = mock.Mock()
+        fake_response.status_code = 401
+        with mock.patch('requests.post', return_value=fake_response):
+            mock_dialog_cls = self._run_validate_synchronously(dlg)
+        mock_dialog_cls.assert_called_once()
+        shown_message = mock_dialog_cls.call_args[0][1]
+        self.assertNotIn('sk-super-secret-value', shown_message)
+
+    def test_buttons_disabled_while_running_and_restored_after(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+
+        class _HeldThread:
+            """Never actually runs its target -- simulates validation
+            still being in flight so the disabled/gauge-visible state
+            can be inspected before anything completes."""
+
+            def __init__(self, target=None, args=()):
+                pass
+
+            def start(self):
+                pass
+
+            def join(self, timeout=None):
+                pass
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.threading.Thread',
+                _HeldThread):
+            dlg._on_validate(None)
+
+        self.assertFalse(dlg.validate_btn.IsEnabled())
+        self.assertFalse(dlg.FindWindowById(wx.ID_OK).IsEnabled())
+        self.assertTrue(dlg.validate_gauge.IsShown())
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'):
+            dlg._on_validate_done(programming_assistant.ValidateThreadEvent(
+                dlg.GetId(), ok=True, error=None, cancelled=False))
+
+        self.assertTrue(dlg.validate_btn.IsEnabled())
+        self.assertTrue(dlg.FindWindowById(wx.ID_OK).IsEnabled())
+        self.assertFalse(dlg.validate_gauge.IsShown())
+
+    def test_cancel_while_validating_cancels_instead_of_closing(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        dlg._validate_thread = threading.Thread(target=lambda: None)
+        dlg._validate_cancel_event = threading.Event()
+
+        close_event = mock.Mock()
+        close_event.Skip = mock.Mock()
+        dlg._on_cancel(close_event)
+
+        self.assertTrue(dlg._validate_cancel_event.is_set())
+        close_event.Skip.assert_not_called()
+        self.assertEqual('Cancelling...', dlg.validate_status.GetLabel())
+
+    def test_cancel_while_idle_behaves_normally(self):
+        dlg = self._make_dialog()
+        dlg._validate_thread = None
+
+        event = mock.Mock()
+        dlg._on_cancel(event)
+
+        event.Skip.assert_called_once()
+
+    def test_close_while_validating_vetoes_and_cancels(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        dlg._validate_thread = threading.Thread(target=lambda: None)
+        dlg._validate_cancel_event = threading.Event()
+
+        close_event = mock.Mock()
+        close_event.CanVeto.return_value = True
+        dlg._on_close(close_event)
+
+        close_event.Veto.assert_called_once()
+        close_event.Skip.assert_not_called()
+        self.assertTrue(dlg._validate_cancel_event.is_set())
+
+    def test_cancelled_result_shows_no_dialog(self):
+        dlg = self._make_dialog()
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls:
+            dlg._on_validate_done(programming_assistant.ValidateThreadEvent(
+                dlg.GetId(), ok=False, error=None, cancelled=True))
+        mock_dialog_cls.assert_not_called()
+        self.assertEqual('Validation cancelled.',
+                         dlg.validate_status.GetLabel())
+
+
+class InterpretationCompletionDialogTest(ProgrammingAssistantWxTestBase):
+    """Coverage for Issue 3: after a successful "Interpret with AI",
+    the wizard previously returned to the same-looking Describe page
+    with no way to tell success-with-changes apart from success-with-
+    nothing-to-change or a silent no-op."""
+
+    def setUp(self):
+        super().setUp()
+        self.describe = self.context.get_page(
+            'describe', programming_assistant.DescribePage)
+
+    def _interpret_event(self, request=None, error=None):
+        return programming_assistant.InterpretThreadEvent(
+            self.describe.GetId(), request=request, error=error)
+
+    def test_changed_fields_are_listed(self):
+        req = models.ProgrammingRequest(
+            location_text='Boise',
+            requested_services=(models.SERVICE_HAM,))
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls:
+            self.describe._interpret_done(
+                self._interpret_event(request=req))
+
+        mock_dialog_cls.assert_called_once()
+        title, message = (mock_dialog_cls.call_args[0][2],
+                          mock_dialog_cls.call_args[0][1])
+        self.assertEqual('AI Interpretation Complete', title)
+        self.assertIn('Location', message)
+        self.assertIn('Requested services', message)
+        self.assertIn('Updated fields', message)
+
+    def test_no_changes_shows_explicit_no_change_message(self):
+        # Prime the fields to already match what the "interpreted"
+        # request produces, so applying it changes nothing -- the
+        # exact ambiguous case Issue 3 describes.
+        req = models.ProgrammingRequest()
+        self.describe._apply_request_to_fields(req)
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls:
+            self.describe._interpret_done(
+                self._interpret_event(request=req))
+
+        mock_dialog_cls.assert_called_once()
+        message = mock_dialog_cls.call_args[0][1]
+        self.assertIn('No changes were required', message)
+        self.assertIn('already matched', message)
+
+    def test_error_does_not_show_a_completion_dialog(self):
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls:
+            self.describe._interpret_done(
+                self._interpret_event(error='simulated provider error'))
+
+        mock_dialog_cls.assert_not_called()
+        self.assertIn('simulated provider error',
+                      self.describe.interpret_status.GetLabel())
+
+    def test_partial_change_only_lists_the_fields_that_actually_changed(
+            self):
+        self.describe.location.SetValue('Boise')
+        self.describe.radius.SetValue(25)
+        req = models.ProgrammingRequest(
+            location_text='Boise',  # unchanged
+            radius_miles=50,  # changed
+            requested_services=(models.SERVICE_HAM,))
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls:
+            self.describe._interpret_done(
+                self._interpret_event(request=req))
+
+        message = mock_dialog_cls.call_args[0][1]
+        self.assertIn('Radius', message)
+        self.assertIn('Requested services', message)
+        self.assertNotIn('Location', message)
 
 
 if __name__ == '__main__':

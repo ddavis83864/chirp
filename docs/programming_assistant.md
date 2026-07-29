@@ -115,7 +115,8 @@ Review page's "Regulatory & Privacy Details..." button.
 - Providers: **Disabled** (default), **OpenAI-compatible** (any Chat
   Completions-compatible HTTP endpoint), or **Ollama** (a local
   server's native `/api/chat`). No remote call happens until you
-  explicitly click "Interpret with AI" after configuring a provider.
+  explicitly click "Interpret with AI" or "Validate AI Config" after
+  configuring a provider.
 - An AI provider is given only your typed text — never radio image
   bytes, serial port details, file paths, or existing memory comments.
 - No OS keyring dependency exists in this project, so API keys are
@@ -132,6 +133,60 @@ Review page's "Regulatory & Privacy Details..." button.
   out-of-range values, and anything that isn't a recognized structured
   field are dropped, never executed. See `chirp/assistant/providers.py`
   for the full trust-boundary explanation.
+
+### The Ollama endpoint must include the path
+
+The **Endpoint URL** field is posted to directly, with no path appended
+by CHIRP — for Ollama, that means entering the full path to its native
+chat endpoint:
+
+```
+http://localhost:11434/api/chat
+```
+
+Entering only `http://localhost:11434` (the bare server address, with
+no path) will fail with an **HTTP 405** error the first time you try to
+use it, since Ollama's root URL doesn't accept the POST request CHIRP
+sends. Use **Validate AI Config** (below) after entering the endpoint
+to catch this — and any other configuration problem — before relying
+on it.
+
+### Validate AI Config
+
+The Configure AI Provider dialog has a **Validate AI Config** button
+that checks the configuration currently entered in the dialog — including
+edits you haven't clicked OK on yet — by making one real request through
+the exact same code path "Interpret with AI" uses: build the provider,
+send the request, parse the response, validate it against the
+structured schema. It is not a simple connectivity check (it does not,
+for example, call Ollama's `/api/tags`), so a successful validation
+means the configuration will actually work for a real request.
+
+The request sent is a fixed, internal, non-localized prompt ("Find
+amateur radio repeaters near Boise, Idaho.") used only to exercise the
+provider — it never touches anything you've typed on the Describe page,
+never modifies any Programming Assistant field, and validating never
+saves the configuration (only clicking OK does that).
+
+While a validation is running, both **Validate AI Config** and **OK**
+are disabled and a progress indicator is shown; **Cancel** during that
+time cancels the in-flight validation instead of closing the dialog.
+On completion, you'll see either a success dialog (showing the
+provider, model, and endpoint that were validated) or a failure dialog
+with a specific, actionable message (connection refused, timed out,
+invalid endpoint, HTTP error, malformed response, or schema validation
+failure) — never a raw provider response, stack trace, API key, or
+authorization header.
+
+### Interpretation completion
+
+After a successful "Interpret with AI", a completion dialog confirms
+what happened before you move on: either a list of which fields were
+updated (Location, Bands/Services, etc. — review them before
+continuing), or, if the interpreted values already matched what was
+already entered, an explicit statement that no changes were required.
+Either way, this removes the previous ambiguity between "it worked but
+nothing visibly changed" and "it silently did nothing."
 
 ## Undo and apply
 
