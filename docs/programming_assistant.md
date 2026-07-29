@@ -53,6 +53,19 @@ that you approve before anything is written to the open image.
    license declaration, activities, requested services, receive-only
    services, channel limit, naming style, existing-memory handling,
    protected memory ranges, and an optional target memory range.
+   **Clear All Entries**, next to Interpret with AI, resets every one
+   of these fields — including anything Interpret with AI populated —
+   back to how the page looked when the Programming Assistant was
+   first opened, in one click. If nothing has been entered yet, it
+   does nothing (no confirmation prompt); otherwise it asks you to
+   confirm first, since there's no Undo for this specific action (it
+   only affects these in-progress, not-yet-submitted fields — not
+   anything else). It never touches your AI provider configuration,
+   the open radio image, or anything on the Confirm/Review/Result
+   pages — those are separate state, unaffected by what you've typed
+   on Describe. After clearing, both Interpret with AI and manual
+   entry work exactly as they would in a freshly opened Programming
+   Assistant.
 2. **Confirm** — a read-only summary of exactly what will be queried
    and built; nothing is queried until you continue from here.
 3. **Review** — a checkable table of every proposed channel with its

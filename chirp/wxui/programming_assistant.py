@@ -295,7 +295,15 @@ class DescribePage(AssistantPage):
         btn_row.Add(self.interpret_btn, 0, wx.RIGHT, 10)
         provider_btn = wx.Button(self, label=_('Configure AI Provider...'))
         provider_btn.Bind(wx.EVT_BUTTON, self._on_configure_provider)
-        btn_row.Add(provider_btn, 0)
+        btn_row.Add(provider_btn, 0, wx.RIGHT, 10)
+        # A vertical separator, not just spacing, so this reads as its
+        # own distinct action -- clearing everything -- rather than a
+        # third AI-related button alongside Interpret/Configure.
+        btn_row.Add(wx.StaticLine(self, style=wx.LI_VERTICAL), 0,
+                    wx.EXPAND | wx.RIGHT, 10)
+        self.clear_btn = wx.Button(self, label=_('Clear All Entries'))
+        self.clear_btn.Bind(wx.EVT_BUTTON, self._on_clear_all)
+        btn_row.Add(self.clear_btn, 0)
         vbox.Add(btn_row, 0, wx.ALL, 10)
 
         self.interpret_status = wx.StaticText(self, label='')
@@ -412,6 +420,93 @@ class DescribePage(AssistantPage):
         dlg.ShowModal()
         dlg.Destroy()
         self._update_interpret_enabled()
+
+    def _has_any_data(self):
+        """True if anything on this page differs from how it looked
+        when the Programming Assistant was first opened -- used to
+        skip the confirmation dialog entirely when there is nothing to
+        clear (Phase 5), and independent of _describe_field_snapshot()
+        above, which only covers the fields an AI interpretation can
+        touch, not every clearable control (free-form text,
+        preserve_existing, allow_replace, use_range/start_mem/end_mem,
+        protected)."""
+        return bool(
+            self.text.GetValue().strip() or
+            self.location.GetValue().strip() or
+            self.radius.GetValue() != 25 or
+            self.license_choice.GetSelection() != 0 or
+            self.gmrs_chk.GetValue() or
+            self.activities.GetValue().strip() or
+            self.services.GetCheckedItems() or
+            self.channel_limit.GetValue() != 40 or
+            self.naming_choice.GetSelection() != 0 or
+            not self.preserve_existing.GetValue() or
+            self.allow_replace.GetValue() or
+            self.use_range.GetValue() or
+            self.start_mem.GetValue() != 0 or
+            self.end_mem.GetValue() != 0 or
+            self.protected.GetValue().strip())
+
+    def _on_clear_all(self, event):
+        if not self._has_any_data():
+            # Nothing entered -- a safe no-op, no confirmation needed.
+            return
+        dlg = wx.MessageDialog(
+            self, _(
+                'This will remove all information entered on the '
+                'Describe page.\n\n'
+                'Your AI provider configuration, radio image, and '
+                'application settings will not be changed.'),
+            _('Clear All Entries?'),
+            style=wx.OK | wx.CANCEL | wx.ICON_QUESTION)
+        dlg.SetOKCancelLabels(_('Clear'), _('Cancel'))
+        result = dlg.ShowModal()
+        dlg.Destroy()
+        if result != wx.ID_OK:
+            return
+        self._clear_all_fields()
+
+    def _clear_all_fields(self):
+        """Restores every Describe-page control to exactly the value
+        it had when the page was first built (see _build() above),
+        including anything an AI interpretation populated -- there is
+        no separate "AI state" to clear beyond these same widgets, see
+        _apply_request_to_fields(), which only ever writes into them.
+        Strictly scoped to this page: context.plan (Confirm/Review/
+        Result state), radio data, and application configuration are
+        never touched here.
+        """
+        self.text.SetValue('')
+        self.location.SetValue('')
+        self.radius.SetValue(25)
+        self.license_choice.SetSelection(0)
+        self.gmrs_chk.SetValue(False)
+        self.activities.SetValue('')
+        for i in range(len(_SERVICE_LABELS)):
+            self.services.Check(i, False)
+        self.channel_limit.SetValue(40)
+        self.naming_choice.SetSelection(0)
+        self.preserve_existing.SetValue(True)
+        self.allow_replace.SetValue(False)
+        self.use_range.SetValue(False)
+        self.start_mem.SetValue(0)
+        self.end_mem.SetValue(0)
+        self.protected.SetValue('')
+        self.interpret_status.SetLabel('')
+        self._update_interpret_enabled()
+        # The one piece of state this page can leave behind outside
+        # its own widgets: replace it with a fresh instance rather
+        # than resetting fields on the existing one, so there is no
+        # way for a stale value to survive under a field this method
+        # forgot to reset.
+        self.context.request = models.ProgrammingRequest()
+        # Re-evaluates the wizard's Next button and the "check at
+        # least one service" status text immediately -- same call
+        # _on_services_changed() makes for a real user click; without
+        # it, Next would stay enabled (or disabled) at whatever it was
+        # before Clear was pressed until the user interacted with the
+        # page again.
+        self._refresh_services_status()
 
     def _on_interpret(self, event):
         if self._interpret_thread:

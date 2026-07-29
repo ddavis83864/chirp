@@ -2151,5 +2151,289 @@ class InterpretationCompletionDialogTest(ProgrammingAssistantWxTestBase):
         self.assertNotIn('Location', message)
 
 
+class DescribePageClearAllEntriesTest(ProgrammingAssistantWxTestBase):
+    """Coverage for the "Clear All Entries" button: restores the
+    Describe page to exactly its first-opened state (including
+    anything an AI interpretation populated) without touching
+    anything outside this page -- AI provider configuration, the open
+    radio image, or Confirm/Review/Result state.
+    """
+
+    def _setup_describe_page(self):
+        # Same pattern as DescribePageServiceValidationTest above --
+        # reuse self.wizard/self.context rather than a second wizard
+        # instance, since FindWindowById(wx.ID_FORWARD) (a shared wx
+        # stock ID) does not reliably scope to the right one otherwise.
+        wizard = self.wizard
+        programming_assistant._wire_wizard_events(wizard)
+        describe = self.context.get_page(
+            'describe', programming_assistant.DescribePage)
+        wizard.GetPageAreaSizer().Add(describe)
+        wizard.ShowPage(describe)
+        return wizard, describe
+
+    def _enter_sample_data(self, describe):
+        describe.text.SetValue('Find repeaters near Boise')
+        describe.location.SetValue('Boise, Idaho')
+        describe.radius.SetValue(50)
+        describe.activities.SetValue('camping, aviation')
+        describe.services.Check(
+            self._service_index(models.SERVICE_HAM), True)
+        describe.protected.SetValue('0-9')
+
+    def _service_index(self, service):
+        return [
+            i for i, (value, _label) in
+            enumerate(programming_assistant._SERVICE_LABELS)
+            if value == service][0]
+
+    def _confirm_clear(self, describe, confirm=True):
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls:
+            mock_dialog_cls.return_value.ShowModal.return_value = (
+                wx.ID_OK if confirm else wx.ID_CANCEL)
+            describe._on_clear_all(None)
+        return mock_dialog_cls
+
+    def test_button_exists(self):
+        _wizard, describe = self._setup_describe_page()
+        self.assertIsInstance(describe.clear_btn, wx.Button)
+        self.assertEqual('Clear All Entries', describe.clear_btn.GetLabel())
+
+    def test_button_is_enabled(self):
+        _wizard, describe = self._setup_describe_page()
+        self.assertTrue(describe.clear_btn.IsEnabled())
+
+    def test_no_data_is_a_safe_noop(self):
+        _wizard, describe = self._setup_describe_page()
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls:
+            describe._on_clear_all(None)
+        mock_dialog_cls.assert_not_called()
+
+    def test_confirmation_dialog_appears_when_data_exists(self):
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+        mock_dialog_cls = self._confirm_clear(describe, confirm=True)
+        mock_dialog_cls.assert_called_once()
+        self.assertEqual('Clear All Entries?',
+                         mock_dialog_cls.call_args[0][2])
+
+    def test_cancel_leaves_all_fields_unchanged(self):
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+        self._confirm_clear(describe, confirm=False)
+
+        self.assertEqual('Find repeaters near Boise',
+                         describe.text.GetValue())
+        self.assertEqual('Boise, Idaho', describe.location.GetValue())
+        self.assertEqual(50, describe.radius.GetValue())
+        self.assertEqual('camping, aviation', describe.activities.GetValue())
+        self.assertIn(self._service_index(models.SERVICE_HAM),
+                      describe.services.GetCheckedItems())
+        self.assertEqual('0-9', describe.protected.GetValue())
+
+    def test_confirm_clears_free_form_description(self):
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+        self._confirm_clear(describe)
+        self.assertEqual('', describe.text.GetValue())
+
+    def test_confirm_clears_location(self):
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+        self._confirm_clear(describe)
+        self.assertEqual('', describe.location.GetValue())
+        self.assertEqual(25, describe.radius.GetValue())
+
+    def test_confirm_clears_services(self):
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+        self._confirm_clear(describe)
+        self.assertEqual((), describe.services.GetCheckedItems())
+
+    def test_confirm_clears_requested_bands_via_request_reset(self):
+        # No dedicated band-selection UI exists yet on the Describe
+        # page (requested_bands is currently only reachable
+        # programmatically -- see chirp.assistant.models); resetting
+        # context.request to a fresh ProgrammingRequest() (proven
+        # below) already guarantees requested_bands is back to its
+        # empty-tuple default, with nothing further to clear here.
+        _wizard, describe = self._setup_describe_page()
+        describe.context.request.requested_bands = (
+            models.BAND_2M, models.BAND_70CM)
+        self._enter_sample_data(describe)
+        self._confirm_clear(describe)
+        self.assertEqual((), describe.context.request.requested_bands)
+
+    def test_confirm_clears_ai_interpreted_values(self):
+        _wizard, describe = self._setup_describe_page()
+        req = models.ProgrammingRequest(
+            location_text='Spokane, Washington', radius_miles=75,
+            requested_services=(models.SERVICE_HAM,),
+            activities=('camping',))
+        describe._apply_request_to_fields(req)
+        self.assertEqual('Spokane, Washington', describe.location.GetValue())
+
+        self._confirm_clear(describe)
+
+        self.assertEqual('', describe.location.GetValue())
+        self.assertEqual(25, describe.radius.GetValue())
+        self.assertEqual((), describe.services.GetCheckedItems())
+        self.assertEqual('', describe.activities.GetValue())
+
+    def test_programming_request_is_reset(self):
+        _wizard, describe = self._setup_describe_page()
+        describe.context.request.location_text = 'stale value'
+        describe.context.request.requested_services = (
+            models.SERVICE_HAM,)
+        self._enter_sample_data(describe)
+
+        self._confirm_clear(describe)
+
+        fresh = models.ProgrammingRequest()
+        self.assertEqual(fresh, describe.context.request)
+
+    def test_page_validation_recalculates(self):
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+        self.assertTrue(describe._validate_next())
+
+        self._confirm_clear(describe)
+
+        self.assertFalse(describe._validate_next())
+        self.assertEqual(
+            'Check at least one requested service to continue.',
+            describe.services_status.GetLabel())
+
+    def test_next_button_updates_immediately(self):
+        wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+        forward = describe.FindWindowById(wx.ID_FORWARD)
+        forward.Enable(True)
+        self.assertTrue(forward.IsEnabled())
+
+        self._confirm_clear(describe)
+
+        self.assertFalse(
+            forward.IsEnabled(),
+            'Next must reflect the cleared (nothing selected) state '
+            'immediately, with no further navigation required')
+
+    def test_interpret_with_ai_still_works_after_clearing(self):
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+        self._confirm_clear(describe)
+
+        describe.text.SetValue('New description after clearing')
+        req = models.ProgrammingRequest(
+            location_text='Post-clear City',
+            requested_services=(models.SERVICE_HAM,))
+
+        def fake_post_event(target, event):
+            target._interpret_done(event)
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.PostEvent',
+                side_effect=fake_post_event), \
+                mock.patch(
+                    'chirp.wxui.programming_assistant.wx.MessageDialog'), \
+                mock.patch.object(
+                    describe.context, 'provider',
+                    return_value=providers.OllamaProvider(
+                        'http://localhost:11434/api/chat', 'llama3')), \
+                mock.patch.object(
+                    providers.OllamaProvider, 'extract_intent',
+                    return_value=req):
+            describe._interpret_worker(
+                describe.context.provider(),
+                describe.text.GetValue())
+
+        self.assertEqual('Post-clear City', describe.location.GetValue())
+
+    def test_manual_entry_still_works_after_clearing(self):
+        wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+        self._confirm_clear(describe)
+
+        describe.location.SetValue('Fresh Manual Entry')
+        describe.services.Check(
+            self._service_index(models.SERVICE_WEATHER), True)
+        evt = wx.CommandEvent(wx.EVT_CHECKLISTBOX.typeId,
+                              describe.services.GetId())
+        describe.services.GetEventHandler().ProcessEvent(evt)
+
+        forward = describe.FindWindowById(wx.ID_FORWARD)
+        self.assertTrue(forward.IsEnabled())
+
+        event = _FakeWizardEvent()
+        describe.validate_success(event)
+        self.assertFalse(event.vetoed)
+        self.assertEqual('Fresh Manual Entry',
+                         self.context.request.location_text)
+        self.assertEqual((models.SERVICE_WEATHER,),
+                         self.context.request.requested_services)
+
+    def test_ai_provider_configuration_not_modified(self):
+        CONF = programming_assistant.CONF
+        CONF.set('provider_kind', providers.PROVIDER_OLLAMA)
+        CONF.set('endpoint', 'http://localhost:11434/api/chat')
+        CONF.set('model', 'llama3')
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+
+        self._confirm_clear(describe)
+
+        self.assertEqual(providers.PROVIDER_OLLAMA,
+                         CONF.get('provider_kind'))
+        self.assertEqual('http://localhost:11434/api/chat',
+                         CONF.get('endpoint'))
+        self.assertEqual('llama3', CONF.get('model'))
+
+    def test_radio_image_not_modified(self):
+        _wizard, describe = self._setup_describe_page()
+        before = [self.radio.get_memory(n).freq
+                  for n in range(*self.radio.get_features().memory_bounds)
+                  if not self.radio.get_memory(n).empty]
+        self._enter_sample_data(describe)
+
+        self._confirm_clear(describe)
+
+        after = [self.radio.get_memory(n).freq
+                 for n in range(*self.radio.get_features().memory_bounds)
+                 if not self.radio.get_memory(n).empty]
+        self.assertEqual(before, after)
+
+    def test_review_page_state_not_modified(self):
+        ready = models.ChannelCandidate(
+            source='s', service=models.SERVICE_HAM, group='g', label='R',
+            freq=146520000, status=models.STATUS_READY, include=True,
+            memory_number=1, name='R1')
+        plan = models.ChannelPlan(
+            groups=[models.PlanGroup(name='g', candidates=[ready])])
+        self.context.plan = plan
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+
+        self._confirm_clear(describe)
+
+        self.assertIs(plan, self.context.plan)
+        self.assertTrue(ready.include)
+        self.assertEqual(models.STATUS_READY, ready.status)
+
+    def test_finish_page_state_not_modified(self):
+        result_page = self.context.get_page(
+            'result', programming_assistant.ResultPage)
+        result_page._applied = True
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+
+        self._confirm_clear(describe)
+
+        self.assertTrue(result_page._applied)
+
+
 if __name__ == '__main__':
     unittest.main()
