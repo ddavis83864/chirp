@@ -1,2 +1,3 @@
-Instructions for running CHIRP from Git can be found on the following Wiki page:
-https://chirpmyradio.com/projects/chirp/wiki/DevelopersPython3Environment#Linux
+Instructions for running CHIRP from this repository (Linux and Windows) are
+in the "Getting started" section of README.md:
+https://github.com/ddavis83864/chirp#getting-started
