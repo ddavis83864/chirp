@@ -777,6 +777,89 @@ class RealPathProfileWorkflowTest(CrossFeatureTestCase):
             if not target_eset.radio.get_memory(n).empty]
         self.assertIn('SRC', applied_names)
 
+    def test_apply_menu_item_present_exactly_once_and_labeled(self):
+        menu_bar = self.frame.GetMenuBar()
+        matches = []
+        for i in range(menu_bar.GetMenuCount()):
+            for item in menu_bar.GetMenu(i).GetMenuItems():
+                if 'Apply Profile to Current Image' in (
+                        item.GetItemLabelText()):
+                    matches.append(item)
+        self.assertEqual(1, len(matches))
+
+    def test_empty_profile_cannot_be_applied(self):
+        from chirp.profiles import model as profile_model
+        self.frame._current_profile = profile_model.Profile(name='Empty')
+        self._blank_csv_editorset()
+
+        with mock.patch.object(
+                wxmain.profileapply, 'ProfileApplyPreviewDialog'
+                ) as preview_dlg, \
+                mock.patch.object(wxmain.wx, 'MessageBox') as msgbox:
+            self.frame._menu_profile_apply(None)
+
+        preview_dlg.assert_not_called()
+        msgbox.assert_called_once()
+        self.assertIn('no channels', str(msgbox.call_args))
+
+    def test_editor_hint_explains_where_apply_lives(self):
+        from chirp.profiles import model as profile_model
+        dlg = wxmain.profileeditor.ProfileEditorDialog(
+            self.frame, profile_model.Profile(name='Hint'))
+        self.addCleanup(dlg.Destroy)
+
+        texts = []
+
+        def _collect(widget):
+            if isinstance(widget, wx.StaticText):
+                texts.append(widget.GetLabelText())
+            for child in widget.GetChildren():
+                _collect(child)
+
+        _collect(dlg)
+        self.assertTrue(
+            any('Apply Profile to Current Image' in t for t in texts),
+            'no visible hint in the Profile editor points at Apply')
+
+    def test_multiple_open_editors_apply_targets_only_the_active_one(self):
+        eset = self._blank_csv_editorset()
+        self._populate_via_pa_write_path(eset, 3, 146520000, 'SRC')
+        result = profilecontroller.create_profile_from_editorset(
+            eset, name='MultiTarget')
+
+        first_eset, first_memedit = self._empty_target_csv()
+        second_eset, second_memedit = self._empty_target_csv()
+        # _blank_csv_editorset()/open_file() makes the most recently
+        # opened tab active -- second_eset here.
+        self.assertIs(second_eset, self.frame.current_editorset)
+        self.frame._current_profile = result.profile
+        self.frame._current_profile_path = None
+
+        def _approve_and_ok(parent, change_set):
+            for item in change_set.items:
+                if not item.blocked:
+                    change_set.set_approval(
+                        item.logical_id, profile_schema.APPROVAL_APPROVED)
+            dlg = mock.MagicMock()
+            dlg.ShowModal.return_value = wx.ID_OK
+            return dlg
+
+        with mock.patch.object(
+                wxmain.profileapply, 'ProfileApplyPreviewDialog',
+                side_effect=_approve_and_ok):
+            self.frame._menu_profile_apply(None)
+
+        first_names = [
+            first_eset.radio.get_memory(n).name
+            for n in range(*first_eset.radio.get_features().memory_bounds)
+            if not first_eset.radio.get_memory(n).empty]
+        second_names = [
+            second_eset.radio.get_memory(n).name
+            for n in range(*second_eset.radio.get_features().memory_bounds)
+            if not second_eset.radio.get_memory(n).empty]
+        self.assertNotIn('SRC', first_names)
+        self.assertIn('SRC', second_names)
+
     def _empty_target_csv(self):
         target_eset = self._blank_csv_editorset()
         memedit_widget = profilecontroller.get_memedit(target_eset)

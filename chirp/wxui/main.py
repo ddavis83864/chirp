@@ -1883,16 +1883,21 @@ class ChirpMain(wx.Frame):
     def _menu_profile_apply(self, event):
         if self._current_profile is None:
             wx.MessageBox(
-                _('No profile is open. Use Profile > Open Profile or '
-                  'Create Profile from Current Image first.'),
+                _('No Profile is currently loaded. Create or open a '
+                  'Profile before applying it.'),
+                _('Apply Profile'), wx.OK | wx.ICON_ERROR, self)
+            return
+        if not self._current_profile.channels:
+            wx.MessageBox(
+                _('This Profile has no channels to apply.'),
                 _('Apply Profile'), wx.OK | wx.ICON_ERROR, self)
             return
         eset = self.current_editorset
         memedit_widget = profilecontroller.get_memedit(eset)
         if memedit_widget is None:
             wx.MessageBox(
-                _('The current tab has no memories to apply a profile '
-                  'to.'),
+                _('Open or create a compatible memory image before '
+                  'applying the Profile.'),
                 _('Apply Profile'), wx.OK | wx.ICON_ERROR, self)
             return
 

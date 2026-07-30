@@ -255,12 +255,23 @@ class ProfileEditorDialog(wx.Dialog):
         self.validation_text = wx.TextCtrl(
             self, style=wx.TE_MULTILINE | wx.TE_READONLY, size=(-1, 80))
 
+        # OK here only accepts edits and closes this dialog -- it does
+        # not write anything to any memory image. This is the one
+        # place a user looking at the (modal, so the main menu bar is
+        # unreachable while it's open) editor can be told where the
+        # separate Apply command actually lives, once they close it.
+        apply_hint = wx.StaticText(self, label=_(
+            'OK saves your changes to this Profile. To write it to an '
+            'open memory image, close this dialog and use Profile > '
+            'Apply Profile to Current Image.'))
+
         buttons = self.CreateButtonSizer(wx.OK | wx.CANCEL)
         outer = wx.BoxSizer(wx.VERTICAL)
         outer.Add(notebook, 1, wx.EXPAND | wx.ALL, 8)
         outer.Add(wx.StaticText(self, label=_('Validation:')),
                   0, wx.LEFT | wx.RIGHT, 8)
         outer.Add(self.validation_text, 0, wx.EXPAND | wx.ALL, 8)
+        outer.Add(apply_hint, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 8)
         outer.Add(buttons, 0, wx.EXPAND | wx.ALL, 8)
         self.SetSizerAndFit(outer)
         self.SetSize((640, 720))
