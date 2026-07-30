@@ -51,9 +51,9 @@ def parse_schema_version(raw):
 def check_schema_version(data):
     """Reject unknown schema *major* versions outright (section 4).
 
-    A newer minor version from a future compatible release is allowed
-    through (its unknown-to-us fields are simply not read), but a major
-    version bump means the document shape may be incompatible.
+    A newer, still-compatible minor version is allowed through (its
+    unknown-to-us fields are simply not read), but a major version
+    bump means the document shape may be incompatible.
     """
     major, _minor = parse_schema_version(data.get('schema_version'))
     if major != schema.SCHEMA_MAJOR:
