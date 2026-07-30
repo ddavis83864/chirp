@@ -1791,6 +1791,15 @@ class ChirpMain(wx.Frame):
         self._current_profile_path = None
         self._menu_profile_edit(None)
 
+        if self._current_profile_path is None:
+            save_now = wx.MessageDialog(
+                self,
+                _('Save this profile now? You can also save it later '
+                  'from Profile > Save Profile.'),
+                _('Save Profile'), style=wx.ICON_QUESTION | wx.YES_NO)
+            if save_now.ShowModal() == wx.ID_YES:
+                self._menu_profile_save_as(None)
+
     @common.error_proof(profile_errors.ProfileError)
     def _menu_profile_open(self, event):
         wildcard = (
@@ -1810,6 +1819,11 @@ class ChirpMain(wx.Frame):
         self._current_profile = profile_serialization.load(path)
         self._current_profile_path = path
 
+    def _show_profile_saved_message(self, path):
+        wx.MessageBox(
+            _('Profile saved to:\n%s') % path,
+            _('Profile Saved'), wx.OK | wx.ICON_INFORMATION, self)
+
     @common.error_proof(profile_errors.ProfileError)
     def _menu_profile_save(self, event):
         if self._current_profile is None:
@@ -1820,6 +1834,7 @@ class ChirpMain(wx.Frame):
             return self._menu_profile_save_as(event)
         profile_serialization.save(
             self._current_profile, self._current_profile_path)
+        self._show_profile_saved_message(self._current_profile_path)
 
     @common.error_proof(profile_errors.ProfileError)
     def _menu_profile_save_as(self, event):
@@ -1835,6 +1850,8 @@ class ChirpMain(wx.Frame):
             os.sep, '_') + profile_schema.FILE_EXTENSION
         style = wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT | wx.FD_CHANGE_DIR
         with wx.FileDialog(self, _('Save Profile As'),
+                           defaultDir=chirp_platform.get_platform()
+                           .get_last_dir(),
                            defaultFile=default_name, wildcard=wildcard,
                            style=style) as fd:
             if fd.ShowModal() == wx.ID_CANCEL:
@@ -1843,6 +1860,7 @@ class ChirpMain(wx.Frame):
             chirp_platform.get_platform().set_last_dir(fd.GetDirectory())
         profile_serialization.save(self._current_profile, path)
         self._current_profile_path = path
+        self._show_profile_saved_message(path)
 
     @common.error_proof(profile_errors.ProfileError)
     def _menu_profile_edit(self, event):
