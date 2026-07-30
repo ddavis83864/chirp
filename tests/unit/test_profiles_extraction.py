@@ -246,9 +246,9 @@ class _MalformedFeatures:
     every assignment (a 2-item NTUPLE), so no conformant driver can
     ever produce a malformed value there -- this plain stand-in exists
     only to prove enumerate_source_memories() fails closed with a
-    specific, typed error rather than an unhandled exception if a
-    future/adversarial get_features() implementation ever managed to
-    return one anyway."""
+    specific, typed error rather than an unhandled exception, should
+    some later or otherwise adversarial get_features() implementation
+    ever manage to return one anyway."""
 
     memory_bounds = None
 
