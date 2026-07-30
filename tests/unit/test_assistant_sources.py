@@ -748,10 +748,10 @@ class RequestedBandAndRecordTypeFilteringTest(unittest.TestCase):
         self.assertNotIn('70cm RPT', labels)
 
     def test_provider_ignoring_band_filter_is_still_enforced(self):
-        # Simulates RepeaterBook (or any future source) returning
-        # records outside the requested band despite the query's own
-        # bands= parameter -- the defense-in-depth layer must not
-        # trust that the provider actually honored it.
+        # Simulates RepeaterBook (or any other, later-added source)
+        # returning records outside the requested band despite the
+        # query's own bands= parameter -- the defense-in-depth layer
+        # must not trust that the provider actually honored it.
         req = models.ProgrammingRequest(
             requested_services=(models.SERVICE_HAM,),
             requested_bands=(models.BAND_2M,),
