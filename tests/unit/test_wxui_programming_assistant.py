@@ -11,8 +11,11 @@ to run (it already does, per tox.ini's [testenv:unit] sitepackages).
 
 import sys
 import tempfile
+import threading
 import unittest
 from unittest import mock
+
+import requests
 
 # Other test modules (e.g. test_wxui_memquery.py) mock sys.modules['wx']
 # at import time to test wx.* code without a real wx runtime. Since
@@ -30,6 +33,7 @@ import wx.adv  # noqa: E402
 
 from chirp import chirp_common  # noqa: E402
 from chirp.assistant import models  # noqa: E402
+from chirp.assistant import providers  # noqa: E402
 from chirp.drivers import generic_csv  # noqa: E402
 from chirp.wxui import config  # noqa: E402
 from chirp.wxui import memedit  # noqa: E402
@@ -69,6 +73,23 @@ def _ensure_wx_app():
         raise unittest.SkipTest(
             'no display available for wx GUI tests: %s' % e)
     return _APP
+
+
+def _safe_destroy(window):
+    """addCleanup(window.Destroy) target for a standalone top-level
+    window (e.g. a wx.Dialog constructed but never Show()n/ShowModal()
+    ed) that may already be gone by cleanup time -- same tolerance as
+    _safe_post_event() above, for the same reason: wx.Window.Destroy()
+    defers actual C++-level deletion, and this file's own tearDown()
+    already documents that a not-yet-actually-freed top-level window
+    can end up torn down as a side effect of unrelated event
+    processing elsewhere in the same run. Calling Destroy() again here
+    is only ever cleanup, never a correctness assertion, so tolerating
+    "already gone" is correct, not a defect being papered over."""
+    try:
+        window.Destroy()
+    except RuntimeError:
+        pass
 
 
 class _FakeEditorSet:
@@ -484,6 +505,49 @@ class ReviewPageTest(ProgrammingAssistantWxTestBase):
         details = page.list.GetItemText(0, 9)
         self.assertIn('Name truncated to fit this radio', details)
 
+    def test_source_warnings_shown_before_apply_not_only_on_result(self):
+        # Phase 5: plan.warnings previously only ever reached the user
+        # via plan.skipped_sources' bare source names on the post-
+        # Apply Result page -- never here, where the user actually
+        # decides what to approve.
+        ready = models.ChannelCandidate(
+            source='s', service=models.SERVICE_HAM, group='g', label='R',
+            freq=146520000, status=models.STATUS_READY, include=True,
+            memory_number=1, name='R1')
+        plan = models.ChannelPlan(
+            groups=[models.PlanGroup(name='g', candidates=[ready])],
+            warnings=[models.PlanWarning(
+                severity='warning',
+                message='RepeaterBook (amateur) unavailable: could not '
+                        'connect (network unreachable or offline)')])
+        self.context.plan = plan
+        page = programming_assistant.ReviewPage(self.context)
+        page._populate()
+
+        self.assertTrue(page.source_details_btn.IsShown())
+        self.assertIn('1', page.source_status.GetLabel())
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls:
+            page._on_source_details(None)
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('RepeaterBook (amateur) unavailable',
+                      mock_dialog_cls.call_args[0][1])
+
+    def test_no_warnings_hides_source_details_button(self):
+        ready = models.ChannelCandidate(
+            source='s', service=models.SERVICE_HAM, group='g', label='R',
+            freq=146520000, status=models.STATUS_READY, include=True,
+            memory_number=1, name='R1')
+        self.context.plan = models.ChannelPlan(
+            groups=[models.PlanGroup(name='g', candidates=[ready])])
+        page = programming_assistant.ReviewPage(self.context)
+        page._populate()
+
+        self.assertFalse(page.source_details_btn.IsShown())
+        self.assertEqual('', page.source_status.GetLabel())
+
     def test_existing_conflict_shown_with_reason(self):
         conflict = models.ChannelCandidate(
             source='s', service=models.SERVICE_HAM, group='g', label='C',
@@ -520,6 +584,200 @@ class ReviewPageTest(ProgrammingAssistantWxTestBase):
         finalized = self.context.service.finalize_for_apply(plan)
         applied_numbers = {memory.number for _c, memory in finalized}
         self.assertTrue(applied_numbers.issubset(shown_numbers))
+
+
+class ReviewPageRealEventNextButtonTest(ProgrammingAssistantWxTestBase):
+    """Regression coverage for a Windows validation report: on first
+    arrival at Review, selecting a candidate did not enable Next --
+    the user had to go Back to Confirm and Next to Review again before
+    the button reflected their selection.
+
+    Root cause, confirmed by reading the code (the same class of
+    defect ReviewPageTest's own sibling, DescribePageServiceValidationTest,
+    already documents and fixed for DescribePage.services, but the
+    identical fix was never applied to ReviewPage.list): _on_check()
+    updates candidate.include in the model but never calls
+    self.validate_next() -- the AssistantPage method that actually
+    re-Enable()s the real wx.ID_FORWARD button. Only page_shown(),
+    called once when the page becomes current (including via the
+    Back-then-Next workaround, which re-triggers EVT_WIZARD_PAGE_
+    CHANGED), ever calls validate_next() before this fix.
+
+    The existing ReviewPageTest coverage (test_unchecking_row_updates_
+    candidate etc.) called page._on_check(_FakeIndexEvent(idx)) and
+    checked page._validate_next()'s return value directly -- exactly
+    the same test-shape gap that let the original DescribePage version
+    of this bug through, since neither exercises the real wx event
+    path or the real button. These tests fire a genuine
+    EVT_LIST_ITEM_CHECKED/UNCHECKED via ProcessEvent() against a real
+    wx.adv.Wizard using the production event wiring, and check the
+    actual wx.ID_FORWARD button's real IsEnabled() state.
+    """
+
+    def _plan_with_two_ready_candidates(self):
+        a = models.ChannelCandidate(
+            source='RepeaterBook', service=models.SERVICE_HAM,
+            group='Local Amateur Repeaters', label='W7ABC', freq=146880000,
+            tx_freq=146280000, status=models.STATUS_READY, include=True,
+            memory_number=1, name='W7ABC')
+        b = models.ChannelCandidate(
+            source='static_ham_calling', service=models.SERVICE_HAM,
+            group='Amateur Simplex', label='Calling 146.520',
+            freq=146520000, status=models.STATUS_READY, include=True,
+            memory_number=2, name='CALL')
+        return models.ChannelPlan(groups=[
+            models.PlanGroup(name='Local Amateur Repeaters', candidates=[a]),
+            models.PlanGroup(name='Amateur Simplex', candidates=[b]),
+        ])
+
+    def _setup_review_page(self, plan):
+        self.context.plan = plan
+        wizard = self.wizard
+        programming_assistant._wire_wizard_events(wizard)
+        review = self.context.get_page(
+            'review', programming_assistant.ReviewPage)
+        wizard.GetPageAreaSizer().Add(review)
+        wizard.ShowPage(review)
+        return wizard, review
+
+    def _toggle_row(self, review, index, checked):
+        review.list.CheckItem(index, checked)
+        event_type = (wx.EVT_LIST_ITEM_CHECKED if checked
+                      else wx.EVT_LIST_ITEM_UNCHECKED)
+        evt = wx.ListEvent(event_type.typeId, review.list.GetId())
+        evt.SetIndex(index)
+        review.list.GetEventHandler().ProcessEvent(evt)
+
+    def test_first_arrival_matches_candidate_include_state(self):
+        # Both candidates default to include=True (the planner's own
+        # default-selection policy -- see policies.py/validator.py:
+        # only candidates that fail radio validation get include=False)
+        # -- first arrival must show them checked and Next enabled
+        # without any interaction at all.
+        _wizard, review = self._setup_review_page(
+            self._plan_with_two_ready_candidates())
+        self.assertTrue(review.list.IsItemChecked(0))
+        self.assertTrue(review.list.IsItemChecked(1))
+        forward = review.FindWindowById(wx.ID_FORWARD)
+        self.assertTrue(forward.IsEnabled())
+
+    def test_unchecking_the_only_selection_disables_next_immediately(self):
+        blocked = models.ChannelCandidate(
+            source='s', service=models.SERVICE_HAM, group='g', label='Bad',
+            freq=1, include=False, status=models.STATUS_BLOCKED)
+        ready = models.ChannelCandidate(
+            source='s', service=models.SERVICE_HAM, group='g', label='Good',
+            freq=146520000, include=True, status=models.STATUS_READY,
+            memory_number=1, name='GOOD')
+        plan = models.ChannelPlan(groups=[
+            models.PlanGroup(name='g', candidates=[ready, blocked])])
+        _wizard, review = self._setup_review_page(plan)
+        forward = review.FindWindowById(wx.ID_FORWARD)
+        self.assertTrue(forward.IsEnabled())
+
+        self._toggle_row(review, 0, False)
+
+        self.assertFalse(forward.IsEnabled(),
+                         'unchecking the only selected candidate must '
+                         'immediately disable Next -- no Back/Next '
+                         'navigation should be required')
+
+    def test_rechecking_immediately_enables_next_no_back_and_forward(self):
+        # The exact reported sequence: uncheck everything (Next
+        # disables, covered above), then select a candidate -- Next
+        # must enable right away, not only after Back then Next.
+        plan = self._plan_with_two_ready_candidates()
+        _wizard, review = self._setup_review_page(plan)
+        forward = review.FindWindowById(wx.ID_FORWARD)
+
+        self._toggle_row(review, 0, False)
+        self._toggle_row(review, 1, False)
+        self.assertFalse(forward.IsEnabled())
+
+        self._toggle_row(review, 0, True)
+
+        self.assertTrue(
+            forward.IsEnabled(),
+            'selecting a candidate must immediately enable Next -- '
+            'reproduces the reported defect where only a Back-then-Next '
+            'round trip refreshed the button state')
+
+    def test_selection_persists_across_back_and_forward_navigation(self):
+        # Deliberately exercises ReviewPage's own re-entry path
+        # directly (the same page_shown() + validate_next() calls
+        # _on_page_changed makes on every real transition -- see
+        # _wire_wizard_events) rather than round-tripping through a
+        # real Confirm page: Confirm's own build-freshness gate
+        # (ConfirmPageBuildFreshnessTest) would kick off a real
+        # background rebuild here with this test's minimal/empty
+        # context.request, replacing context.plan with an unrelated
+        # empty one -- a separate concern from what this test is
+        # about, which is purely whether Review's OWN re-population
+        # preserves candidate.include state correctly.
+        plan = self._plan_with_two_ready_candidates()
+        _wizard, review = self._setup_review_page(plan)
+
+        self._toggle_row(review, 0, False)
+        self.assertFalse(review._row_candidates[0].include)
+        self.assertTrue(review._row_candidates[1].include)
+
+        # Simulates arriving at Review again (e.g. after Back then
+        # Next) -- same calls _on_page_changed makes on every real
+        # transition.
+        review.page_shown()
+        review.validate_next()
+
+        self.assertFalse(review.list.IsItemChecked(0))
+        self.assertTrue(review.list.IsItemChecked(1))
+        forward = review.FindWindowById(wx.ID_FORWARD)
+        self.assertTrue(forward.IsEnabled())
+
+    def test_checking_a_blocked_candidate_does_not_enable_next(self):
+        # A candidate with validation errors is blocked and can never
+        # be included, regardless of the checkbox -- see
+        # AssistantService.finalize_for_apply()'s own authoritative
+        # re-check, which skips anything with errors independent of
+        # include. The Review page itself must not let a user think
+        # they successfully selected one either.
+        blocked = models.ChannelCandidate(
+            source='s', service=models.SERVICE_HAM, group='g', label='Bad',
+            freq=99999999999, status=models.STATUS_BLOCKED, include=False,
+            errors=('out of range',))
+        plan = models.ChannelPlan(
+            groups=[models.PlanGroup(name='g', candidates=[blocked])])
+        _wizard, review = self._setup_review_page(plan)
+        forward = review.FindWindowById(wx.ID_FORWARD)
+        self.assertFalse(forward.IsEnabled())
+        self.assertFalse(review.list.IsItemChecked(0))
+
+        self._toggle_row(review, 0, True)
+
+        self.assertFalse(
+            review.list.IsItemChecked(0),
+            'checking a blocked candidate must revert, not stick')
+        self.assertFalse(blocked.include)
+        self.assertFalse(
+            forward.IsEnabled(),
+            'a blocked candidate must never be able to enable Next')
+
+    def test_toggling_does_not_duplicate_rows_or_recurse(self):
+        plan = self._plan_with_two_ready_candidates()
+        _wizard, review = self._setup_review_page(plan)
+        row_count_before = review.list.GetItemCount()
+        candidate_count_before = len(review._row_candidates)
+
+        for _ in range(3):
+            self._toggle_row(review, 0, False)
+            self._toggle_row(review, 0, True)
+
+        self.assertEqual(row_count_before, review.list.GetItemCount())
+        self.assertEqual(candidate_count_before,
+                         len(review._row_candidates))
+        # _on_check() only ever sets candidate.include and calls
+        # validate_next() -- it never re-populates the list -- so
+        # repeated toggling can't recurse into _populate() and can't
+        # accumulate duplicate row entries.
+        self.assertTrue(review._row_candidates[0].include)
 
 
 class _FakeIndexEvent:
@@ -794,25 +1052,60 @@ class ResultPageApplyTest(ProgrammingAssistantWxTestBase):
         self.assertTrue(self.radio.get_memory(first_number).empty)
 
 
+def _install_fake_open_file(chirpmain, radio, editor, succeeds=True):
+    """Stands in for the real ChirpMain.open_file(): when called,
+    simulates a new blank memory document becoming the active tab --
+    exactly the observable effect _ensure_blank_memory_document()
+    depends on (chirpmain.current_editorset resolving a compatible
+    memedit afterward) -- without needing this test file's lightweight
+    fixtures to also reproduce the real wx.Notebook/ChirpEditorSet
+    construction, which is chirp.wxui.main's own, separately covered,
+    responsibility. Returns the calls list so a test can assert
+    open_file was invoked exactly once, with the expected arguments.
+    """
+    calls = []
+
+    def fake_open_file(filename, exists=True, select=True, rclass=None,
+                       atindex=None):
+        calls.append((filename, exists))
+        if succeeds:
+            chirpmain.current_editorset = _FakeEditorSet(radio, editor)
+
+    chirpmain.open_file = fake_open_file
+    return calls
+
+
 class DoProgrammingAssistantTest(ProgrammingAssistantWxTestBase):
-    """Regression coverage for a Windows validation finding: selecting
-    Radio > Programming Assistant with no radio image open at all (no
-    ChirpEditorSet tab exists yet, so ChirpMain.current_editorset is
-    None) raised 'NoneType' object has no attribute 'current_editor'
-    from AssistantContext.__init__ -> _find_memedit(), instead of the
-    friendly "No memory editor is available" dialog that
-    do_programming_assistant() already intended to show for this exact
-    situation. common.error_proof() caught the AttributeError and
-    displayed it verbatim as a raw exception dialog rather than letting
-    it crash the app outright, which is why the report described a
-    Python exception dialog rather than a hard crash.
+    """Regression coverage for two Windows validation findings:
+
+    1. (Historical) Selecting Radio > Programming Assistant with no
+       radio image open at all (no ChirpEditorSet tab exists yet, so
+       ChirpMain.current_editorset is None) raised 'NoneType' object
+       has no attribute 'current_editor' from AssistantContext.
+       __init__ -> _find_memedit(), instead of a friendly message.
+       common.error_proof() caught the AttributeError and displayed it
+       verbatim as a raw exception dialog rather than letting it crash
+       the app outright, which is why the report described a Python
+       exception dialog rather than a hard crash.
+
+    2. (Current) The friendly message itself -- "No memory editor is
+       available for the current tab" -- was later identified as an
+       unnecessary dead end for entirely normal use (a freshly opened
+       CHIRP, or a Settings/Banks-only tab active): see
+       ProgrammingAssistantLaunchTest below for the replacement
+       automatic-blank-document behavior. This class now covers the
+       two boundary cases that behavior itself must still handle
+       cleanly: blank-document creation genuinely failing (still no
+       crash, still no raw exception), and the pre-existing "editor
+       already available" path (unchanged, still reaches the wizard
+       directly, still creates nothing new).
     """
 
-    def test_no_editor_open_shows_friendly_message_not_a_crash(self):
-        # Simulate CHIRP freshly launched: no ChirpEditorSet tab exists
-        # yet, so current_editorset is None -- distinct from "a tab is
-        # open but it's Settings/Banks, not Memories", which was
-        # already handled correctly before this fix.
+    def test_creation_failure_shows_actionable_message_not_a_crash(self):
+        # No open_file() at all on this bare wx.Frame stand-in --
+        # calling it raises AttributeError, exercising exactly the
+        # "blank-document creation failed" path from a real exception,
+        # not a mock standing in for one.
         self.frame.current_editorset = None
 
         with mock.patch(
@@ -825,17 +1118,26 @@ class DoProgrammingAssistantTest(ProgrammingAssistantWxTestBase):
             programming_assistant.do_programming_assistant(
                 self.frame, None)
 
-        # The intended friendly message fired exactly once...
         mock_dialog_cls.assert_called_once()
-        self.assertIn('No memory editor',
-                      mock_dialog_cls.call_args[0][1])
+        message = mock_dialog_cls.call_args[0][1]
+        self.assertIn('could not create a new memory editor', message)
+        # The old, no-longer-applicable wording is gone.
+        self.assertNotIn('No memory editor is available', message)
+        # Sanitized -- no raw Python exception text (AttributeError,
+        # a module path, etc.) leaked into the user-facing dialog.
+        self.assertNotIn('AttributeError', message)
+        self.assertNotIn('.py', message)
         # ...and error_proof() never had to catch an unhandled
-        # exception to get there.
+        # exception to get there -- do_programming_assistant() handled
+        # the failure itself.
         mock_show_error.assert_not_called()
 
     def test_active_editor_reaches_wizard_run(self):
         self.frame.current_editorset = _FakeEditorSet(
             self.radio, self.editor)
+        # No open_file on this fixture at all -- if the existing-editor
+        # path incorrectly tried to create a new document, this would
+        # raise AttributeError instead of reaching RunWizard().
 
         with mock.patch.object(wx.adv.Wizard, 'RunWizard',
                                return_value=True) as run, \
@@ -847,6 +1149,375 @@ class DoProgrammingAssistantTest(ProgrammingAssistantWxTestBase):
 
         run.assert_called_once()
         mock_show_error.assert_not_called()
+
+    def test_active_editor_path_creates_no_new_document(self):
+        original_editorset = _FakeEditorSet(self.radio, self.editor)
+        self.frame.current_editorset = original_editorset
+        open_file_calls = _install_fake_open_file(
+            self.frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True):
+            programming_assistant.do_programming_assistant(
+                self.frame, None)
+
+        self.assertEqual([], open_file_calls)
+        self.assertIs(original_editorset, self.frame.current_editorset)
+
+    def test_active_editor_path_leaves_existing_memory_data_unchanged(self):
+        self.frame.current_editorset = _FakeEditorSet(
+            self.radio, self.editor)
+        before = self._full_snapshot(self.radio.get_memory(1))
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True):
+            programming_assistant.do_programming_assistant(
+                self.frame, None)
+
+        after = self._full_snapshot(self.radio.get_memory(1))
+        self.assertEqual(before, after)
+
+    @staticmethod
+    def _full_snapshot(mem):
+        return (mem.empty, mem.freq, mem.name, mem.mode, mem.duplex,
+                mem.offset, mem.tmode, mem.rtone, mem.ctone, mem.dtcs)
+
+
+class ProgrammingAssistantLaunchTest(ProgrammingAssistantWxTestBase):
+    """Coverage for the automatic blank-memory-document launch
+    workflow: selecting Programming Assistant with no compatible
+    memory editor active no longer dead-ends on an error message --
+    chirp.wxui.main.ChirpMain.open_file('Untitled.csv', exists=False)
+    (the same call Radio > New uses) is invoked to create one, exactly
+    as if the user had done so manually, and the assistant opens
+    against the result.
+
+    chirp.wxui.main.ChirpEditorSet.__init__ constructs and refreshes
+    its memedit.ChirpMemEdit synchronously, with no thread, timer, or
+    wx.CallAfter-style deferred step anywhere in this path (confirmed
+    by reading it directly) -- so unlike some other parts of this
+    file, these tests never need a background-thread stand-in or a
+    _safe_post_event()-style round trip: by the time open_file()
+    returns, there is nothing left to wait for.
+    """
+
+    def _no_editor_frame(self):
+        self.frame.current_editorset = None
+        return self.frame
+
+    @staticmethod
+    def _full_snapshot(mem):
+        return (mem.empty, mem.freq, mem.name, mem.mode, mem.duplex,
+                mem.offset, mem.tmode, mem.rtone, mem.ctone, mem.dtcs)
+
+    def test_no_editor_creates_document_exactly_once(self):
+        frame = self._no_editor_frame()
+        calls = _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertEqual([('Untitled.csv', False)], calls)
+
+    def test_new_document_becomes_the_active_tab(self):
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertIsNotNone(frame.current_editorset)
+        self.assertIsInstance(frame.current_editorset.current_editor,
+                              memedit.ChirpMemEdit)
+
+    def test_assistant_opens_against_the_new_editor(self):
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True) as run, \
+                mock.patch(
+                    'chirp.wxui.common.error_proof.show_error'
+                    ) as mock_show_error:
+            programming_assistant.do_programming_assistant(frame, None)
+
+        run.assert_called_once()
+        mock_show_error.assert_not_called()
+
+    def test_obsolete_error_message_not_shown_for_normal_use(self):
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True), \
+                mock.patch(
+                    'chirp.wxui.programming_assistant.wx.MessageDialog'
+                    ) as mock_dialog_cls:
+            programming_assistant.do_programming_assistant(frame, None)
+
+        mock_dialog_cls.assert_not_called()
+
+    def test_new_editor_bound_not_a_stale_prior_reference(self):
+        # A DIFFERENT editorset was "active" only in the sense of being
+        # the object identity present before open_file() ran --
+        # confirms the assistant's context is built from whatever
+        # open_file() actually left as current, not captured earlier.
+        frame = self._no_editor_frame()
+        new_radio = generic_csv.CSVRadio(None)
+        new_editor = memedit.ChirpMemEdit(new_radio, self.frame)
+        self.addCleanup(_safe_destroy, new_editor)
+        new_editor.refresh()
+        _install_fake_open_file(frame, new_radio, new_editor)
+
+        captured_context = {}
+        real_init = programming_assistant.AssistantContext.__init__
+
+        def capturing_init(self, wizard, chirpmain):
+            real_init(self, wizard, chirpmain)
+            captured_context['memedit'] = self.memedit
+
+        with mock.patch.object(
+                programming_assistant.AssistantContext, '__init__',
+                capturing_init), \
+                mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                                  return_value=True):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertIs(new_editor, captured_context['memedit'])
+
+    def test_cancel_leaves_new_document_open(self):
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=False):  # Cancel
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertIsNotNone(frame.current_editorset)
+
+    def test_cancel_adds_no_memories(self):
+        # generic_csv.CSVRadio(None) is not fully empty by construction
+        # -- it pre-populates memory 0 with a default placeholder
+        # frequency (see CSVRadio._blank(setDefault=True)) -- so this
+        # compares a before/after snapshot of every slot, the same
+        # pattern DoProgrammingAssistantTest.test_active_editor_path_
+        # leaves_existing_memory_data_unchanged above uses, rather
+        # than asserting the (for this radio, false) premise that a
+        # freshly created document starts with literally nothing in it.
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor)
+        lo, hi = self.radio.get_features().memory_bounds
+        before = [self._full_snapshot(self.radio.get_memory(n))
+                  for n in range(lo, hi + 1)]
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=False):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        after = [self._full_snapshot(self.radio.get_memory(n))
+                 for n in range(lo, hi + 1)]
+        self.assertEqual(before, after)
+
+    def test_cancel_does_not_modify_a_different_open_document(self):
+        other_radio = generic_csv.CSVRadio(None)
+        mem = other_radio.get_memory(0)
+        mem.freq = 146520000
+        other_radio.set_memory(mem)
+        before = other_radio.get_memory(0).freq
+
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=False):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertEqual(before, other_radio.get_memory(0).freq)
+
+    def test_launch_guard_cleared_after_success(self):
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertNotIn(id(frame),
+                         programming_assistant._LAUNCH_IN_PROGRESS)
+
+    def test_second_launch_after_success_works_normally(self):
+        frame = self._no_editor_frame()
+        calls = _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True):
+            programming_assistant.do_programming_assistant(frame, None)
+            # Second, independent launch -- editor already active this
+            # time, so no second document should be created.
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertEqual(1, len(calls))
+
+    def test_reentrant_launch_while_pending_creates_one_document(self):
+        # Simulates a launch reaching RunWizard() while, for whatever
+        # reason, the module-level guard has not yet been cleared --
+        # the realistic trigger (per do_programming_assistant's own
+        # comment) is a stale queued event or programmatic re-entry,
+        # not a genuine UI race, since RunWizard() itself is modal and
+        # blocks this window's event loop for any real second click.
+        frame = self._no_editor_frame()
+        calls = _install_fake_open_file(frame, self.radio, self.editor)
+        reentrant_calls = []
+
+        def reentrant_run_wizard(self_wizard, start):
+            reentrant_calls.append(1)
+            programming_assistant.do_programming_assistant(frame, None)
+            return True
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               reentrant_run_wizard):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertEqual(1, len(calls))
+        self.assertEqual(1, len(reentrant_calls))
+
+    def test_launch_guard_cleared_after_creation_failure(self):
+        frame = self._no_editor_frame()
+        # No open_file at all -- creation raises.
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertNotIn(id(frame),
+                         programming_assistant._LAUNCH_IN_PROGRESS)
+
+    def test_later_launch_works_after_an_earlier_failure(self):
+        frame = self._no_editor_frame()
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        # Now give it a working open_file and try again.
+        calls = _install_fake_open_file(frame, self.radio, self.editor)
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True) as run:
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertEqual(1, len(calls))
+        run.assert_called_once()
+
+    def test_creation_exception_produces_actionable_error(self):
+        frame = self._no_editor_frame()
+
+        def raising_open_file(filename, exists=True, select=True,
+                              rclass=None, atindex=None):
+            raise RuntimeError('simulated disk error: /some/local/path')
+
+        frame.open_file = raising_open_file
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls:
+            mock_dialog_cls.return_value.ShowModal.return_value = wx.ID_OK
+            programming_assistant.do_programming_assistant(frame, None)
+
+        mock_dialog_cls.assert_called_once()
+        message = mock_dialog_cls.call_args[0][1]
+        self.assertIn('could not create a new memory editor', message)
+        self.assertNotIn('simulated disk error', message)
+        self.assertNotIn('/some/local/path', message)
+        self.assertNotIn('RuntimeError', message)
+
+    def test_creation_exception_is_logged(self):
+        frame = self._no_editor_frame()
+
+        def raising_open_file(filename, exists=True, select=True,
+                              rclass=None, atindex=None):
+            raise RuntimeError('simulated failure')
+
+        frame.open_file = raising_open_file
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'), \
+                mock.patch.object(
+                    programming_assistant.LOG, 'exception') as mock_log:
+            programming_assistant.do_programming_assistant(frame, None)
+
+        mock_log.assert_called_once()
+        self.assertIn('simulated failure', str(mock_log.call_args))
+
+    def test_initialization_failure_produces_actionable_error_not_open(
+            self):
+        # open_file() "succeeds" (raises nothing) but does not leave a
+        # compatible memedit behind -- the defensively-checked, not
+        # assumed-unreachable, case _ensure_blank_memory_document's
+        # docstring describes.
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor,
+                                succeeds=False)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True) as run, \
+                mock.patch(
+                    'chirp.wxui.programming_assistant.wx.MessageDialog'
+                    ) as mock_dialog_cls:
+            mock_dialog_cls.return_value.ShowModal.return_value = wx.ID_OK
+            programming_assistant.do_programming_assistant(frame, None)
+
+        run.assert_not_called()
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('could not create a new memory editor',
+                      mock_dialog_cls.call_args[0][1])
+
+    def test_no_unrelated_document_modified_on_failure(self):
+        other_radio = generic_csv.CSVRadio(None)
+        mem = other_radio.get_memory(0)
+        mem.freq = 146520000
+        other_radio.set_memory(mem)
+        before = other_radio.get_memory(0).freq
+
+        frame = self._no_editor_frame()
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertEqual(before, other_radio.get_memory(0).freq)
+
+    def test_creation_and_lookup_complete_before_wizard_construction_returns(
+            self):
+        # Direct evidence of the synchronous claim in this class's own
+        # docstring: no thread is started, and the editor is already
+        # resolvable via a plain, immediate call -- nothing here
+        # required a background thread, a timer, or an event round
+        # trip the way _interpret_worker()/_build_worker() elsewhere
+        # in this file do.
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch('threading.Thread') as mock_thread, \
+                mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                                  return_value=True):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        mock_thread.assert_not_called()
+
+    def test_tab_change_during_creation_binds_the_new_editor_not_stale(
+            self):
+        # _ensure_blank_memory_document() itself changes the active
+        # tab as an intentional side effect (open_file(..., select=
+        # True), matching Radio > New) -- confirms the context built
+        # afterward reflects that, not whatever was active when
+        # do_programming_assistant() started.
+        frame = self._no_editor_frame()
+        _install_fake_open_file(frame, self.radio, self.editor)
+
+        with mock.patch.object(wx.adv.Wizard, 'RunWizard',
+                               return_value=True):
+            programming_assistant.do_programming_assistant(frame, None)
+
+        self.assertIs(self.editor, frame.current_editorset.current_editor)
 
 
 class DescribePageServiceValidationTest(ProgrammingAssistantWxTestBase):
@@ -1451,6 +2122,730 @@ class MenuIntegrationTest(unittest.TestCase):
 
         programming_assistant.set_assistant_enabled(False)
         self.assertFalse(programming_assistant.assistant_enabled())
+
+
+class AssistantProviderDialogSizingTest(ProgrammingAssistantWxTestBase):
+    """Windows validation finding: the dialog opened smaller than its
+    own contents needed, with OK/Cancel not visible without a manual
+    resize -- see AssistantProviderDialog.__init__'s vbox.Fit(self)/
+    SetMinSize() call."""
+
+    def _make_dialog(self):
+        dlg = programming_assistant.AssistantProviderDialog(self.frame)
+        self.addCleanup(_safe_destroy, dlg)
+        return dlg
+
+    def test_ok_and_cancel_fit_within_initial_client_area(self):
+        dlg = self._make_dialog()
+        client = dlg.GetClientSize()
+        for btn_id in (wx.ID_OK, wx.ID_CANCEL):
+            btn = dlg.FindWindowById(btn_id)
+            self.assertIsNotNone(btn, 'button %r not found' % btn_id)
+            rect = btn.GetRect()
+            self.assertLessEqual(
+                rect.GetBottom(), client.height,
+                '%r extends below the dialog\'s client area' % btn_id)
+            self.assertLessEqual(
+                rect.GetRight(), client.width,
+                '%r extends past the dialog\'s client area' % btn_id)
+
+    def test_validate_button_also_fits(self):
+        dlg = self._make_dialog()
+        client = dlg.GetClientSize()
+        rect = dlg.validate_btn.GetRect()
+        self.assertLessEqual(rect.GetBottom(), client.height)
+        self.assertLessEqual(rect.GetRight(), client.width)
+
+    def test_min_size_matches_initial_fitted_size(self):
+        dlg = self._make_dialog()
+        # RESIZE_BORDER still lets the user grow the dialog further,
+        # but it must never be resizable BELOW what Fit() determined
+        # its contents need, which is what caused controls to be
+        # clipped in the original report.
+        self.assertEqual(dlg.GetSize(), dlg.GetMinSize())
+        self.assertGreater(dlg.GetMinSize().GetWidth(), 0)
+        self.assertGreater(dlg.GetMinSize().GetHeight(), 0)
+
+
+class AssistantProviderDialogValidateTest(ProgrammingAssistantWxTestBase):
+    """Coverage for the "Validate AI Config" button (Issue 2): it must
+    exercise the exact same provider.extract_intent() path "Interpret
+    with AI" uses -- create_provider() -> HTTP request -> response
+    parsing -> schema validation -- so only the network transport
+    (requests.post) is mocked here, never provider logic itself,
+    matching the pattern test_assistant_providers.py's HTTPProviderTest
+    already uses for the same reason.
+    """
+
+    class _ImmediateThread:
+        """Stands in for threading.Thread: runs its target immediately,
+        in the calling thread -- same pattern as
+        ConfirmPageBuildFreshnessTest._ImmediateThread."""
+
+        def __init__(self, target=None, args=()):
+            self._target = target
+            self._args = args
+
+        def start(self):
+            self._target(*self._args)
+
+        def join(self, timeout=None):
+            pass
+
+    def _make_dialog(self):
+        dlg = programming_assistant.AssistantProviderDialog(self.frame)
+        self.addCleanup(_safe_destroy, dlg)
+        return dlg
+
+    def _configure_ollama(self, dlg):
+        dlg.kind_choice.SetSelection(
+            providers.ALL_PROVIDER_KINDS.index(providers.PROVIDER_OLLAMA))
+        dlg.endpoint.SetValue('http://localhost:11434/api/chat')
+        dlg.model.SetValue('llama3')
+
+    def _run_validate_synchronously(self, dlg):
+        def fake_post_event(target, event):
+            target._on_validate_done(event)
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.PostEvent',
+                side_effect=fake_post_event), \
+                mock.patch(
+                    'chirp.wxui.programming_assistant.threading.Thread',
+                    self._ImmediateThread), \
+                mock.patch(
+                    'chirp.wxui.programming_assistant.wx.MessageDialog'
+                    ) as mock_dialog_cls:
+            dlg._on_validate(None)
+        return mock_dialog_cls
+
+    def test_success_exercises_real_provider_path_with_dialog_values(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+
+        fake_response = mock.Mock()
+        fake_response.status_code = 200
+        fake_response.json.return_value = {
+            'message': {'content':
+                        '{"location_text": "Boise", '
+                        '"requested_services": ["ham"]}'}}
+        with mock.patch('requests.post',
+                        return_value=fake_response) as post:
+            mock_dialog_cls = self._run_validate_synchronously(dlg)
+
+        # Real OllamaProvider._build_payload()/extract_intent() ran --
+        # not a stand-in "connectivity check" -- confirmed by checking
+        # what was actually posted: the real payload shape (model,
+        # messages, format=json), to the exact URL entered above.
+        post.assert_called_once()
+        self.assertEqual('http://localhost:11434/api/chat',
+                         post.call_args[0][0])
+        payload = post.call_args.kwargs['json']
+        self.assertEqual('llama3', payload['model'])
+        self.assertEqual('json', payload['format'])
+        self.assertNotIn('/api/tags', post.call_args[0][0])
+
+        mock_dialog_cls.assert_called_once()
+        self.assertEqual('AI Configuration Valid',
+                         mock_dialog_cls.call_args[0][2])
+        self.assertEqual('Configuration is valid.',
+                         dlg.validate_status.GetLabel())
+
+    def test_never_saves_configuration_or_settings(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        CONF = programming_assistant.CONF
+        CONF.set('endpoint', 'http://should-not-change.invalid')
+        CONF.set('model', 'should-not-change')
+        CONF.set('provider_kind', providers.PROVIDER_DISABLED)
+
+        fake_response = mock.Mock()
+        fake_response.status_code = 200
+        fake_response.json.return_value = {'message': {'content': '{}'}}
+        with mock.patch('requests.post', return_value=fake_response):
+            self._run_validate_synchronously(dlg)
+
+        self.assertEqual('http://should-not-change.invalid',
+                         CONF.get('endpoint'))
+        self.assertEqual('should-not-change', CONF.get('model'))
+        self.assertEqual(providers.PROVIDER_DISABLED,
+                         CONF.get('provider_kind'))
+
+    def test_uses_unsaved_dialog_edits_not_conf(self):
+        dlg = self._make_dialog()
+        CONF = programming_assistant.CONF
+        CONF.set('provider_kind', providers.PROVIDER_DISABLED)
+        CONF.set('endpoint', 'http://old.invalid')
+        CONF.set('model', 'old-model')
+        self._configure_ollama(dlg)
+        dlg.endpoint.SetValue('http://new.invalid/api/chat')
+        dlg.model.SetValue('new-model')
+
+        fake_response = mock.Mock()
+        fake_response.status_code = 200
+        fake_response.json.return_value = {'message': {'content': '{}'}}
+        with mock.patch('requests.post',
+                        return_value=fake_response) as post:
+            self._run_validate_synchronously(dlg)
+
+        self.assertEqual('http://new.invalid/api/chat',
+                         post.call_args[0][0])
+        self.assertEqual('new-model', post.call_args.kwargs['json']['model'])
+
+    def test_timeout_shows_meaningful_error(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        with mock.patch('requests.post',
+                        side_effect=requests.exceptions.Timeout):
+            mock_dialog_cls = self._run_validate_synchronously(dlg)
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('timed out', mock_dialog_cls.call_args[0][1])
+        self.assertEqual('Validation failed.',
+                         dlg.validate_status.GetLabel())
+
+    def test_connection_refused_shows_meaningful_error(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        with mock.patch(
+                'requests.post',
+                side_effect=requests.exceptions.ConnectionError):
+            mock_dialog_cls = self._run_validate_synchronously(dlg)
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('Could not reach', mock_dialog_cls.call_args[0][1])
+
+    def test_http_405_reproduces_original_report_and_is_detected(self):
+        # The exact defect this feature exists to catch before use: an
+        # Ollama endpoint missing the /api/chat path segment.
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        dlg.endpoint.SetValue('http://localhost:11434')
+        fake_response = mock.Mock()
+        fake_response.status_code = 405
+        with mock.patch('requests.post', return_value=fake_response):
+            mock_dialog_cls = self._run_validate_synchronously(dlg)
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('405', mock_dialog_cls.call_args[0][1])
+
+    def test_model_not_found_http_error(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        fake_response = mock.Mock()
+        fake_response.status_code = 404
+        with mock.patch('requests.post', return_value=fake_response):
+            mock_dialog_cls = self._run_validate_synchronously(dlg)
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('404', mock_dialog_cls.call_args[0][1])
+
+    def test_malformed_json_response(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        fake_response = mock.Mock()
+        fake_response.status_code = 200
+        fake_response.json.return_value = {
+            'message': {'content': 'not json at all'}}
+        with mock.patch('requests.post', return_value=fake_response):
+            mock_dialog_cls = self._run_validate_synchronously(dlg)
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('valid JSON', mock_dialog_cls.call_args[0][1])
+
+    def test_schema_validation_failure(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        fake_response = mock.Mock()
+        fake_response.status_code = 200
+        fake_response.json.return_value = {
+            'message': {'content': '{"channel_limit": 999999}'}}
+        with mock.patch('requests.post', return_value=fake_response):
+            mock_dialog_cls = self._run_validate_synchronously(dlg)
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('validation',
+                      mock_dialog_cls.call_args[0][1].lower())
+
+    def test_unexpected_response_shape(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        fake_response = mock.Mock()
+        fake_response.status_code = 200
+        fake_response.json.return_value = {'unexpected': 'shape'}
+        with mock.patch('requests.post', return_value=fake_response):
+            mock_dialog_cls = self._run_validate_synchronously(dlg)
+        mock_dialog_cls.assert_called_once()
+        self.assertIn('Unexpected', mock_dialog_cls.call_args[0][1])
+
+    def test_disabled_provider_shows_message_posts_nothing(self):
+        dlg = self._make_dialog()
+        dlg.kind_choice.SetSelection(
+            providers.ALL_PROVIDER_KINDS.index(providers.PROVIDER_DISABLED))
+        with mock.patch('requests.post') as post:
+            dlg._on_validate(None)
+        post.assert_not_called()
+        self.assertIn('Disabled', dlg.validate_status.GetLabel())
+
+    def test_error_message_never_leaks_api_key(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        dlg.kind_choice.SetSelection(providers.ALL_PROVIDER_KINDS.index(
+            providers.PROVIDER_OPENAI_COMPATIBLE))
+        dlg.endpoint.SetValue('https://example.invalid/v1/chat/completions')
+        dlg.api_key.SetValue('sk-super-secret-value')
+        fake_response = mock.Mock()
+        fake_response.status_code = 401
+        with mock.patch('requests.post', return_value=fake_response):
+            mock_dialog_cls = self._run_validate_synchronously(dlg)
+        mock_dialog_cls.assert_called_once()
+        shown_message = mock_dialog_cls.call_args[0][1]
+        self.assertNotIn('sk-super-secret-value', shown_message)
+
+    def test_buttons_disabled_while_running_and_restored_after(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+
+        class _HeldThread:
+            """Never actually runs its target -- simulates validation
+            still being in flight so the disabled/gauge-visible state
+            can be inspected before anything completes."""
+
+            def __init__(self, target=None, args=()):
+                pass
+
+            def start(self):
+                pass
+
+            def join(self, timeout=None):
+                pass
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.threading.Thread',
+                _HeldThread):
+            dlg._on_validate(None)
+
+        self.assertFalse(dlg.validate_btn.IsEnabled())
+        self.assertFalse(dlg.FindWindowById(wx.ID_OK).IsEnabled())
+        self.assertTrue(dlg.validate_gauge.IsShown())
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'):
+            dlg._on_validate_done(programming_assistant.ValidateThreadEvent(
+                dlg.GetId(), ok=True, error=None, cancelled=False))
+
+        self.assertTrue(dlg.validate_btn.IsEnabled())
+        self.assertTrue(dlg.FindWindowById(wx.ID_OK).IsEnabled())
+        self.assertFalse(dlg.validate_gauge.IsShown())
+
+    def test_cancel_while_validating_cancels_instead_of_closing(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        dlg._validate_thread = threading.Thread(target=lambda: None)
+        dlg._validate_cancel_event = threading.Event()
+
+        close_event = mock.Mock()
+        close_event.Skip = mock.Mock()
+        dlg._on_cancel(close_event)
+
+        self.assertTrue(dlg._validate_cancel_event.is_set())
+        close_event.Skip.assert_not_called()
+        self.assertEqual('Cancelling...', dlg.validate_status.GetLabel())
+
+    def test_cancel_while_idle_behaves_normally(self):
+        dlg = self._make_dialog()
+        dlg._validate_thread = None
+
+        event = mock.Mock()
+        dlg._on_cancel(event)
+
+        event.Skip.assert_called_once()
+
+    def test_close_while_validating_vetoes_and_cancels(self):
+        dlg = self._make_dialog()
+        self._configure_ollama(dlg)
+        dlg._validate_thread = threading.Thread(target=lambda: None)
+        dlg._validate_cancel_event = threading.Event()
+
+        close_event = mock.Mock()
+        close_event.CanVeto.return_value = True
+        dlg._on_close(close_event)
+
+        close_event.Veto.assert_called_once()
+        close_event.Skip.assert_not_called()
+        self.assertTrue(dlg._validate_cancel_event.is_set())
+
+    def test_cancelled_result_shows_no_dialog(self):
+        dlg = self._make_dialog()
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls:
+            dlg._on_validate_done(programming_assistant.ValidateThreadEvent(
+                dlg.GetId(), ok=False, error=None, cancelled=True))
+        mock_dialog_cls.assert_not_called()
+        self.assertEqual('Validation cancelled.',
+                         dlg.validate_status.GetLabel())
+
+
+class InterpretationCompletionDialogTest(ProgrammingAssistantWxTestBase):
+    """Coverage for Issue 3: after a successful "Interpret with AI",
+    the wizard previously returned to the same-looking Describe page
+    with no way to tell success-with-changes apart from success-with-
+    nothing-to-change or a silent no-op."""
+
+    def setUp(self):
+        super().setUp()
+        self.describe = self.context.get_page(
+            'describe', programming_assistant.DescribePage)
+
+    def _interpret_event(self, request=None, error=None):
+        return programming_assistant.InterpretThreadEvent(
+            self.describe.GetId(), request=request, error=error)
+
+    def test_changed_fields_are_listed(self):
+        req = models.ProgrammingRequest(
+            location_text='Boise',
+            requested_services=(models.SERVICE_HAM,))
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls:
+            self.describe._interpret_done(
+                self._interpret_event(request=req))
+
+        mock_dialog_cls.assert_called_once()
+        title, message = (mock_dialog_cls.call_args[0][2],
+                          mock_dialog_cls.call_args[0][1])
+        self.assertEqual('AI Interpretation Complete', title)
+        self.assertIn('Location', message)
+        self.assertIn('Requested services', message)
+        self.assertIn('Updated fields', message)
+
+    def test_no_changes_shows_explicit_no_change_message(self):
+        # Prime the fields to already match what the "interpreted"
+        # request produces, so applying it changes nothing -- the
+        # exact ambiguous case Issue 3 describes.
+        req = models.ProgrammingRequest()
+        self.describe._apply_request_to_fields(req)
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls:
+            self.describe._interpret_done(
+                self._interpret_event(request=req))
+
+        mock_dialog_cls.assert_called_once()
+        message = mock_dialog_cls.call_args[0][1]
+        self.assertIn('No changes were required', message)
+        self.assertIn('already matched', message)
+
+    def test_error_does_not_show_a_completion_dialog(self):
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls:
+            self.describe._interpret_done(
+                self._interpret_event(error='simulated provider error'))
+
+        mock_dialog_cls.assert_not_called()
+        self.assertIn('simulated provider error',
+                      self.describe.interpret_status.GetLabel())
+
+    def test_partial_change_only_lists_the_fields_that_actually_changed(
+            self):
+        self.describe.location.SetValue('Boise')
+        self.describe.radius.SetValue(25)
+        req = models.ProgrammingRequest(
+            location_text='Boise',  # unchanged
+            radius_miles=50,  # changed
+            requested_services=(models.SERVICE_HAM,))
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls:
+            self.describe._interpret_done(
+                self._interpret_event(request=req))
+
+        message = mock_dialog_cls.call_args[0][1]
+        self.assertIn('Radius', message)
+        self.assertIn('Requested services', message)
+        self.assertNotIn('Location', message)
+
+
+class DescribePageClearAllEntriesTest(ProgrammingAssistantWxTestBase):
+    """Coverage for the "Clear All Entries" button: restores the
+    Describe page to exactly its first-opened state (including
+    anything an AI interpretation populated) without touching
+    anything outside this page -- AI provider configuration, the open
+    radio image, or Confirm/Review/Result state.
+    """
+
+    def _setup_describe_page(self):
+        # Same pattern as DescribePageServiceValidationTest above --
+        # reuse self.wizard/self.context rather than a second wizard
+        # instance, since FindWindowById(wx.ID_FORWARD) (a shared wx
+        # stock ID) does not reliably scope to the right one otherwise.
+        wizard = self.wizard
+        programming_assistant._wire_wizard_events(wizard)
+        describe = self.context.get_page(
+            'describe', programming_assistant.DescribePage)
+        wizard.GetPageAreaSizer().Add(describe)
+        wizard.ShowPage(describe)
+        return wizard, describe
+
+    def _enter_sample_data(self, describe):
+        describe.text.SetValue('Find repeaters near Boise')
+        describe.location.SetValue('Boise, Idaho')
+        describe.radius.SetValue(50)
+        describe.activities.SetValue('camping, aviation')
+        describe.services.Check(
+            self._service_index(models.SERVICE_HAM), True)
+        describe.protected.SetValue('0-9')
+
+    def _service_index(self, service):
+        return [
+            i for i, (value, _label) in
+            enumerate(programming_assistant._SERVICE_LABELS)
+            if value == service][0]
+
+    def _confirm_clear(self, describe, confirm=True):
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls:
+            mock_dialog_cls.return_value.ShowModal.return_value = (
+                wx.ID_OK if confirm else wx.ID_CANCEL)
+            describe._on_clear_all(None)
+        return mock_dialog_cls
+
+    def test_button_exists(self):
+        _wizard, describe = self._setup_describe_page()
+        self.assertIsInstance(describe.clear_btn, wx.Button)
+        self.assertEqual('Clear All Entries', describe.clear_btn.GetLabel())
+
+    def test_button_is_enabled(self):
+        _wizard, describe = self._setup_describe_page()
+        self.assertTrue(describe.clear_btn.IsEnabled())
+
+    def test_no_data_is_a_safe_noop(self):
+        _wizard, describe = self._setup_describe_page()
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'
+                ) as mock_dialog_cls:
+            describe._on_clear_all(None)
+        mock_dialog_cls.assert_not_called()
+
+    def test_confirmation_dialog_appears_when_data_exists(self):
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+        mock_dialog_cls = self._confirm_clear(describe, confirm=True)
+        mock_dialog_cls.assert_called_once()
+        self.assertEqual('Clear All Entries?',
+                         mock_dialog_cls.call_args[0][2])
+
+    def test_cancel_leaves_all_fields_unchanged(self):
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+        self._confirm_clear(describe, confirm=False)
+
+        self.assertEqual('Find repeaters near Boise',
+                         describe.text.GetValue())
+        self.assertEqual('Boise, Idaho', describe.location.GetValue())
+        self.assertEqual(50, describe.radius.GetValue())
+        self.assertEqual('camping, aviation', describe.activities.GetValue())
+        self.assertIn(self._service_index(models.SERVICE_HAM),
+                      describe.services.GetCheckedItems())
+        self.assertEqual('0-9', describe.protected.GetValue())
+
+    def test_confirm_clears_free_form_description(self):
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+        self._confirm_clear(describe)
+        self.assertEqual('', describe.text.GetValue())
+
+    def test_confirm_clears_location(self):
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+        self._confirm_clear(describe)
+        self.assertEqual('', describe.location.GetValue())
+        self.assertEqual(25, describe.radius.GetValue())
+
+    def test_confirm_clears_services(self):
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+        self._confirm_clear(describe)
+        self.assertEqual((), describe.services.GetCheckedItems())
+
+    def test_confirm_clears_requested_bands_via_request_reset(self):
+        # No dedicated band-selection UI exists yet on the Describe
+        # page (requested_bands is currently only reachable
+        # programmatically -- see chirp.assistant.models); resetting
+        # context.request to a fresh ProgrammingRequest() (proven
+        # below) already guarantees requested_bands is back to its
+        # empty-tuple default, with nothing further to clear here.
+        _wizard, describe = self._setup_describe_page()
+        describe.context.request.requested_bands = (
+            models.BAND_2M, models.BAND_70CM)
+        self._enter_sample_data(describe)
+        self._confirm_clear(describe)
+        self.assertEqual((), describe.context.request.requested_bands)
+
+    def test_confirm_clears_ai_interpreted_values(self):
+        _wizard, describe = self._setup_describe_page()
+        req = models.ProgrammingRequest(
+            location_text='Spokane, Washington', radius_miles=75,
+            requested_services=(models.SERVICE_HAM,),
+            activities=('camping',))
+        describe._apply_request_to_fields(req)
+        self.assertEqual('Spokane, Washington', describe.location.GetValue())
+
+        self._confirm_clear(describe)
+
+        self.assertEqual('', describe.location.GetValue())
+        self.assertEqual(25, describe.radius.GetValue())
+        self.assertEqual((), describe.services.GetCheckedItems())
+        self.assertEqual('', describe.activities.GetValue())
+
+    def test_programming_request_is_reset(self):
+        _wizard, describe = self._setup_describe_page()
+        describe.context.request.location_text = 'stale value'
+        describe.context.request.requested_services = (
+            models.SERVICE_HAM,)
+        self._enter_sample_data(describe)
+
+        self._confirm_clear(describe)
+
+        fresh = models.ProgrammingRequest()
+        self.assertEqual(fresh, describe.context.request)
+
+    def test_page_validation_recalculates(self):
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+        self.assertTrue(describe._validate_next())
+
+        self._confirm_clear(describe)
+
+        self.assertFalse(describe._validate_next())
+        self.assertEqual(
+            'Check at least one requested service to continue.',
+            describe.services_status.GetLabel())
+
+    def test_next_button_updates_immediately(self):
+        wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+        forward = describe.FindWindowById(wx.ID_FORWARD)
+        forward.Enable(True)
+        self.assertTrue(forward.IsEnabled())
+
+        self._confirm_clear(describe)
+
+        self.assertFalse(
+            forward.IsEnabled(),
+            'Next must reflect the cleared (nothing selected) state '
+            'immediately, with no further navigation required')
+
+    def test_interpret_with_ai_still_works_after_clearing(self):
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+        self._confirm_clear(describe)
+
+        describe.text.SetValue('New description after clearing')
+        req = models.ProgrammingRequest(
+            location_text='Post-clear City',
+            requested_services=(models.SERVICE_HAM,))
+
+        def fake_post_event(target, event):
+            target._interpret_done(event)
+
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.PostEvent',
+                side_effect=fake_post_event), \
+                mock.patch(
+                    'chirp.wxui.programming_assistant.wx.MessageDialog'), \
+                mock.patch.object(
+                    describe.context, 'provider',
+                    return_value=providers.OllamaProvider(
+                        'http://localhost:11434/api/chat', 'llama3')), \
+                mock.patch.object(
+                    providers.OllamaProvider, 'extract_intent',
+                    return_value=req):
+            describe._interpret_worker(
+                describe.context.provider(),
+                describe.text.GetValue())
+
+        self.assertEqual('Post-clear City', describe.location.GetValue())
+
+    def test_manual_entry_still_works_after_clearing(self):
+        wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+        self._confirm_clear(describe)
+
+        describe.location.SetValue('Fresh Manual Entry')
+        describe.services.Check(
+            self._service_index(models.SERVICE_WEATHER), True)
+        evt = wx.CommandEvent(wx.EVT_CHECKLISTBOX.typeId,
+                              describe.services.GetId())
+        describe.services.GetEventHandler().ProcessEvent(evt)
+
+        forward = describe.FindWindowById(wx.ID_FORWARD)
+        self.assertTrue(forward.IsEnabled())
+
+        event = _FakeWizardEvent()
+        describe.validate_success(event)
+        self.assertFalse(event.vetoed)
+        self.assertEqual('Fresh Manual Entry',
+                         self.context.request.location_text)
+        self.assertEqual((models.SERVICE_WEATHER,),
+                         self.context.request.requested_services)
+
+    def test_ai_provider_configuration_not_modified(self):
+        CONF = programming_assistant.CONF
+        CONF.set('provider_kind', providers.PROVIDER_OLLAMA)
+        CONF.set('endpoint', 'http://localhost:11434/api/chat')
+        CONF.set('model', 'llama3')
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+
+        self._confirm_clear(describe)
+
+        self.assertEqual(providers.PROVIDER_OLLAMA,
+                         CONF.get('provider_kind'))
+        self.assertEqual('http://localhost:11434/api/chat',
+                         CONF.get('endpoint'))
+        self.assertEqual('llama3', CONF.get('model'))
+
+    def test_radio_image_not_modified(self):
+        _wizard, describe = self._setup_describe_page()
+        before = [self.radio.get_memory(n).freq
+                  for n in range(*self.radio.get_features().memory_bounds)
+                  if not self.radio.get_memory(n).empty]
+        self._enter_sample_data(describe)
+
+        self._confirm_clear(describe)
+
+        after = [self.radio.get_memory(n).freq
+                 for n in range(*self.radio.get_features().memory_bounds)
+                 if not self.radio.get_memory(n).empty]
+        self.assertEqual(before, after)
+
+    def test_review_page_state_not_modified(self):
+        ready = models.ChannelCandidate(
+            source='s', service=models.SERVICE_HAM, group='g', label='R',
+            freq=146520000, status=models.STATUS_READY, include=True,
+            memory_number=1, name='R1')
+        plan = models.ChannelPlan(
+            groups=[models.PlanGroup(name='g', candidates=[ready])])
+        self.context.plan = plan
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+
+        self._confirm_clear(describe)
+
+        self.assertIs(plan, self.context.plan)
+        self.assertTrue(ready.include)
+        self.assertEqual(models.STATUS_READY, ready.status)
+
+    def test_finish_page_state_not_modified(self):
+        result_page = self.context.get_page(
+            'result', programming_assistant.ResultPage)
+        result_page._applied = True
+        _wizard, describe = self._setup_describe_page()
+        self._enter_sample_data(describe)
+
+        self._confirm_clear(describe)
+
+        self.assertTrue(result_page._applied)
 
 
 if __name__ == '__main__':

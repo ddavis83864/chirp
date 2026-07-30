@@ -141,14 +141,70 @@ def memory_to_candidate(memory, source_name, service, source_id='',
     )
 
 
+# Standard 2-letter USPS abbreviations for every fips.FIPS_STATES entry
+# that has one (the US states, DC, and the three territories RepeaterBook
+# itself lists under country='United States'; the Canadian provinces also
+# present in FIPS_STATES have no reachable path here today -- see
+# fetch_repeaterbook's hardcoded country='United States' -- so they're
+# deliberately not included). A very common way to type a location is
+# "City, ST" (e.g. "Coeur d'Alene, ID"), which a bare full-name match
+# alone can never resolve.
+_STATE_ABBREVIATIONS = {
+    'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas',
+    'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut',
+    'DE': 'Delaware', 'DC': 'District of Columbia', 'FL': 'Florida',
+    'GA': 'Georgia', 'GU': 'Guam', 'HI': 'Hawaii', 'ID': 'Idaho',
+    'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas',
+    'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
+    'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota',
+    'MS': 'Mississippi', 'MO': 'Missouri', 'MT': 'Montana',
+    'NE': 'Nebraska', 'NV': 'Nevada', 'NH': 'New Hampshire',
+    'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York',
+    'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio',
+    'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania',
+    'PR': 'Puerto Rico', 'RI': 'Rhode Island', 'SC': 'South Carolina',
+    'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah',
+    'VT': 'Vermont', 'VA': 'Virginia', 'VI': 'Virgin Islands',
+    'WA': 'Washington', 'WV': 'West Virginia', 'WI': 'Wisconsin',
+    'WY': 'Wyoming',
+}
+
+
 def _resolve_us_state(name):
+    """Exact match (case-insensitive) against a full state name, or a
+    standard 2-letter USPS abbreviation. Never a partial/fuzzy match --
+    a name this can't resolve returns None rather than guessing."""
     if not name:
         return None
     name = name.strip()
     for state in fips.FIPS_STATES:
         if state.lower() == name.lower():
             return state
-    return None
+    return _STATE_ABBREVIATIONS.get(name.upper())
+
+
+# Standard amateur radio band edges (Hz) -- the same, internationally
+# ordinary "2 meter"/"70 centimeter"/etc. band names hams use every
+# day (see e.g. chirp.bandplan_na for the same allocations in more
+# regulatory detail than this lookup needs). Used only to narrow a
+# RepeaterBook query to specific bands when the request asks for them
+# (chirp.sources.repeaterbook.RepeaterBook.do_fetch already has its
+# own included_band() filter -- it was simply never given real band
+# data to filter by before, always receiving bands=[], meaning "every
+# band").
+_BAND_RANGES_HZ = {
+    models.BAND_6M: (50000000, 54000000),
+    models.BAND_2M: (144000000, 148000000),
+    models.BAND_222: (219000000, 225000000),
+    models.BAND_70CM: (420000000, 450000000),
+    models.BAND_33CM: (902000000, 928000000),
+    models.BAND_23CM: (1240000000, 1300000000),
+}
+
+
+def _band_ranges(requested_bands):
+    return [_BAND_RANGES_HZ[b] for b in requested_bands
+            if b in _BAND_RANGES_HZ]
 
 
 def fetch_repeaterbook(request, service, status=None):
@@ -156,18 +212,19 @@ def fetch_repeaterbook(request, service, status=None):
     both through the same adapter. Returns (candidates, error_or_None).
     """
     status = status or _CollectingStatus()
-    state = _resolve_us_state(_state_hint(request))
+    state = _state_hint(request)
     if not state:
-        return [], ('RepeaterBook requires a resolvable US state; '
-                    '%r could not be matched to one. Enter the state '
-                    'name explicitly, or coordinates only cover '
-                    'distance sorting, not the initial data set.' %
-                    (request.location_text,))
+        return [], ('location could not be resolved to a supported US '
+                    'state: %r. RepeaterBook needs a US state to query -- '
+                    'include it in the location (e.g. "Coeur d\'Alene, '
+                    'Idaho" or "Coeur d\'Alene, ID"), or enter the state '
+                    'name by itself.' % (request.location_text,))
 
     radio = repeaterbook.RepeaterBook()
     params = dict(
         lat=request.latitude or 0, lon=request.longitude or 0,
-        dist=request.radius_miles, filter='', bands=[], modes=[],
+        dist=request.radius_miles, filter='',
+        bands=_band_ranges(request.requested_bands), modes=[],
         fmconv=True, openonly=True, cached=True, country='United States',
         state=state, service=service,
         service_display='GMRS' if service == 'gmrs' else 'Amateur')
@@ -194,10 +251,42 @@ def fetch_repeaterbook(request, service, status=None):
 
 
 def _state_hint(request):
-    """Best-effort state name from the request, without geocoding --
-    either the caller already resolved and stored it in notes-adjacent
-    fields, or location_text itself names a state directly."""
-    return _resolve_us_state(request.location_text) or request.location_text
+    """Best-effort US state name embedded in request.location_text,
+    without geocoding and without ever inventing a state that isn't
+    literally present in what the user typed. Handles, in order:
+
+      1. location_text is nothing but a state name or abbreviation
+         (the only case the original implementation handled).
+      2. The far more common case of a full "City, State" or
+         "City, ST" description -- e.g. "Coeur d'Alene, Idaho" --
+         by trying progressively shorter trailing runs of words
+         (longest first, so "New York" resolves before the shorter,
+         wrong "York").
+
+    Returns None, never a guess, if no state name/abbreviation is
+    found anywhere in the text -- callers must treat that as "could
+    not resolve a location", not silently fall back to something.
+    This is plain text parsing, not geocoding: it never derives
+    coordinates, and a resolved state only narrows RepeaterBook's
+    query to that whole state's dataset (see fetch_repeaterbook and
+    chirp.sources.repeaterbook.RepeaterBook.do_fetch's own distance-
+    filtering, which is skipped entirely without real coordinates --
+    documented as a known limitation in docs/programming_assistant.md
+    rather than papered over).
+    """
+    text = (request.location_text or '').strip()
+    if not text:
+        return None
+    direct = _resolve_us_state(text)
+    if direct:
+        return direct
+    tokens = text.replace(',', ' ').split()
+    for width in range(min(4, len(tokens)), 0, -1):
+        candidate = ' '.join(tokens[-width:])
+        resolved = _resolve_us_state(candidate)
+        if resolved:
+            return resolved
+    return None
 
 
 def fetch_satellites(request, status=None):
@@ -302,6 +391,16 @@ def build_candidates(request, network_allowed=True):
                     severity='warning',
                     message='RepeaterBook (amateur) unavailable: %s' % err))
                 skipped.append('RepeaterBook (amateur)')
+            elif not found:
+                # The query itself succeeded (a state resolved and
+                # RepeaterBook was reached) but returned no records --
+                # distinct from "unavailable" above: this is Phase 5's
+                # "source query completed but returned no matching
+                # repeaters" case, not a failure.
+                warnings.append(models.PlanWarning(
+                    severity='info',
+                    message='RepeaterBook (amateur): the query completed '
+                            'but returned no matching repeaters.'))
             else:
                 candidates.extend(found)
             candidates.extend(static_calling_candidates(request))
@@ -321,6 +420,11 @@ def build_candidates(request, network_allowed=True):
                     severity='warning',
                     message='RepeaterBook (GMRS) unavailable: %s' % err))
                 skipped.append('RepeaterBook (GMRS)')
+            elif not found:
+                warnings.append(models.PlanWarning(
+                    severity='info',
+                    message='RepeaterBook (GMRS): the query completed but '
+                            'returned no matching repeaters.'))
             else:
                 candidates.extend(found)
         else:

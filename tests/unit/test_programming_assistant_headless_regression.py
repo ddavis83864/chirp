@@ -178,4 +178,4 @@ class ProgrammingAssistantHeadlessRegressionTest(unittest.TestCase):
              'tests/unit/test_wxui_programming_assistant.py'], env)
         self.assertEqual(0, result.returncode, result.stdout)
         self.assertNotIn('skipped', result.stdout)
-        self.assertRegex(result.stdout, r'56 passed')
+        self.assertRegex(result.stdout, r'128 passed')

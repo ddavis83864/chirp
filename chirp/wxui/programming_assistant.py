@@ -49,6 +49,17 @@ CONF = config.get('assistant')
 
 BuildThreadEvent, EVT_BUILD_THREAD = wx.lib.newevent.NewCommandEvent()
 InterpretThreadEvent, EVT_INTERPRET_THREAD = wx.lib.newevent.NewCommandEvent()
+ValidateThreadEvent, EVT_VALIDATE_THREAD = wx.lib.newevent.NewCommandEvent()
+
+# A fixed, deterministic prompt used ONLY to exercise a configured
+# provider's real extract_intent() path end to end (HTTP request ->
+# response parsing -> schema validation) from the "Validate AI Config"
+# button -- see AssistantProviderDialog._on_validate(). Never shown to
+# the user, never localized (it is model input, not UI text, the same
+# reasoning as providers._SYSTEM_PROMPT), never affects any
+# ProgrammingRequest field the user has actually entered, and the
+# result is discarded after checking whether it succeeded.
+_VALIDATION_PROMPT = 'Find amateur radio repeaters near Boise, Idaho.'
 
 _ACTIVITY_CHOICES = (
     'camping', 'aviation', 'marine', 'off-road', 'travel', 'emergency prep',
@@ -75,6 +86,20 @@ _LICENSE_LABELS = (
 _NAMING_LABELS = (
     (models.NAMING_SHORT, _('Short (radio-constrained)')),
     (models.NAMING_DESCRIPTIVE, _('Descriptive')),
+)
+
+# Keys match DescribePage._describe_field_snapshot()'s dict; labels are
+# what a changed-fields list in the AI-interpretation-complete dialog
+# shows -- see DescribePage._show_interpretation_complete().
+_INTERPRET_FIELD_LABELS = (
+    ('location', _('Location')),
+    ('radius', _('Radius')),
+    ('license', _('Amateur license class')),
+    ('gmrs', _('GMRS license')),
+    ('activities', _('Activities')),
+    ('services', _('Requested services')),
+    ('channel_limit', _('Maximum channels')),
+    ('naming', _('Naming style')),
 )
 
 _DISCLAIMER = _(
@@ -270,7 +295,15 @@ class DescribePage(AssistantPage):
         btn_row.Add(self.interpret_btn, 0, wx.RIGHT, 10)
         provider_btn = wx.Button(self, label=_('Configure AI Provider...'))
         provider_btn.Bind(wx.EVT_BUTTON, self._on_configure_provider)
-        btn_row.Add(provider_btn, 0)
+        btn_row.Add(provider_btn, 0, wx.RIGHT, 10)
+        # A vertical separator, not just spacing, so this reads as its
+        # own distinct action -- clearing everything -- rather than a
+        # third AI-related button alongside Interpret/Configure.
+        btn_row.Add(wx.StaticLine(self, style=wx.LI_VERTICAL), 0,
+                    wx.EXPAND | wx.RIGHT, 10)
+        self.clear_btn = wx.Button(self, label=_('Clear All Entries'))
+        self.clear_btn.Bind(wx.EVT_BUTTON, self._on_clear_all)
+        btn_row.Add(self.clear_btn, 0)
         vbox.Add(btn_row, 0, wx.ALL, 10)
 
         self.interpret_status = wx.StaticText(self, label='')
@@ -388,6 +421,93 @@ class DescribePage(AssistantPage):
         dlg.Destroy()
         self._update_interpret_enabled()
 
+    def _has_any_data(self):
+        """True if anything on this page differs from how it looked
+        when the Programming Assistant was first opened -- used to
+        skip the confirmation dialog entirely when there is nothing to
+        clear (Phase 5), and independent of _describe_field_snapshot()
+        above, which only covers the fields an AI interpretation can
+        touch, not every clearable control (free-form text,
+        preserve_existing, allow_replace, use_range/start_mem/end_mem,
+        protected)."""
+        return bool(
+            self.text.GetValue().strip() or
+            self.location.GetValue().strip() or
+            self.radius.GetValue() != 25 or
+            self.license_choice.GetSelection() != 0 or
+            self.gmrs_chk.GetValue() or
+            self.activities.GetValue().strip() or
+            self.services.GetCheckedItems() or
+            self.channel_limit.GetValue() != 40 or
+            self.naming_choice.GetSelection() != 0 or
+            not self.preserve_existing.GetValue() or
+            self.allow_replace.GetValue() or
+            self.use_range.GetValue() or
+            self.start_mem.GetValue() != 0 or
+            self.end_mem.GetValue() != 0 or
+            self.protected.GetValue().strip())
+
+    def _on_clear_all(self, event):
+        if not self._has_any_data():
+            # Nothing entered -- a safe no-op, no confirmation needed.
+            return
+        dlg = wx.MessageDialog(
+            self, _(
+                'This will remove all information entered on the '
+                'Describe page.\n\n'
+                'Your AI provider configuration, radio image, and '
+                'application settings will not be changed.'),
+            _('Clear All Entries?'),
+            style=wx.OK | wx.CANCEL | wx.ICON_QUESTION)
+        dlg.SetOKCancelLabels(_('Clear'), _('Cancel'))
+        result = dlg.ShowModal()
+        dlg.Destroy()
+        if result != wx.ID_OK:
+            return
+        self._clear_all_fields()
+
+    def _clear_all_fields(self):
+        """Restores every Describe-page control to exactly the value
+        it had when the page was first built (see _build() above),
+        including anything an AI interpretation populated -- there is
+        no separate "AI state" to clear beyond these same widgets, see
+        _apply_request_to_fields(), which only ever writes into them.
+        Strictly scoped to this page: context.plan (Confirm/Review/
+        Result state), radio data, and application configuration are
+        never touched here.
+        """
+        self.text.SetValue('')
+        self.location.SetValue('')
+        self.radius.SetValue(25)
+        self.license_choice.SetSelection(0)
+        self.gmrs_chk.SetValue(False)
+        self.activities.SetValue('')
+        for i in range(len(_SERVICE_LABELS)):
+            self.services.Check(i, False)
+        self.channel_limit.SetValue(40)
+        self.naming_choice.SetSelection(0)
+        self.preserve_existing.SetValue(True)
+        self.allow_replace.SetValue(False)
+        self.use_range.SetValue(False)
+        self.start_mem.SetValue(0)
+        self.end_mem.SetValue(0)
+        self.protected.SetValue('')
+        self.interpret_status.SetLabel('')
+        self._update_interpret_enabled()
+        # The one piece of state this page can leave behind outside
+        # its own widgets: replace it with a fresh instance rather
+        # than resetting fields on the existing one, so there is no
+        # way for a stale value to survive under a field this method
+        # forgot to reset.
+        self.context.request = models.ProgrammingRequest()
+        # Re-evaluates the wizard's Next button and the "check at
+        # least one service" status text immediately -- same call
+        # _on_services_changed() makes for a real user click; without
+        # it, Next would stay enabled (or disabled) at whatever it was
+        # before Clear was pressed until the user interacted with the
+        # page again.
+        self._refresh_services_status()
+
     def _on_interpret(self, event):
         if self._interpret_thread:
             return
@@ -422,7 +542,62 @@ class DescribePage(AssistantPage):
             return
         self.interpret_status.SetLabel(
             _('Interpreted -- review the fields below before continuing.'))
+        # Snapshotted before AND after applying the interpreted request
+        # (rather than comparing the request to some notion of "prior
+        # field values" computed a different way) so "what changed" is
+        # always exactly what a user re-reading the fields would see --
+        # see _show_interpretation_complete()'s docstring for why this
+        # matters: a successful interpretation that happens to match
+        # what was already entered is otherwise indistinguishable from
+        # one that silently did nothing.
+        before = self._describe_field_snapshot()
         self._apply_request_to_fields(event.request)
+        after = self._describe_field_snapshot()
+        changed_labels = [label for key, label in _INTERPRET_FIELD_LABELS
+                          if before[key] != after[key]]
+        self._show_interpretation_complete(changed_labels)
+
+    def _describe_field_snapshot(self):
+        """A plain-value snapshot of every field _apply_request_to_
+        fields() can touch, for before/after comparison in
+        _interpret_done() -- deliberately independent of
+        models.ProgrammingRequest (which self.context.request is, and
+        which is not updated until DescribePage.validate_success()),
+        since what matters here is what the WIDGETS show, not what has
+        been committed to the request yet."""
+        return {
+            'location': self.location.GetValue().strip(),
+            'radius': self.radius.GetValue(),
+            'license': self.license_choice.GetSelection(),
+            'gmrs': self.gmrs_chk.GetValue(),
+            'activities': self.activities.GetValue().strip(),
+            'services': tuple(sorted(self.services.GetCheckedItems())),
+            'channel_limit': self.channel_limit.GetValue(),
+            'naming': self.naming_choice.GetSelection(),
+        }
+
+    def _show_interpretation_complete(self, changed_labels):
+        """Always shown after a successful interpretation (Issue 3):
+        without this, a successful call that happens to produce fields
+        identical to what was already entered looks exactly like the
+        button silently doing nothing, which is indistinguishable from
+        a failure a user can't otherwise detect."""
+        if changed_labels:
+            bullets = '\n'.join(
+                '• %s' % label for label in changed_labels)
+            msg = _(
+                'Your description was successfully interpreted.\n\n'
+                'Updated fields:\n\n%s\n\n'
+                'Review the interpreted values before continuing.') % (
+                bullets)
+        else:
+            msg = _(
+                'The AI interpretation completed successfully.\n\n'
+                'The interpreted values already matched the current '
+                'selections.\n\n'
+                'No changes were required.')
+        wx.MessageDialog(self, msg, _('AI Interpretation Complete'),
+                         style=wx.OK | wx.ICON_INFORMATION).ShowModal()
 
     def _apply_request_to_fields(self, request):
         if request.location_text:
@@ -542,9 +717,20 @@ class AssistantProviderDialog(wx.Dialog):
         grid.Add(self.kind_choice, 0)
 
         self.endpoint = wx.TextCtrl(self, value=CONF.get('endpoint') or '')
+        self.endpoint.SetHint('http://localhost:11434/api/chat')
         grid.Add(wx.StaticText(self, label=_('Endpoint URL:')), 0,
                  wx.ALIGN_CENTER_VERTICAL)
         grid.Add(self.endpoint, 1, wx.EXPAND)
+
+        endpoint_hint = wx.StaticText(self, label=_(
+            'The provider posts directly to this exact URL. For '
+            'Ollama, include the path: http://localhost:11434/api/'
+            'chat -- entering only http://localhost:11434 will fail '
+            'with an HTTP 405 error. Use "Validate AI Config" below '
+            'to check this before use.'))
+        endpoint_hint.Wrap(420)
+        grid.Add(wx.StaticText(self), 0)
+        grid.Add(endpoint_hint, 0, wx.EXPAND)
 
         self.model = wx.TextCtrl(self, value=CONF.get('model') or '')
         grid.Add(wx.StaticText(self, label=_('Model name:')), 0,
@@ -573,9 +759,41 @@ class AssistantProviderDialog(wx.Dialog):
         grid.Add(self.persist_key, 0)
 
         vbox.Add(grid, 0, wx.EXPAND | wx.ALL, 10)
+
+        validate_row = wx.BoxSizer(wx.HORIZONTAL)
+        self.validate_btn = wx.Button(self, label=_('Validate AI Config'))
+        self.validate_btn.Bind(wx.EVT_BUTTON, self._on_validate)
+        validate_row.Add(self.validate_btn, 0, wx.RIGHT, 10)
+        self.validate_gauge = wx.Gauge(
+            self, range=100, size=(120, -1), style=wx.GA_HORIZONTAL)
+        self.validate_gauge.Hide()
+        validate_row.Add(self.validate_gauge, 0,
+                         wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+        self.validate_status = wx.StaticText(self, label='')
+        validate_row.Add(self.validate_status, 1, wx.ALIGN_CENTER_VERTICAL)
+        vbox.Add(validate_row, 0,
+                 wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
         vbox.Add(self.CreateButtonSizer(wx.OK | wx.CANCEL), 0,
                  wx.EXPAND | wx.ALL, 10)
         self.Bind(wx.EVT_BUTTON, self._on_ok, id=wx.ID_OK)
+        self.Bind(wx.EVT_BUTTON, self._on_cancel, id=wx.ID_CANCEL)
+        self.Bind(wx.EVT_CLOSE, self._on_close)
+        self.Bind(EVT_VALIDATE_THREAD, self._on_validate_done)
+
+        self._validate_thread = None
+        self._validate_cancel_event = None
+        self._pulse_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self._on_pulse_timer, self._pulse_timer)
+
+        # Ensure every control (including the buttons added just above)
+        # is accounted for in the dialog's initial size -- without
+        # this, the dialog can open smaller than its own contents need,
+        # with OK/Cancel not visible until manually resized (Windows
+        # validation finding). wx.RESIZE_BORDER above still lets the
+        # user resize it further; this only fixes the *initial* size.
+        vbox.Fit(self)
+        self.SetMinSize(self.GetSize())
         self.CenterOnParent()
 
     def _on_ok(self, event):
@@ -590,6 +808,147 @@ class AssistantProviderDialog(wx.Dialog):
         elif not self.persist_key.GetValue():
             if CONF.is_defined('api_key_encoded', 'assistant'):
                 CONF.remove_option('api_key_encoded', 'assistant')
+        event.Skip()
+
+    def _set_ok_enabled(self, enabled):
+        ok_btn = self.FindWindowById(wx.ID_OK)
+        if ok_btn:
+            ok_btn.Enable(enabled)
+
+    def _current_api_key(self):
+        # Matches _get_api_key()'s own precedence: when the field is
+        # disabled (CHIRP_ASSISTANT_API_KEY is set), that's what a real
+        # extract_intent() call would actually use, not the (empty,
+        # disabled) text control -- validation must exercise the same
+        # value the real "Interpret with AI" call would.
+        if self.api_key.IsEnabled():
+            return self.api_key.GetValue()
+        return _get_api_key()
+
+    def _on_validate(self, event):
+        if self._validate_thread:
+            return
+        kind = providers.ALL_PROVIDER_KINDS[self.kind_choice.GetSelection()]
+        if kind == providers.PROVIDER_DISABLED:
+            self.validate_status.SetLabel(
+                _('Select a provider (not Disabled) to validate.'))
+            return
+        try:
+            # Built from the CONTROLS' current values, not CONF -- this
+            # must validate unsaved edits, since the whole point is
+            # letting the user check a configuration before committing
+            # it with OK.
+            provider = providers.create_provider(
+                kind, endpoint=self.endpoint.GetValue().strip(),
+                model=self.model.GetValue().strip(),
+                api_key=self._current_api_key())
+        except providers.ProviderError as e:
+            self.validate_status.SetLabel(_('Error: %s') % e)
+            return
+
+        self._validate_cancel_event = threading.Event()
+        self.validate_btn.Enable(False)
+        self._set_ok_enabled(False)
+        self.validate_status.SetLabel(_('Validating...'))
+        self.validate_gauge.Show()
+        self._pulse_timer.Start(100)
+        self.Layout()
+
+        self._validate_thread = threading.Thread(
+            target=self._validate_worker,
+            args=(provider, self._validate_cancel_event))
+        self._validate_thread.start()
+
+    def _on_pulse_timer(self, event):
+        self.validate_gauge.Pulse()
+
+    def _validate_worker(self, provider, cancel_event):
+        # Exercises the exact same extract_intent() path "Interpret
+        # with AI" uses -- create_provider() -> HTTP request ->
+        # response parsing -> schema validation -- never a separate
+        # connectivity-only check (e.g. GET /api/tags), so a
+        # successful validation means the configuration will actually
+        # work for a real request, not just that the endpoint answers.
+        try:
+            provider.extract_intent(
+                _VALIDATION_PROMPT, cancel_event=cancel_event)
+            _safe_post_event(self, ValidateThreadEvent(
+                self.GetId(), ok=True, error=None,
+                cancelled=cancel_event.is_set()))
+        except providers.ProviderCancelled:
+            _safe_post_event(self, ValidateThreadEvent(
+                self.GetId(), ok=False, error=None, cancelled=True))
+        except providers.ProviderError as e:
+            # str(e) is guaranteed safe to show directly -- see
+            # providers.ProviderError's own docstring: never an API
+            # key, an Authorization header, a stack trace, or a raw
+            # provider response body.
+            _safe_post_event(self, ValidateThreadEvent(
+                self.GetId(), ok=False, error=str(e),
+                cancelled=cancel_event.is_set()))
+
+    def _on_validate_done(self, event):
+        self._validate_thread = None
+        self._validate_cancel_event = None
+        self._pulse_timer.Stop()
+        self.validate_gauge.Hide()
+        self.validate_btn.Enable(True)
+        self._set_ok_enabled(True)
+        self.Layout()
+
+        if event.cancelled:
+            self.validate_status.SetLabel(_('Validation cancelled.'))
+            return
+        if event.ok:
+            self.validate_status.SetLabel(_('Configuration is valid.'))
+            provider_label = self.kind_choice.GetString(
+                self.kind_choice.GetSelection())
+            msg = _(
+                'Successfully connected.\n\n'
+                'Provider: %(provider)s\n'
+                'Model: %(model)s\n'
+                'Endpoint: %(endpoint)s\n\n'
+                'The provider successfully interpreted the validation '
+                'request.') % {
+                'provider': provider_label,
+                'model': self.model.GetValue().strip(),
+                'endpoint': self.endpoint.GetValue().strip(),
+            }
+            wx.MessageDialog(self, msg, _('AI Configuration Valid'),
+                             style=wx.OK | wx.ICON_INFORMATION).ShowModal()
+        else:
+            self.validate_status.SetLabel(_('Validation failed.'))
+            wx.MessageDialog(self, event.error,
+                             _('AI Configuration Error'),
+                             style=wx.OK | wx.ICON_ERROR).ShowModal()
+
+    def _on_cancel(self, event):
+        if self._validate_thread:
+            # Cancel, while a validation is in flight, cancels the
+            # validation (checked by the provider before/after its one
+            # network call -- see providers.AIProvider.extract_intent's
+            # own docstring on why true mid-request interruption isn't
+            # attempted) rather than closing the dialog out from under
+            # the still-running background thread.
+            self._validate_cancel_event.set()
+            self.validate_status.SetLabel(_('Cancelling...'))
+            return
+        event.Skip()
+
+    def _on_close(self, event):
+        # The dialog's title-bar close button/Escape reach EVT_CLOSE
+        # directly, bypassing the wx.ID_CANCEL button-click handling
+        # above -- same guard, so a validation in flight can't have its
+        # target window destroyed out from under it (the background
+        # thread's _safe_post_event() call would then just silently
+        # drop the result, but stopping that from happening at all is
+        # simpler and avoids a validation nobody ever sees the outcome
+        # of).
+        if self._validate_thread and event.CanVeto():
+            event.Veto()
+            self._validate_cancel_event.set()
+            self.validate_status.SetLabel(_('Cancelling...'))
+            return
         event.Skip()
 
 
@@ -787,14 +1146,29 @@ class ReviewPage(AssistantPage):
         details_btn = wx.Button(
             self, label=_('Regulatory && Privacy Details...'))
         details_btn.Bind(wx.EVT_BUTTON, self._on_details)
-        btn_row.Add(details_btn, 0)
+        btn_row.Add(details_btn, 0, wx.RIGHT, 10)
+        self.source_details_btn = wx.Button(
+            self, label=_('Source Details...'))
+        self.source_details_btn.Bind(wx.EVT_BUTTON, self._on_source_details)
+        self.source_details_btn.Hide()
+        btn_row.Add(self.source_details_btn, 0)
         vbox.Add(btn_row, 0, wx.ALL, 10)
+
+        self.source_status = wx.StaticText(self, label='')
+        vbox.Add(self.source_status, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
         self._row_candidates = []
 
     def _on_details(self, event):
         wx.MessageDialog(self, _DISCLAIMER, _('Regulatory & Privacy Details'),
                          style=wx.OK | wx.ICON_INFORMATION).ShowModal()
+
+    def _on_source_details(self, event):
+        plan = self.context.plan
+        messages = [w.message for w in plan.warnings] if plan else []
+        wx.MessageDialog(
+            self, '\n\n'.join(messages), _('Source Details'),
+            style=wx.OK | wx.ICON_INFORMATION).ShowModal()
 
     def page_shown(self):
         self._populate()
@@ -817,6 +1191,26 @@ class ReviewPage(AssistantPage):
             _('%i total, %i included: ') % (
                 len(plan.all_candidates), sum(counts.values())) +
             ', '.join('%s=%i' % (k, v) for k, v in sorted(counts.items())))
+
+        # plan.warnings (source-unavailable, location-not-resolved,
+        # zero-matching-records, unsupported-service, etc. -- see
+        # chirp.assistant.sources.build_candidates) previously only
+        # ever reached the user on the post-Apply Result page, via
+        # plan.skipped_sources' bare source names with no explanation.
+        # Surfacing them here means a request that fell back to
+        # simplex-only results (e.g. because a repeater source
+        # returned nothing) says so before the user reviews/approves
+        # the list, instead of the list silently looking like a fully
+        # satisfied repeater request.
+        if plan.warnings:
+            self.source_status.SetLabel(
+                _('%i source note(s) -- some requested data may be '
+                  'incomplete.') % len(plan.warnings))
+            self.source_details_btn.Show()
+        else:
+            self.source_status.SetLabel('')
+            self.source_details_btn.Hide()
+        self.Layout()
 
     def _add_row(self, row, group, candidate):
         idx = self.list.InsertItem(row, str(candidate.memory_number
@@ -850,7 +1244,28 @@ class ReviewPage(AssistantPage):
         if idx >= len(self._row_candidates):
             return
         candidate = self._row_candidates[idx]
-        candidate.include = self.list.IsItemChecked(idx)
+        checked = self.list.IsItemChecked(idx)
+        if checked and candidate.errors:
+            # A candidate with validation errors is blocked and can
+            # never be included -- finalize_for_apply() re-checks and
+            # would silently skip it at apply time regardless, but
+            # reverting the checkbox here instead gives immediate
+            # feedback that this row can't be selected, rather than
+            # letting Next look enabled for a selection that would
+            # silently do nothing.
+            self.list.CheckItem(idx, False)
+            candidate.include = False
+        else:
+            candidate.include = checked
+        # Nothing else re-evaluates the wizard's Next button just
+        # because the page is sitting there being interacted with --
+        # see AssistantPage.validate_next()'s own docstring, and
+        # DescribePage._on_services_changed() for the identical fix
+        # applied there. Without this call, Next stayed stuck at
+        # whatever it was when the page first became current until
+        # the user navigated away and back (which re-triggers
+        # page_shown() + validate_next() via _wire_wizard_events).
+        self.validate_next()
 
     def _validate_next(self):
         return any(c.include for c in self._row_candidates)
@@ -996,38 +1411,130 @@ def _wire_wizard_events(wizard):
                            if e.GetDirection() else None))
 
 
+_LAUNCH_IN_PROGRESS = set()
+
+_NO_EDITOR_ERROR = _(
+    'Programming Assistant could not create a new memory editor.\n\n'
+    'No compatible memory editor is currently available. Create a new '
+    'radio image manually and try again.'
+)
+
+
+def _show_no_editor_error(parent):
+    wx.MessageDialog(
+        parent, _NO_EDITOR_ERROR, _('Programming Assistant'),
+        style=wx.OK | wx.ICON_ERROR).ShowModal()
+
+
+def _ensure_blank_memory_document(chirpmain):
+    """Creates a new blank memory document through CHIRP's normal
+    New-document workflow -- the same chirpmain.open_file('Untitled.
+    csv', exists=False) call Radio > New uses -- and leaves it as the
+    active tab, so a subsequent AssistantContext(...) construction
+    resolves a real, already-initialized memory editor from it rather
+    than a stale reference to whatever tab was active before.
+
+    This is a synchronous call: open_file() constructs a real
+    generic_csv.CSVRadio(None) (a blank, in-memory-only radio -- the
+    same one this project's tests, and CSVRadio(None) callers
+    generally, already rely on: no file I/O, no serial port, no
+    hardware detection), builds a real ChirpEditorSet around it
+    (which synchronously constructs and refreshes its
+    memedit.ChirpMemEdit inside its own __init__ -- confirmed by
+    reading chirp.wxui.main.ChirpEditorSet.__init__, which has no
+    thread, timer, or deferred (wx.CallAfter-style) step anywhere in
+    this path), and registers+selects it as a normal tab via
+    add_editorset(). By the time this function returns, there is
+    nothing left to wait for.
+
+    Returns True if a compatible memory editor is present on the
+    (now current) tab afterward, False otherwise -- covering both a
+    raised exception during creation and the -- unreachable via this
+    exact call, but checked defensively rather than assumed -- case
+    of creation completing without leaving a usable editor behind.
+    Never raises: do_programming_assistant() below treats False as an
+    actionable, sanitized error condition, not an unhandled exception.
+    """
+    try:
+        chirpmain.open_file('Untitled.csv', exists=False)
+    except Exception as e:
+        LOG.exception(
+            'Failed to create a blank memory document for Programming '
+            'Assistant launch: %s', e)
+        return False
+    return _find_memedit(chirpmain.current_editorset) is not None
+
+
 @common.error_proof()
 def do_programming_assistant(parent, event):
-    wizard = wx.adv.Wizard(parent)
-    wizard.SetPageSize((620, 520))
-
-    context = AssistantContext(wizard, parent)
-
-    if context.memedit is None:
-        wx.MessageDialog(
-            parent, _('No memory editor is available for the current '
-                      'tab.'), _('Programming Assistant'),
-            style=wx.OK | wx.ICON_WARNING).ShowModal()
-        wizard.Destroy()
+    # A modal wx.adv.Wizard (below) blocks this window's own event
+    # loop for as long as it's open, so in practice a second EVT_MENU
+    # for this same command cannot be dispatched while one is already
+    # running against the same @parent -- but a stale queued event or
+    # a programmatic re-entry could still reach here before the first
+    # call's own `finally` clears this, so the guard is real, not
+    # decorative. Keyed by id(parent) (not a single flag) since CHIRP
+    # supports more than one top-level main window (see
+    # _menu_new_window) -- launching in one window must not block
+    # launching in another.
+    launch_key = id(parent)
+    if launch_key in _LAUNCH_IN_PROGRESS:
         return
+    _LAUNCH_IN_PROGRESS.add(launch_key)
 
-    audit.dialog_opened()
-
-    _wire_wizard_events(wizard)
-
-    start = context.get_page('describe', DescribePage)
-    wizard.GetPageAreaSizer().Add(start)
+    wizard = None
     try:
+        wizard = wx.adv.Wizard(parent)
+        wizard.SetPageSize((620, 520))
+
+        context = AssistantContext(wizard, parent)
+
+        if context.memedit is None:
+            # The normal case for a freshly launched CHIRP, or a
+            # non-memory (Settings/Banks-only, or no image at all) tab
+            # active -- no longer a dead end: create a new blank
+            # memory document through the same workflow Radio > New
+            # uses, exactly as if the user had done so manually, then
+            # continue with that as the target.
+            if not _ensure_blank_memory_document(parent):
+                _show_no_editor_error(parent)
+                return
+            # Re-resolve against whatever is now the active tab -- the
+            # document just created, not the (possibly still-absent-a-
+            # memedit) tab that was active when this function started.
+            context = AssistantContext(wizard, parent)
+            if context.memedit is None:
+                # Reachable only if a future change breaks the
+                # invariant _ensure_blank_memory_document's own
+                # docstring proves today -- kept as a real check
+                # rather than an assumption, per the same "do not
+                # leave a partially initialized assistant open"
+                # principle as the branch above.
+                LOG.error(
+                    'Blank memory document created but no compatible '
+                    'memory editor was found on the resulting tab')
+                _show_no_editor_error(parent)
+                return
+
+        audit.dialog_opened()
+
+        _wire_wizard_events(wizard)
+
+        start = context.get_page('describe', DescribePage)
+        wizard.GetPageAreaSizer().Add(start)
         wizard.RunWizard(start)
     finally:
-        # Always destroy the wizard, even if something in a page's
-        # event handler raised -- @common.error_proof() above will
-        # still catch and report the exception, but only after this
-        # function returns, so it must not skip cleanup on the way
-        # out. A background _build_worker()/_interpret_worker() thread
-        # may still be in flight at this point if the user cancelled
-        # or closed the wizard early; each posts its result via
-        # _safe_post_event() below rather than directly, so a stale
-        # post to an already-destroyed page is dropped instead of
-        # raising into the worker thread.
-        wizard.Destroy()
+        # Always cleared/destroyed, on every exit path -- success,
+        # cancellation, the no-editor-available error returns above,
+        # or an exception @common.error_proof() will catch after this
+        # function returns -- so a failed or cancelled launch never
+        # leaves the menu command permanently unusable. A background
+        # _build_worker()/_interpret_worker() thread may still be in
+        # flight at this point if the user cancelled or closed the
+        # wizard early; each posts its result via _safe_post_event()
+        # below rather than directly, so a stale post to an
+        # already-destroyed page is dropped instead of raising into
+        # the worker thread.
+        _LAUNCH_IN_PROGRESS.discard(launch_key)
+        if wizard is not None:
+            wizard.Destroy()

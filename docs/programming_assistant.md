@@ -46,6 +46,31 @@ that you approve before anything is written to the open image.
 - It does not overwrite existing, populated memories by default, and
   never touches protected or immutable memories.
 
+## Launching without an open memory editor
+
+The Programming Assistant needs a memory editor to preview and apply
+candidates against — it always targets the currently active tab's
+memory editor, the same one Radio menu commands like Apply act on.
+
+If the active tab already has one, it's reused exactly as before —
+opening the assistant never creates a new document, switches tabs, or
+touches your existing memory data just because you launched it.
+
+If there's no compatible memory editor available for the active tab —
+no radio image is open yet, or the active tab is a Settings/Banks-only
+tab with no memory sub-editor of its own — CHIRP automatically creates
+a new blank memory document (the same as using Radio > New) and opens
+the assistant against that, instead of stopping with an error. The new
+document behaves exactly like one you created manually: it stays open
+if you cancel the assistant, nothing is written to it just by opening
+the assistant (Apply is still the only thing that ever adds memories),
+and you can edit, save, or discard it like any other tab.
+
+If CHIRP genuinely cannot create the new document (a real failure, not
+the normal case above), a short, specific message is shown instead of
+a raw error — create a new radio image yourself (Radio > New) and try
+again.
+
 ## The deterministic wizard (no AI required)
 
 1. **Describe** — optional free-text box, plus the same structured
@@ -53,12 +78,36 @@ that you approve before anything is written to the open image.
    license declaration, activities, requested services, receive-only
    services, channel limit, naming style, existing-memory handling,
    protected memory ranges, and an optional target memory range.
+   **Clear All Entries**, next to Interpret with AI, resets every one
+   of these fields — including anything Interpret with AI populated —
+   back to how the page looked when the Programming Assistant was
+   first opened, in one click. If nothing has been entered yet, it
+   does nothing (no confirmation prompt); otherwise it asks you to
+   confirm first, since there's no Undo for this specific action (it
+   only affects these in-progress, not-yet-submitted fields — not
+   anything else). It never touches your AI provider configuration,
+   the open radio image, or anything on the Confirm/Review/Result
+   pages — those are separate state, unaffected by what you've typed
+   on Describe. After clearing, both Interpret with AI and manual
+   entry work exactly as they would in a freshly opened Programming
+   Assistant.
 2. **Confirm** — a read-only summary of exactly what will be queried
    and built; nothing is queried until you continue from here.
 3. **Review** — a checkable table of every proposed channel with its
    status (Ready / Adjusted / Warning / Blocked / Receive-only /
    Duplicate / Existing conflict / Source unavailable / Unsupported by
-   radio), source, and details. Uncheck anything you don't want.
+   radio), source, and details. Every candidate that isn't blocked by
+   radio validation is **checked (selected) by default** when the page
+   first appears — this is a preselection policy, not a requirement to
+   manually pick anything; uncheck what you don't want. Checking or
+   unchecking updates whether Next/Finish is available immediately, no
+   navigation required. A blocked candidate's checkbox can't be turned
+   on at all — checking one reverts it and explains why in that row's
+   Details column, rather than letting it look selected. If any
+   requested source returned a warning (unavailable, no matches,
+   location not resolved, etc. — see "Data sources and provenance"
+   above), a "Source Details..." button appears here, before you
+   approve anything, listing exactly what happened.
 4. **Result** — after Apply, a count of applied/skipped/blocked/
    adjusted/replaced entries, and a reminder that the image has not
    been uploaded to a radio.
@@ -80,6 +129,15 @@ underlying data is. Nothing is ever presented as more current or
 authoritative than it actually is. Network source failures produce a
 warning and an empty contribution for that source — they never crash
 the assistant or fall back to guessed data.
+
+Requesting the ham service always includes both a real RepeaterBook
+query (when a state resolves and network sources are allowed) *and*
+the static calling-frequency table — these are additive, not
+either/or, and stay visually distinguishable in Review by their Group
+column: RepeaterBook results with a real transmit offset group under
+"Local Amateur Repeaters", while the static calling table always
+groups under "Amateur Simplex" — so a plan that includes both never
+misrepresents a simplex suggestion as a local repeater.
 
 ## Receive-only and transmit policy
 
@@ -115,7 +173,8 @@ Review page's "Regulatory & Privacy Details..." button.
 - Providers: **Disabled** (default), **OpenAI-compatible** (any Chat
   Completions-compatible HTTP endpoint), or **Ollama** (a local
   server's native `/api/chat`). No remote call happens until you
-  explicitly click "Interpret with AI" after configuring a provider.
+  explicitly click "Interpret with AI" or "Validate AI Config" after
+  configuring a provider.
 - An AI provider is given only your typed text — never radio image
   bytes, serial port details, file paths, or existing memory comments.
 - No OS keyring dependency exists in this project, so API keys are
@@ -132,6 +191,60 @@ Review page's "Regulatory & Privacy Details..." button.
   out-of-range values, and anything that isn't a recognized structured
   field are dropped, never executed. See `chirp/assistant/providers.py`
   for the full trust-boundary explanation.
+
+### The Ollama endpoint must include the path
+
+The **Endpoint URL** field is posted to directly, with no path appended
+by CHIRP — for Ollama, that means entering the full path to its native
+chat endpoint:
+
+```
+http://localhost:11434/api/chat
+```
+
+Entering only `http://localhost:11434` (the bare server address, with
+no path) will fail with an **HTTP 405** error the first time you try to
+use it, since Ollama's root URL doesn't accept the POST request CHIRP
+sends. Use **Validate AI Config** (below) after entering the endpoint
+to catch this — and any other configuration problem — before relying
+on it.
+
+### Validate AI Config
+
+The Configure AI Provider dialog has a **Validate AI Config** button
+that checks the configuration currently entered in the dialog — including
+edits you haven't clicked OK on yet — by making one real request through
+the exact same code path "Interpret with AI" uses: build the provider,
+send the request, parse the response, validate it against the
+structured schema. It is not a simple connectivity check (it does not,
+for example, call Ollama's `/api/tags`), so a successful validation
+means the configuration will actually work for a real request.
+
+The request sent is a fixed, internal, non-localized prompt ("Find
+amateur radio repeaters near Boise, Idaho.") used only to exercise the
+provider — it never touches anything you've typed on the Describe page,
+never modifies any Programming Assistant field, and validating never
+saves the configuration (only clicking OK does that).
+
+While a validation is running, both **Validate AI Config** and **OK**
+are disabled and a progress indicator is shown; **Cancel** during that
+time cancels the in-flight validation instead of closing the dialog.
+On completion, you'll see either a success dialog (showing the
+provider, model, and endpoint that were validated) or a failure dialog
+with a specific, actionable message (connection refused, timed out,
+invalid endpoint, HTTP error, malformed response, or schema validation
+failure) — never a raw provider response, stack trace, API key, or
+authorization header.
+
+### Interpretation completion
+
+After a successful "Interpret with AI", a completion dialog confirms
+what happened before you move on: either a list of which fields were
+updated (Location, Bands/Services, etc. — review them before
+continuing), or, if the interpreted values already matched what was
+already entered, an explicit statement that no changes were required.
+Either way, this removes the previous ambiguity between "it worked but
+nothing visibly changed" and "it silently did nothing."
 
 ## Undo and apply
 
@@ -191,11 +304,32 @@ disappear.
   international guard/emergency frequencies.
 - No source for FRS, MURS, marine, public safety, business, or railroad
   channels in this release.
-- Location resolution from free text (e.g. "Coeur d'Alene") to a US
-  state/coordinates is not implemented in this release; enter the state
-  name and/or coordinates directly, or have an AI provider extract
-  `location_text` and confirm/correct it before building the plan.
-  RepeaterBook queries require a resolvable US state name.
+- Location resolution is text parsing, not geocoding: RepeaterBook
+  queries require a resolvable US state, and `location_text` is parsed
+  for a bare state name (e.g. "Idaho"), a standard 2-letter
+  abbreviation (e.g. "ID"), or one of those as the trailing part of a
+  "City, State" or "City, ST" description (e.g. "Coeur d'Alene, Idaho"
+  or "Coeur d'Alene, ID" both resolve to Idaho). No coordinates are
+  ever derived from a city name — there is no geocoding dependency
+  anywhere in this codebase — so a resolved state narrows the query to
+  that whole state's repeater dataset, not specifically to the named
+  city; only real, explicitly-provided coordinates (`latitude`/
+  `longitude` on the request, not populated by any UI or AI path in
+  this release) narrow it further by distance. A location with no
+  state name or abbreviation anywhere in it (e.g. just "Coeur
+  d'Alene") cannot be resolved at all, and produces a clear message
+  explaining why, on the Review page's "Source Details..." button,
+  rather than a silent simplex-only fallback (see "Data sources and
+  provenance" above).
+- Band selection (e.g. "2-meter and 70-centimeter bands only") is
+  supported end to end at the model and source-query level
+  (`ProgrammingRequest.requested_bands`) but has no dedicated UI
+  control or AI-extractable field yet in this release — set it
+  programmatically, or treat this as a natural next step once a UI
+  affordance is designed for it. Omitting it (the only path currently
+  reachable from the wizard or an AI-interpreted request) preserves
+  today's behavior exactly: every band RepeaterBook returns for the
+  resolved state is included, unfiltered.
 - RepeaterBook-sourced candidates don't carry a per-candidate distance
   value in the preview (the adapter sorts by distance internally, but
   `chirp_common.Memory` has no field to carry the source coordinates
