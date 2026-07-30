@@ -64,6 +64,13 @@ profile to a completely different radio model.
 The bottom of the editor always shows current validation problems, if any.
 **Save Profile** is disabled until the profile is valid.
 
+**OK** in this dialog only accepts your edits and closes the editor --
+it does not write anything to any memory image. The editor is a modal
+dialog, so the main menu (including Apply, below) isn't reachable
+while it's open; the editor itself reminds you of this, next to its
+OK/Cancel buttons, so it's never unclear where Apply actually is once
+you close it.
+
 ### Transmit behavior
 
 Every channel has an explicit transmit setting, one of:
@@ -98,6 +105,11 @@ results" below for what happens if a target radio can't actually enforce it.
 
 If you change your mind after applying, a single **Undo** (Edit > Undo, or
 Ctrl+Z) reverses the entire apply in one step.
+
+A profile with no channels can't be applied -- Apply tells you so
+directly rather than showing an empty preview. The same is true if no
+Profile is currently loaded, or the active tab has no memory grid to
+apply to.
 
 ## Understanding the results
 

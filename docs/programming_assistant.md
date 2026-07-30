@@ -141,13 +141,24 @@ misrepresents a simplex suggestion as a local repeater.
 
 ### Explicit band and repeater/simplex constraints
 
-A request can narrow both dimensions explicitly, and both are
-enforced, not just requested:
+"Interpret with AI" can narrow a request along two independent, fully
+enforced dimensions -- not just requested, but actually checked before
+anything reaches Review or gets written:
 
-- **Band** — naming a band (e.g. "2 meter") is a hard inclusion
-  constraint: "all the 2 meter repeaters in the Coeur d'Alene Idaho
-  area" returns only 2-meter results, never 70cm or any other band,
-  even if RepeaterBook's own query returns something outside it.
+- **Band** — naming a band (e.g. "2 meter", "70cm", "440", "20
+  meters") is a hard inclusion constraint: "all the 2 meter repeaters
+  in the Coeur d'Alene Idaho area" returns only 2-meter results, never
+  70cm or any other band, even if RepeaterBook's own query returns
+  something outside it. Every amateur band CHIRP's own North American
+  band plan (`chirp.bandplan_na`) has data for is recognized -- 160
+  meters through 13 centimeters, sixteen bands in total, not only 2
+  meters and 70 centimeters -- see `chirp.assistant.bands` for the
+  full registry and its recognized aliases ("two meters", "70
+  centimeter", "440 band", ...). Multiple bands may be named at once
+  ("2 meter and 70 centimeter repeaters"); every one named is
+  included, and nothing else is. A band the AI returns that cannot be
+  recognized as any of these is rejected with an actionable error
+  rather than silently treated as "no restriction".
 - **Repeater vs. simplex** — asking for "repeaters" excludes simplex
   results (including the static calling table); asking for "simplex"
   excludes repeaters. Naming neither includes both, exactly as before.
@@ -160,9 +171,15 @@ to the requested band, and every candidate returned by any source is
 independently re-checked against the request's band and record-type
 constraints before it can reach Review — a provider that ignores its
 own query parameters (or a static table that isn't organized by band
-at all) cannot bypass what was actually requested. The AI-interpreted
-path extracts both constraints the same way the deterministic wizard's
-own request does; see `chirp.assistant.providers._SYSTEM_PROMPT`.
+at all) cannot bypass what was actually requested. The Describe page
+shows the currently interpreted band/record-type filter (if any)
+directly below the Interpret with AI button, since neither has a
+structured-field checkbox of its own the way requested services do --
+this is the only place that state is visible, and it updates every
+time interpretation runs (replacing, not adding to, whatever was
+interpreted before) or Clear All Entries is used. Because there is no
+structured-field control for either, they can currently only be set
+through "Interpret with AI", not the deterministic wizard.
 
 ## Receive-only and transmit policy
 
@@ -346,15 +363,22 @@ disappear.
   explaining why, on the Review page's "Source Details..." button,
   rather than a silent simplex-only fallback (see "Data sources and
   provenance" above).
-- Band selection (e.g. "2-meter and 70-centimeter bands only") is
-  supported end to end at the model and source-query level
-  (`ProgrammingRequest.requested_bands`) but has no dedicated UI
-  control or AI-extractable field yet in this release — set it
-  programmatically, or treat this as a natural next step once a UI
-  affordance is designed for it. Omitting it (the only path currently
-  reachable from the wizard or an AI-interpreted request) preserves
-  today's behavior exactly: every band RepeaterBook returns for the
-  resolved state is included, unfiltered.
+- Band and repeater/simplex selection (`ProgrammingRequest.
+  requested_bands`/`requested_record_types`, see "Explicit band and
+  repeater/simplex constraints" above) is currently reachable only
+  through "Interpret with AI" — there is no dedicated structured-field
+  checkbox list for either the way there already is for services.
+  Omitting either from a request (the only path reachable from the
+  deterministic wizard, which never sets them) preserves prior
+  behavior exactly: every band and record type a source returns is
+  included, unfiltered.
+- 60 meters is not in the band registry (`chirp.assistant.bands`): it
+  is a small set of discrete channelized frequencies, not a contiguous
+  allocation like every other supported band, and no authoritative
+  channel list for it exists elsewhere in this codebase to derive it
+  from without inventing regulatory data. A request naming "60 meters"
+  is rejected as an unrecognized band rather than silently ignored or
+  guessed at.
 - RepeaterBook-sourced candidates don't carry a per-candidate distance
   value in the preview (the adapter sorts by distance internally, but
   `chirp_common.Memory` has no field to carry the source coordinates
