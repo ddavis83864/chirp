@@ -29,6 +29,36 @@ class ParseStructuredResponseTest(unittest.TestCase):
         self.assertEqual('Boise', req.location_text)
         self.assertEqual('general', req.amateur_license)
 
+    def test_band_and_record_type_constraints_survive_provider_json(self):
+        # The exact shape a provider extracting "all the 2 meter
+        # repeaters in the Coeur d'Alene Idaho area" is instructed
+        # (see _SYSTEM_PROMPT) to return.
+        req = providers._parse_structured_response(
+            '{"location_text": "Coeur d\'Alene, Idaho", '
+            '"requested_services": ["ham"], '
+            '"requested_bands": ["2m"], '
+            '"requested_record_types": ["repeater"]}')
+        self.assertEqual(('2m',), req.requested_bands)
+        self.assertEqual(('repeater',), req.requested_record_types)
+
+
+class SystemPromptTest(unittest.TestCase):
+    """The provider only extracts fields it is explicitly told about
+    (see _SYSTEM_PROMPT) -- this is a direct regression guard for the
+    Windows validation finding that requested_bands and record-type
+    constraints were never mentioned in the prompt at all, so the AI
+    path had no way to ever populate them regardless of what the user
+    typed."""
+
+    def test_prompt_documents_requested_bands(self):
+        self.assertIn('requested_bands', providers._SYSTEM_PROMPT)
+        self.assertIn('"2m"', providers._SYSTEM_PROMPT)
+
+    def test_prompt_documents_requested_record_types(self):
+        self.assertIn('requested_record_types', providers._SYSTEM_PROMPT)
+        self.assertIn('"repeater"', providers._SYSTEM_PROMPT)
+        self.assertIn('"simplex"', providers._SYSTEM_PROMPT)
+
     def test_markdown_fence_tolerated(self):
         req = providers._parse_structured_response(
             '```json\n{"location_text": "Boise"}\n```')

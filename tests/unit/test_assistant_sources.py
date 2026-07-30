@@ -618,5 +618,233 @@ class InvalidSourceRecordsRejectedTest(unittest.TestCase):
         self.assertIn('RepeaterBook (amateur)', skipped)
 
 
+def _repeater(label, freq, tx_freq, service=models.SERVICE_HAM):
+    return models.ChannelCandidate(
+        source='RepeaterBook', service=service, group='',
+        label=label, freq=freq, tx_freq=tx_freq)
+
+
+def _simplex(label, freq, service=models.SERVICE_HAM,
+             source='RepeaterBook'):
+    return models.ChannelCandidate(
+        source=source, service=service, group='', label=label, freq=freq)
+
+
+class RequestedBandAndRecordTypeFilteringTest(unittest.TestCase):
+    """Windows validation: "all the 2 meter repeaters in the Coeur
+    d'Alene Idaho area" returned 70cm repeaters and simplex channels
+    alongside the requested 2m repeaters. fetch_repeaterbook() already
+    asks RepeaterBook for the narrowest band it can, but nothing
+    re-checked what RepeaterBook (or the always-on static calling
+    table, which isn't organized by band/record-type at all) actually
+    returned -- build_candidates()'s own defense-in-depth filtering
+    (chirp.assistant.sources._matches_requested_constraints) is what
+    these tests exercise, simulating a provider that ignores the
+    query's own band filter (the same "do not rely solely on provider
+    labels" case named in the corrective task) alongside one that
+    honors it.
+    """
+
+    def _build(self, request, repeaterbook_candidates):
+        with mock.patch.object(
+                sources, 'fetch_repeaterbook',
+                return_value=(repeaterbook_candidates, None)):
+            return sources.build_candidates(request, network_allowed=True)
+
+    def test_explicit_2m_repeaters_excludes_70cm_and_simplex(self):
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_HAM,),
+            requested_bands=(models.BAND_2M,),
+            requested_record_types=(models.RECORD_TYPE_REPEATER,),
+            location_text='Idaho')
+        rpt_2m = _repeater('2m RPT', 146880000, 146280000)
+        rpt_70cm = _repeater('70cm RPT', 440500000, 445500000)
+        rpt_222 = _repeater('222 RPT', 223940000, 222340000)
+        spx_2m = _simplex('2m SPX', 146580000)
+        spx_70cm = _simplex('70cm SPX', 446000000)
+        candidates, _warnings, _skipped = self._build(
+            req, [rpt_2m, rpt_70cm, rpt_222, spx_2m, spx_70cm])
+        labels = {c.label for c in candidates}
+        self.assertIn('2m RPT', labels)
+        self.assertNotIn('70cm RPT', labels)
+        self.assertNotIn('222 RPT', labels)
+        self.assertNotIn('2m SPX', labels)
+        self.assertNotIn('70cm SPX', labels)
+        # static_calling_candidates() (always simplex) must also be
+        # fully excluded by the repeater-only constraint.
+        self.assertFalse(any(c.source == 'static_ham_calling'
+                             for c in candidates))
+
+    def test_explicit_70cm_repeaters_excludes_2m_and_simplex(self):
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_HAM,),
+            requested_bands=(models.BAND_70CM,),
+            requested_record_types=(models.RECORD_TYPE_REPEATER,),
+            location_text='Idaho')
+        rpt_2m = _repeater('2m RPT', 146880000, 146280000)
+        rpt_70cm = _repeater('70cm RPT', 440500000, 445500000)
+        spx_70cm = _simplex('70cm SPX', 446000000)
+        candidates, _w, _s = self._build(req, [rpt_2m, rpt_70cm, spx_70cm])
+        labels = {c.label for c in candidates}
+        self.assertIn('70cm RPT', labels)
+        self.assertNotIn('2m RPT', labels)
+        self.assertNotIn('70cm SPX', labels)
+
+    def test_explicit_2m_simplex_excludes_repeaters_and_other_bands(self):
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_HAM,),
+            requested_bands=(models.BAND_2M,),
+            requested_record_types=(models.RECORD_TYPE_SIMPLEX,),
+            location_text='Idaho')
+        rpt_2m = _repeater('2m RPT', 146880000, 146280000)
+        spx_2m = _simplex('2m SPX', 146580000)
+        spx_70cm = _simplex('70cm SPX', 446000000)
+        candidates, _w, _s = self._build(req, [rpt_2m, spx_2m, spx_70cm])
+        labels = {c.label for c in candidates}
+        self.assertIn('2m SPX', labels)
+        self.assertNotIn('2m RPT', labels)
+        self.assertNotIn('70cm SPX', labels)
+        # The static calling table is 2m/70cm mixed -- band filtering
+        # alone (without excluding it entirely, since it's simplex and
+        # simplex was requested) must still drop any non-2m entries.
+        static_labels = {c.label for c in candidates
+                         if c.source == 'static_ham_calling'}
+        self.assertTrue(all('70' not in label for label in static_labels)
+                        or not static_labels)
+
+    def test_all_repeaters_no_band_includes_bands_excludes_simplex(self):
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_HAM,),
+            requested_record_types=(models.RECORD_TYPE_REPEATER,),
+            location_text='Idaho')
+        rpt_2m = _repeater('2m RPT', 146880000, 146280000)
+        rpt_70cm = _repeater('70cm RPT', 440500000, 445500000)
+        spx_2m = _simplex('2m SPX', 146580000)
+        candidates, _w, _s = self._build(req, [rpt_2m, rpt_70cm, spx_2m])
+        labels = {c.label for c in candidates}
+        self.assertIn('2m RPT', labels)
+        self.assertIn('70cm RPT', labels)
+        self.assertNotIn('2m SPX', labels)
+        self.assertFalse(any(c.source == 'static_ham_calling'
+                             for c in candidates))
+
+    def test_band_only_no_record_type_includes_both_repeater_and_simplex(
+            self):
+        # Documented, intentional current behavior: "2 meter channels"
+        # (a band with no explicit repeater/simplex wording) narrows
+        # by band only -- both record types remain, matching how an
+        # unconstrained request already includes both.
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_HAM,),
+            requested_bands=(models.BAND_2M,),
+            location_text='Idaho')
+        rpt_2m = _repeater('2m RPT', 146880000, 146280000)
+        rpt_70cm = _repeater('70cm RPT', 440500000, 445500000)
+        spx_2m = _simplex('2m SPX', 146580000)
+        candidates, _w, _s = self._build(req, [rpt_2m, rpt_70cm, spx_2m])
+        labels = {c.label for c in candidates}
+        self.assertIn('2m RPT', labels)
+        self.assertIn('2m SPX', labels)
+        self.assertNotIn('70cm RPT', labels)
+
+    def test_provider_ignoring_band_filter_is_still_enforced(self):
+        # Simulates RepeaterBook (or any future source) returning
+        # records outside the requested band despite the query's own
+        # bands= parameter -- the defense-in-depth layer must not
+        # trust that the provider actually honored it.
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_HAM,),
+            requested_bands=(models.BAND_2M,),
+            location_text='Idaho')
+        rpt_2m = _repeater('2m RPT', 146880000, 146280000)
+        rpt_ignored_70cm = _repeater('Ignored 70cm', 440500000, 445500000)
+        candidates, _w, _s = self._build(req, [rpt_2m, rpt_ignored_70cm])
+        labels = {c.label for c in candidates}
+        self.assertIn('2m RPT', labels)
+        self.assertNotIn('Ignored 70cm', labels)
+
+    def test_band_edge_frequencies_included(self):
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_HAM,),
+            requested_bands=(models.BAND_2M,),
+            location_text='Idaho')
+        low_edge = _repeater('Low Edge', 144000000, 144600000)
+        high_edge = _repeater('High Edge', 148000000, 147400000)
+        just_below = _repeater('Just Below', 143999999, 143399999)
+        just_above = _repeater('Just Above', 148000001, 148600001)
+        candidates, _w, _s = self._build(
+            req, [low_edge, high_edge, just_below, just_above])
+        labels = {c.label for c in candidates}
+        self.assertIn('Low Edge', labels)
+        self.assertIn('High Edge', labels)
+        self.assertNotIn('Just Below', labels)
+        self.assertNotIn('Just Above', labels)
+
+    def test_classification_is_frequency_based_not_label_based(self):
+        # A candidate with no distinguishing label/source metadata --
+        # only frequency and tx_freq -- is still classified correctly.
+        # candidate.is_repeater() never looks at a tone field.
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_HAM,),
+            requested_record_types=(models.RECORD_TYPE_REPEATER,),
+            location_text='Idaho')
+        untoned_repeater = models.ChannelCandidate(
+            source='RepeaterBook', service=models.SERVICE_HAM, group='',
+            label='No Tone RPT', freq=146880000, tx_freq=146280000,
+            tmode='')
+        toned_simplex = models.ChannelCandidate(
+            source='RepeaterBook', service=models.SERVICE_HAM, group='',
+            label='Toned SPX', freq=146580000, tmode='Tone', rtone=100.0)
+        candidates, _w, _s = self._build(
+            req, [untoned_repeater, toned_simplex])
+        labels = {c.label for c in candidates}
+        self.assertIn('No Tone RPT', labels)
+        self.assertNotIn('Toned SPX', labels)
+
+    def test_gmrs_repeater_only_request_excludes_gmrs_simplex(self):
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_GMRS,),
+            requested_record_types=(models.RECORD_TYPE_REPEATER,),
+            location_text='Idaho')
+        rpt = _repeater('GMRS RPT', 462650000, 467650000,
+                        service=models.SERVICE_GMRS)
+        spx = _simplex('GMRS SPX', 462562500, service=models.SERVICE_GMRS)
+        with mock.patch.object(
+                sources, 'fetch_repeaterbook',
+                return_value=([rpt, spx], None)):
+            candidates, _w, _s = sources.build_candidates(
+                req, network_allowed=True)
+        labels = {c.label for c in candidates}
+        self.assertIn('GMRS RPT', labels)
+        self.assertNotIn('GMRS SPX', labels)
+
+
+class RequestFromDictBandAndRecordTypeTest(unittest.TestCase):
+    """The AI-interpreted path: providers.py builds a ProgrammingRequest
+    via models.ProgrammingRequest.from_dict() from parsed provider
+    JSON, then validate()s it -- the same gate the deterministic
+    wizard's own request goes through. Confirms requested_bands and
+    requested_record_types round-trip through that exact path."""
+
+    def test_from_dict_round_trips_bands_and_record_types(self):
+        req = models.ProgrammingRequest.from_dict({
+            'location_text': "Coeur d'Alene, Idaho",
+            'requested_services': ['ham'],
+            'requested_bands': ['2m'],
+            'requested_record_types': ['repeater'],
+        })
+        self.assertEqual([], req.validate())
+        self.assertEqual((models.BAND_2M,), req.requested_bands)
+        self.assertEqual((models.RECORD_TYPE_REPEATER,),
+                         req.requested_record_types)
+
+    def test_unknown_record_type_fails_validation(self):
+        req = models.ProgrammingRequest(
+            requested_record_types=('not-a-real-type',))
+        errors = req.validate()
+        self.assertTrue(
+            any('record type' in e.lower() for e in errors))
+
+
 if __name__ == '__main__':
     unittest.main()

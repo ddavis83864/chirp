@@ -1,7 +1,9 @@
 import unittest
+from unittest import mock
 
 from chirp.assistant import models
 from chirp.assistant import service
+from chirp.assistant import sources
 from chirp.drivers import generic_csv
 
 
@@ -65,6 +67,47 @@ class AssistantServiceTest(unittest.TestCase):
         ham_candidates = [c for c in plan.all_candidates
                           if c.service == models.SERVICE_HAM]
         self.assertTrue(any(not c.receive_only for c in ham_candidates))
+
+    def test_repeater_only_2m_request_plan_and_apply_stay_compliant(self):
+        """End-to-end reproduction of the Windows validation finding at
+        the Review/Apply layer: a request for 2m repeaters only must
+        result in a ChannelPlan (what the Review page shows) and a
+        finalized apply list (what actually gets written) that both
+        contain only the 2m repeater -- never the 70cm repeater or the
+        simplex calling frequencies real requests would otherwise also
+        surface.
+        """
+        req = models.ProgrammingRequest(
+            requested_services=(models.SERVICE_HAM,),
+            requested_bands=(models.BAND_2M,),
+            requested_record_types=(models.RECORD_TYPE_REPEATER,),
+            location_text='Idaho', amateur_license=models.LICENSE_TECHNICIAN,
+            channel_limit=20)
+        rpt_2m = models.ChannelCandidate(
+            source='RepeaterBook', service=models.SERVICE_HAM, group='',
+            label='2m RPT', freq=146880000, tx_freq=146280000,
+            tmode='Tone', rtone=100.0)
+        rpt_70cm = models.ChannelCandidate(
+            source='RepeaterBook', service=models.SERVICE_HAM, group='',
+            label='70cm RPT', freq=440500000, tx_freq=445500000,
+            tmode='Tone', rtone=100.0)
+        with mock.patch.object(
+                sources, 'fetch_repeaterbook',
+                return_value=([rpt_2m, rpt_70cm], None)):
+            plan = self.svc.build_plan(req, network_allowed=True)
+        self.svc.convert_and_validate(plan)
+
+        review_labels = {c.label for c in plan.all_candidates}
+        self.assertIn('2m RPT', review_labels)
+        self.assertNotIn('70cm RPT', review_labels)
+        self.assertFalse(any(c.source == 'static_ham_calling'
+                             for c in plan.all_candidates))
+
+        finalized = self.svc.finalize_for_apply(plan)
+        applied_labels = {candidate.label for candidate, _memory in
+                          finalized}
+        self.assertIn('2m RPT', applied_labels)
+        self.assertNotIn('70cm RPT', applied_labels)
 
     def test_finalize_for_apply_only_returns_valid_included(self):
         req = models.ProgrammingRequest(

@@ -75,8 +75,23 @@ with these optional keys:
   activities (array of short strings, e.g. "camping","aviation"),
   requested_services (array from: "ham","gmrs","frs","murs","weather",
     "aviation","marine","public_safety","business","railroad","satellite"),
+  requested_bands (array from: "6m","2m","222","70cm","33cm","23cm" --
+    only include a band the user explicitly named; omit entirely if no
+    band was named, meaning no band restriction),
+  requested_record_types (array from: "repeater","simplex" -- only
+    include this if the user explicitly asked for one and not the
+    other, e.g. "repeaters" means ["repeater"], "simplex channels"
+    means ["simplex"]; omit entirely if the user did not distinguish,
+    meaning both are wanted),
   channel_limit (integer, 1-500),
   naming_style (one of "short","descriptive").
+
+A named band (e.g. "2 meter") is a hard inclusion constraint, not a \
+preference -- do not omit requested_bands just because other bands \
+might also be useful. A request for "repeaters" excludes simplex \
+channels, and a request for "simplex" excludes repeaters -- never \
+include both record types unless the user's text asked for both or \
+named neither.
 
 Never include a frequency, tone, offset, DCS code, or any other \
 technical radio value -- there is no field for one, and any such value \

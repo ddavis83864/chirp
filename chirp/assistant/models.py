@@ -43,6 +43,16 @@ BAND_33CM = '33cm'
 BAND_23CM = '23cm'
 ALL_BANDS = (BAND_6M, BAND_2M, BAND_222, BAND_70CM, BAND_33CM, BAND_23CM)
 
+# A repeater-capable candidate's record type -- whether it represents a
+# repeater (distinct transmit/receive frequencies) or a simplex channel
+# (same frequency both ways). Only meaningful for services that can be
+# either (ham, gmrs); an empty requested_record_types on
+# ProgrammingRequest means "no restriction", matching requested_bands'
+# own convention.
+RECORD_TYPE_REPEATER = 'repeater'
+RECORD_TYPE_SIMPLEX = 'simplex'
+ALL_RECORD_TYPES = (RECORD_TYPE_REPEATER, RECORD_TYPE_SIMPLEX)
+
 SERVICE_HAM = 'ham'
 SERVICE_GMRS = 'gmrs'
 SERVICE_FRS = 'frs'
@@ -115,6 +125,13 @@ class ProgrammingRequest:
     # has no effect on static-table sources (weather, aviation,
     # calling frequencies), which aren't organized by band selection.
     requested_bands: tuple = ()
+    # Optional -- an empty tuple means "no repeater/simplex restriction
+    # requested", the same convention as requested_bands. Only narrows
+    # ham/gmrs candidates (repeater-book results and static amateur
+    # calling/simplex frequencies); has no effect on services that
+    # aren't organized by repeater/simplex distinction at all (weather,
+    # aviation, etc).
+    requested_record_types: tuple = ()
     receive_only_services: tuple = ()
     channel_limit: int = 40
     preserve_existing: bool = True
@@ -154,6 +171,12 @@ class ProgrammingRequest:
         if unknown_bands:
             errors.append('Unknown requested band(s): %s' %
                           ', '.join(sorted(unknown_bands)))
+
+        unknown_record_types = (set(self.requested_record_types) -
+                                set(ALL_RECORD_TYPES))
+        if unknown_record_types:
+            errors.append('Unknown requested record type(s): %s' %
+                          ', '.join(sorted(unknown_record_types)))
 
         if not isinstance(self.radius_miles, (int, float)):
             errors.append('radius_miles must be a number')
@@ -210,7 +233,8 @@ class ProgrammingRequest:
                 continue
             value = data[key]
             if key in ('activities', 'requested_services',
-                       'receive_only_services', 'requested_bands'):
+                       'receive_only_services', 'requested_bands',
+                       'requested_record_types'):
                 if isinstance(value, (list, tuple)):
                     kwargs[key] = tuple(str(v) for v in value)
             elif key == 'protected_memory_ranges':
@@ -309,6 +333,15 @@ class ChannelCandidate:
         return (self.freq, self.tx_freq, self.mode, self.tmode,
                 round(self.rtone, 1), round(self.ctone, 1), self.dtcs,
                 self.service)
+
+    def is_repeater(self):
+        """True if this candidate has a distinct transmit frequency
+        (a repeater), False if transmit and receive share one
+        frequency (simplex). The single canonical repeater/simplex
+        classification -- based on frequency/duplex evidence, never a
+        source label or a tone field -- shared by planner.group_name()
+        and chirp.assistant.sources' record-type filtering."""
+        return self.tx_freq is not None and self.tx_freq != self.freq
 
 
 @dataclasses.dataclass

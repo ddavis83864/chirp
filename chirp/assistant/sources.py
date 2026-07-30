@@ -372,6 +372,42 @@ def static_calling_candidates(request):
     return candidates
 
 
+def _matches_requested_constraints(candidate, request):
+    """True if @candidate satisfies @request's explicit band and
+    repeater/simplex constraints (both empty tuples on @request means
+    "no restriction", so every candidate matches).
+
+    Defense-in-depth: fetch_repeaterbook() already asks RepeaterBook
+    for the narrowest supported band range, but this re-checks every
+    returned record directly against its own frequency/duplex evidence
+    rather than trusting the provider (or a static table not organized
+    by band/record-type at all) to have actually honored that request.
+    A request that names a band is a hard inclusion constraint, and a
+    request for "repeaters" excludes simplex, and vice versa -- never
+    softened to "preferred".
+    """
+    if request.requested_bands and not any(
+            lo <= candidate.freq <= hi
+            for lo, hi in _band_ranges(request.requested_bands)):
+        return False
+    if request.requested_record_types:
+        is_repeater = candidate.is_repeater()
+        if is_repeater and (
+                models.RECORD_TYPE_REPEATER not in
+                request.requested_record_types):
+            return False
+        if not is_repeater and (
+                models.RECORD_TYPE_SIMPLEX not in
+                request.requested_record_types):
+            return False
+    return True
+
+
+def _filtered(candidates, request):
+    return [c for c in candidates
+            if _matches_requested_constraints(c, request)]
+
+
 def build_candidates(request, network_allowed=True):
     """Dispatch to the right source(s) for every service in
     request.requested_services. Returns (candidates, plan_warnings,
@@ -402,10 +438,12 @@ def build_candidates(request, network_allowed=True):
                     message='RepeaterBook (amateur): the query completed '
                             'but returned no matching repeaters.'))
             else:
-                candidates.extend(found)
-            candidates.extend(static_calling_candidates(request))
+                candidates.extend(_filtered(found, request))
+            candidates.extend(
+                _filtered(static_calling_candidates(request), request))
         else:
-            candidates.extend(static_calling_candidates(request))
+            candidates.extend(
+                _filtered(static_calling_candidates(request), request))
             warnings.append(models.PlanWarning(
                 severity='info',
                 message='Network sources disabled: only static amateur '
@@ -426,7 +464,7 @@ def build_candidates(request, network_allowed=True):
                     message='RepeaterBook (GMRS): the query completed but '
                             'returned no matching repeaters.'))
             else:
-                candidates.extend(found)
+                candidates.extend(_filtered(found, request))
         else:
             warnings.append(models.PlanWarning(
                 severity='info',

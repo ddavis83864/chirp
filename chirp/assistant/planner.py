@@ -66,8 +66,7 @@ _SERVICE_RANK = {
 
 def group_name(candidate):
     if candidate.service == models.SERVICE_HAM:
-        if (candidate.tx_freq is not None and
-                candidate.tx_freq != candidate.freq):
+        if candidate.is_repeater():
             return 'Local Amateur Repeaters'
         return 'Amateur Simplex'
     return _GROUP_NAMES.get(candidate.service, candidate.service.title())
