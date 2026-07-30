@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: CHIRP\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-29 21:19-0700\n"
+"POT-Creation-Date: 2026-07-29 22:47-0700\n"
 "PO-Revision-Date: 2023-02-11 15:12+0200\n"
 "Last-Translator: Sokratis Alichanidis <sv2hzs@posteo.net>\n"
 "Language-Team: Greek\n"
@@ -62,12 +62,12 @@ msgstr[1] "Διαγραφή %i μνημών και μετακίνηση ομάδ
 msgid "%i memories failed validation for this radio (see details below). Add them anyway?"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1207
+#: ../wxui/programming_assistant.py:1259
 #, python-format
 msgid "%i source note(s) -- some requested data may be incomplete."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1191
+#: ../wxui/programming_assistant.py:1243
 #, python-format
 msgid "%i total, %i included: "
 msgstr ""
@@ -77,7 +77,7 @@ msgstr ""
 msgid "%s already exists and was not created by CHIRP; refusing to overwrite it"
 msgstr ""
 
-#: ../wxui/main.py:1921
+#: ../wxui/main.py:1926
 #, python-format
 msgid "%s has not been saved. Save before closing?"
 msgstr ""
@@ -775,31 +775,31 @@ msgid ""
 "It will may not work if you turn on the radio with the cable already attached"
 msgstr ""
 
-#: ../wxui/profileeditor.py:451
+#: ../wxui/profileeditor.py:462
 msgid "A channel with this logical ID already exists"
 msgstr ""
 
-#: ../wxui/main.py:2587
+#: ../wxui/main.py:2592
 msgid "A new CHIRP version is available. Please visit the website as soon as possible to download it!"
 msgstr "Μία νέα έκδοση του CHIRP είναι διαθέσιμη. Παρακαλούμε επισκεφθείτε την ιστοσελίδα το συντομότερο δυνατό για να την κατεβάσετε!"
 
-#: ../wxui/programming_assistant.py:922
+#: ../wxui/programming_assistant.py:974
 msgid "AI Configuration Error"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:917
+#: ../wxui/programming_assistant.py:969
 msgid "AI Configuration Valid"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:599
+#: ../wxui/programming_assistant.py:651
 msgid "AI Interpretation Complete"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:693
+#: ../wxui/programming_assistant.py:745
 msgid "AI Provider Configuration"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:699
+#: ../wxui/programming_assistant.py:751
 msgid "AI is used ONLY to turn your typed description into the structured fields above -- it never supplies frequencies, tones, or any other technical channel data, and no call is made until you click \"Interpret with AI\"."
 msgstr ""
 
@@ -807,7 +807,7 @@ msgstr ""
 msgid "AM mode does not allow duplex or tone"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:749
+#: ../wxui/programming_assistant.py:801
 msgid "API key (session/optional):"
 msgstr ""
 
@@ -819,7 +819,7 @@ msgstr ""
 msgid "About"
 msgstr "Σχετικά"
 
-#: ../wxui/main.py:2297
+#: ../wxui/main.py:2302
 msgid "About CHIRP"
 msgstr "Σχετικά με το CHIRP"
 
@@ -832,15 +832,15 @@ msgstr ""
 msgid "Action: %s"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:99
+#: ../wxui/programming_assistant.py:100
 msgid "Activities"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:340
+#: ../wxui/programming_assistant.py:351
 msgid "Activities (comma-separated):"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:994
+#: ../wxui/programming_assistant.py:1046
 #, python-format
 msgid "Activities: %s"
 msgstr ""
@@ -849,7 +849,7 @@ msgstr ""
 msgid "Adapted"
 msgstr ""
 
-#: ../wxui/profileapply.py:38 ../wxui/profileeditor.py:409
+#: ../wxui/profileapply.py:38 ../wxui/profileeditor.py:420
 msgid "Add"
 msgstr ""
 
@@ -857,7 +857,7 @@ msgstr ""
 msgid "Add CHIRP to the application menu"
 msgstr ""
 
-#: ../wxui/profileeditor.py:452
+#: ../wxui/profileeditor.py:463
 msgid "Add Channel"
 msgstr ""
 
@@ -878,8 +878,8 @@ msgstr ""
 msgid "Add Custom Column..."
 msgstr ""
 
-#: ../wxui/profileeditor.py:349 ../wxui/profileeditor.py:373
-#: ../wxui/profileeditor.py:378 ../wxui/profileeditor.py:381
+#: ../wxui/profileeditor.py:360 ../wxui/profileeditor.py:384
+#: ../wxui/profileeditor.py:389 ../wxui/profileeditor.py:392
 msgid "Add Group"
 msgstr ""
 
@@ -895,12 +895,12 @@ msgstr ""
 msgid "Add..."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1343
+#: ../wxui/programming_assistant.py:1395
 #, python-format
 msgid "Adjusted for this radio: %i"
 msgstr ""
 
-#: ../wxui/main.py:2352
+#: ../wxui/main.py:2357
 msgid "Agree"
 msgstr ""
 
@@ -921,16 +921,16 @@ msgstr "Όλα τα αρχεία"
 msgid "All supported formats"
 msgstr "Όλοι οι τύποι αρχείων"
 
-#: ../wxui/programming_assistant.py:999
+#: ../wxui/programming_assistant.py:1051
 #, python-format
 msgid "Allow duplicate replacement: %s"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:979
+#: ../wxui/programming_assistant.py:1031
 msgid "Allow network source queries (RepeaterBook, satellites)"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:386
+#: ../wxui/programming_assistant.py:397
 msgid "Allow replacing conflicting existing memories"
 msgstr ""
 
@@ -942,11 +942,11 @@ msgstr ""
 msgid "Amateur"
 msgstr "Ραδιοερασιτέχνη"
 
-#: ../wxui/programming_assistant.py:68
+#: ../wxui/programming_assistant.py:69
 msgid "Amateur (Ham) Radio"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:78
+#: ../wxui/programming_assistant.py:79
 msgid "Amateur Satellite"
 msgstr ""
 
@@ -954,15 +954,15 @@ msgstr ""
 msgid "Amateur allocation, no specific subtype."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:97
+#: ../wxui/programming_assistant.py:98
 msgid "Amateur license class"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:329
+#: ../wxui/programming_assistant.py:340
 msgid "Amateur license class:"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:992
+#: ../wxui/programming_assistant.py:1044
 #, python-format
 msgid "Amateur license: %s"
 msgstr ""
@@ -1003,7 +1003,7 @@ msgstr ""
 msgid "Application menu launcher"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1340
+#: ../wxui/programming_assistant.py:1392
 #, python-format
 msgid "Applied: %i"
 msgstr ""
@@ -1017,7 +1017,7 @@ msgstr ""
 msgid "Apply %s profile"
 msgstr ""
 
-#: ../wxui/main.py:1888 ../wxui/main.py:1896
+#: ../wxui/main.py:1888 ../wxui/main.py:1893 ../wxui/main.py:1901
 msgid "Apply Profile"
 msgstr ""
 
@@ -1054,7 +1054,7 @@ msgstr ""
 msgid "Approved"
 msgstr ""
 
-#: ../wxui/main.py:2018
+#: ../wxui/main.py:2023
 msgid "Automatic from system"
 msgstr ""
 
@@ -1066,7 +1066,7 @@ msgstr ""
 msgid "Aviation"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:73
+#: ../wxui/programming_assistant.py:74
 msgid "Aviation (receive-only)"
 msgstr ""
 
@@ -1078,7 +1078,7 @@ msgstr ""
 msgid "Background:"
 msgstr ""
 
-#: ../wxui/main.py:2501
+#: ../wxui/main.py:2506
 msgid "Bandplan"
 msgstr "Χάρτης συχνοτήτων"
 
@@ -1099,7 +1099,7 @@ msgstr "Bin"
 msgid "Blocked"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1342
+#: ../wxui/programming_assistant.py:1394
 #, python-format
 msgid "Blocked by validation: %i"
 msgstr ""
@@ -1143,7 +1143,7 @@ msgstr ""
 msgid "Building Radio Browser"
 msgstr "Δημιουργία Περιηγητή Πομποδεκτών"
 
-#: ../wxui/programming_assistant.py:1056
+#: ../wxui/programming_assistant.py:1108
 msgid "Building plan..."
 msgstr ""
 
@@ -1155,7 +1155,7 @@ msgstr ""
 msgid "Business/Industrial"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:76
+#: ../wxui/programming_assistant.py:77
 msgid "Business/Industrial (receive-only)"
 msgstr ""
 
@@ -1167,7 +1167,7 @@ msgstr ""
 msgid "CHIRP Profile Files"
 msgstr ""
 
-#: ../wxui/main.py:2047
+#: ../wxui/main.py:2052
 msgid "CHIRP must be restarted for the new selection to take effect"
 msgstr ""
 
@@ -1188,11 +1188,11 @@ msgstr ""
 msgid "Canada"
 msgstr "Καναδάς"
 
-#: ../wxui/programming_assistant.py:462
+#: ../wxui/programming_assistant.py:473
 msgid "Cancel"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:934 ../wxui/programming_assistant.py:950
+#: ../wxui/programming_assistant.py:986 ../wxui/programming_assistant.py:1002
 msgid "Cancelling..."
 msgstr ""
 
@@ -1208,7 +1208,7 @@ msgstr ""
 msgid "Changing this setting requires refreshing the settings from the image, which will happen now."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:996
+#: ../wxui/programming_assistant.py:1048
 #, python-format
 msgid "Channel limit: %i"
 msgstr ""
@@ -1233,7 +1233,7 @@ msgstr ""
 msgid "Channels with equivalent TX and RX %s are represented by tone mode of \"%s\""
 msgstr ""
 
-#: ../wxui/programming_assistant.py:360 ../wxui/programming_assistant.py:628
+#: ../wxui/programming_assistant.py:371 ../wxui/programming_assistant.py:680
 msgid "Check at least one requested service to continue."
 msgstr ""
 
@@ -1307,7 +1307,7 @@ msgstr ""
 msgid "Classification: %s"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:462
+#: ../wxui/programming_assistant.py:473
 msgid "Clear"
 msgstr ""
 
@@ -1323,11 +1323,11 @@ msgid_plural "Clear %(label)s on %(count)i memories"
 msgstr[0] ""
 msgstr[1] ""
 
-#: ../wxui/programming_assistant.py:304
+#: ../wxui/programming_assistant.py:305
 msgid "Clear All Entries"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:460
+#: ../wxui/programming_assistant.py:471
 msgid "Clear All Entries?"
 msgstr ""
 
@@ -1339,11 +1339,11 @@ msgstr ""
 msgid "Clear Recent Files"
 msgstr ""
 
-#: ../wxui/main.py:2338
+#: ../wxui/main.py:2343
 msgid "Click here for full license text"
 msgstr ""
 
-#: ../wxui/main.py:2317
+#: ../wxui/main.py:2322
 msgid "Click here for online documentation"
 msgstr ""
 
@@ -1375,7 +1375,7 @@ msgstr "Λήψη από πομποδέκτη"
 msgid "Cloning to radio"
 msgstr "Αποστολή σε πομποδέκτη"
 
-#: ../wxui/main.py:1240 ../wxui/main.py:2353
+#: ../wxui/main.py:1240 ../wxui/main.py:2358
 msgid "Close"
 msgstr "Κλείσιμο"
 
@@ -1428,15 +1428,15 @@ msgstr ""
 msgid "Conditions"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:903
+#: ../wxui/programming_assistant.py:955
 msgid "Configuration is valid."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:296
+#: ../wxui/programming_assistant.py:297
 msgid "Configure AI Provider..."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:956
+#: ../wxui/programming_assistant.py:1008
 msgid "Confirm your request"
 msgstr ""
 
@@ -1568,7 +1568,7 @@ msgstr ""
 msgid "DV Memory"
 msgstr "Μνήμη DV"
 
-#: ../wxui/main.py:2390
+#: ../wxui/main.py:2395
 msgid "Danger Ahead"
 msgstr ""
 
@@ -1576,15 +1576,15 @@ msgstr ""
 msgid "Dec"
 msgstr "Dec"
 
-#: ../wxui/profileeditor.py:315
+#: ../wxui/profileeditor.py:326
 msgid "Default Mode"
 msgstr ""
 
-#: ../wxui/profileeditor.py:320
+#: ../wxui/profileeditor.py:331
 msgid "Default Power Preference"
 msgstr ""
 
-#: ../wxui/profileeditor.py:325
+#: ../wxui/profileeditor.py:336
 msgid "Default Scan Intent"
 msgstr ""
 
@@ -1596,7 +1596,7 @@ msgstr ""
 msgid "Degraded"
 msgstr ""
 
-#: ../wxui/memedit.py:2913 ../wxui/memedit.py:3075 ../wxui/profileeditor.py:411
+#: ../wxui/memedit.py:2913 ../wxui/memedit.py:3075 ../wxui/profileeditor.py:422
 #: ../wxui/memcolordialog.py:470
 msgid "Delete"
 msgstr "Διαγραφή"
@@ -1626,19 +1626,19 @@ msgstr ""
 msgid "Delete rule \"%s\"?"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:278
+#: ../wxui/programming_assistant.py:279
 msgid "Describe what you want programmed"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:280
+#: ../wxui/programming_assistant.py:281
 msgid "Describe your request in plain language, or just fill in the fields below directly -- AI is entirely optional and nothing here requires it."
 msgstr ""
 
-#: ../wxui/profileeditor.py:288
+#: ../wxui/profileeditor.py:299
 msgid "Description"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:88
+#: ../wxui/programming_assistant.py:89
 msgid "Descriptive"
 msgstr ""
 
@@ -1651,7 +1651,7 @@ msgstr ""
 msgid "Detailed information"
 msgstr "Πληροφορίες πομποδέκτη"
 
-#: ../wxui/programming_assistant.py:1125
+#: ../wxui/programming_assistant.py:1177
 msgid "Details"
 msgstr ""
 
@@ -1667,7 +1667,7 @@ msgstr ""
 msgid "Developer Mode"
 msgstr "Λειτουργία προγραμματιστή"
 
-#: ../wxui/main.py:2396
+#: ../wxui/main.py:2401
 #, python-format
 msgid "Developer state is now %s. CHIRP must be restarted to take effect"
 msgstr ""
@@ -1690,12 +1690,12 @@ msgstr "Ψηφιακός Κωδικός"
 msgid "Digital Modes"
 msgstr "Ψηφιακός Κωδικός"
 
-#: ../wxui/main.py:2408
+#: ../wxui/main.py:2413
 #, fuzzy
 msgid "Disable reporting"
 msgstr "Αναφορές απενεργοποιημένες"
 
-#: ../wxui/memedit.py:594 ../wxui/programming_assistant.py:709
+#: ../wxui/memedit.py:594 ../wxui/programming_assistant.py:761
 msgid "Disabled"
 msgstr ""
 
@@ -1768,11 +1768,11 @@ msgstr ""
 msgid "Duplicate"
 msgstr ""
 
-#: ../wxui/profileeditor.py:335
+#: ../wxui/profileeditor.py:346
 msgid "Duplicate-Handling Policy"
 msgstr ""
 
-#: ../wxui/profileeditor.py:410
+#: ../wxui/profileeditor.py:421
 msgid "Edit"
 msgstr ""
 
@@ -1838,7 +1838,7 @@ msgstr ""
 msgid "Enabled:"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:721
+#: ../wxui/programming_assistant.py:773
 msgid "Endpoint URL:"
 msgstr ""
 
@@ -1854,7 +1854,7 @@ msgstr ""
 msgid "Enter TX Frequency (MHz)"
 msgstr "Εισάγετε συχνότητα εκπομπής (MHz)"
 
-#: ../wxui/programming_assistant.py:516
+#: ../wxui/programming_assistant.py:531
 msgid "Enter a description first."
 msgstr ""
 
@@ -1924,8 +1924,8 @@ msgstr "Σφάλμα εφαρμογής ρυθμίσεων"
 msgid "Error communicating with radio"
 msgstr "Σφάλμα επικοινωνίας με τον πομποδέκτη"
 
-#: ../wxui/programming_assistant.py:541 ../wxui/programming_assistant.py:846
-#: ../wxui/programming_assistant.py:1088
+#: ../wxui/programming_assistant.py:556 ../wxui/programming_assistant.py:898
+#: ../wxui/programming_assistant.py:1140
 #, python-format
 msgid "Error: %s"
 msgstr ""
@@ -1970,12 +1970,12 @@ msgstr ""
 msgid "Exclude private and closed repeaters"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1344
+#: ../wxui/programming_assistant.py:1396
 #, python-format
 msgid "Existing memories replaced: %i"
 msgstr ""
 
-#: ../wxui/main.py:2427
+#: ../wxui/main.py:2432
 msgid "Experimental Feature"
 msgstr ""
 
@@ -2008,7 +2008,7 @@ msgstr "Εξαγωγή σε αρχείο μορφής .CSV"
 msgid "Export to CSV..."
 msgstr "Εξαγωγή σε αρχείο μορφής .CSV"
 
-#: ../wxui/memedit.py:3742 ../wxui/programming_assistant.py:84
+#: ../wxui/memedit.py:3742 ../wxui/programming_assistant.py:85
 msgid "Extra"
 msgstr "Περισσότερα"
 
@@ -2031,11 +2031,11 @@ msgid ""
 "required."
 msgstr ""
 
-#: ../wxui/memcolorlegend.py:50 ../wxui/programming_assistant.py:70
+#: ../wxui/memcolorlegend.py:50 ../wxui/programming_assistant.py:71
 msgid "FRS"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1347
+#: ../wxui/programming_assistant.py:1399
 #, python-format
 msgid "Failed to apply: %i"
 msgstr ""
@@ -2103,8 +2103,8 @@ msgid "File does not exist: %s"
 msgstr "Το αρχείο δεν υπάρχει: %s"
 
 #: ../wxui/main.py:1528 ../wxui/main.py:1634 ../wxui/main.py:1644
-#: ../wxui/main.py:1677 ../wxui/main.py:1735 ../wxui/main.py:2267
-#: ../wxui/main.py:2268
+#: ../wxui/main.py:1677 ../wxui/main.py:1735 ../wxui/main.py:2272
+#: ../wxui/main.py:2273
 msgid "Files"
 msgstr "Αρχεία"
 
@@ -2130,7 +2130,7 @@ msgstr "Φίλτρο"
 msgid "Filter:"
 msgstr ""
 
-#: ../wxui/main.py:1976
+#: ../wxui/main.py:1981
 msgid "Find"
 msgstr "Εύρεση"
 
@@ -2348,7 +2348,7 @@ msgstr ""
 msgid "Found empty list value for %(name)s: %(value)r"
 msgstr ""
 
-#: ../wxui/memedit.py:348 ../wxui/profileeditor.py:405
+#: ../wxui/memedit.py:348 ../wxui/profileeditor.py:416
 msgid "Frequency"
 msgstr "Συχνότητα"
 
@@ -2390,22 +2390,22 @@ msgstr ""
 msgid "Frequency outside TX bands must be duplex=off"
 msgstr ""
 
-#: ../wxui/memcolorlegend.py:49 ../wxui/programming_assistant.py:69
+#: ../wxui/memcolorlegend.py:49 ../wxui/programming_assistant.py:70
 #: ../wxui/query_sources.py:355 ../wxui/query_sources.py:435
 #: ../wxui/query_sources.py:536
 msgid "GMRS"
 msgstr "GMRS"
 
-#: ../wxui/programming_assistant.py:98
+#: ../wxui/programming_assistant.py:99
 msgid "GMRS license"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:993
+#: ../wxui/programming_assistant.py:1045
 #, python-format
 msgid "GMRS license declared: %s"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:83
+#: ../wxui/programming_assistant.py:84
 msgid "General"
 msgstr ""
 
@@ -2430,20 +2430,20 @@ msgstr "Μετάβαση σε Μνήμη:"
 msgid "Goto..."
 msgstr "Μετάβαση σε"
 
-#: ../wxui/programming_assistant.py:1122
+#: ../wxui/programming_assistant.py:1174
 msgid "Group"
 msgstr ""
 
-#: ../wxui/profileeditor.py:373
+#: ../wxui/profileeditor.py:384
 msgid "Group ID (slug):"
 msgstr ""
 
-#: ../wxui/profileeditor.py:381
+#: ../wxui/profileeditor.py:392
 msgid "Group Name:"
 msgstr ""
 
 #: ../wxui/profileeditor.py:160 ../wxui/profileeditor.py:252
-#: ../wxui/profileeditor.py:406
+#: ../wxui/profileeditor.py:417
 msgid "Groups"
 msgstr ""
 
@@ -2521,11 +2521,11 @@ msgstr ""
 msgid "I have"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:334
+#: ../wxui/programming_assistant.py:345
 msgid "I have a GMRS license"
 msgstr ""
 
-#: ../wxui/profileeditor.py:346
+#: ../wxui/profileeditor.py:357
 msgid "ID"
 msgstr ""
 
@@ -2635,15 +2635,20 @@ msgstr "Αλληλεπίδραση με οδηγό"
 msgid "Internal driver error: Attempt to modify frozen memory; Please report this as a bug using \"Report or update a bug\" in the Help menu"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:293
+#: ../wxui/programming_assistant.py:294
 msgid "Interpret with AI"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:544
+#: ../wxui/programming_assistant.py:559
 msgid "Interpreted -- review the fields below before continuing."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:520
+#: ../wxui/programming_assistant.py:610
+#, python-format
+msgid "Interpreted filter -- %s"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:535
 msgid "Interpreting..."
 msgstr ""
 
@@ -2675,7 +2680,7 @@ msgstr "Μη έγκυρος ΤΚ"
 msgid "Invalid edit: %s"
 msgstr "Μη έγκυρη τιμή: %s"
 
-#: ../wxui/profileeditor.py:378
+#: ../wxui/profileeditor.py:389
 msgid "Invalid group ID"
 msgstr ""
 
@@ -2684,7 +2689,7 @@ msgstr ""
 msgid "Invalid locator"
 msgstr "Μη έγκυρη τιμή: %s"
 
-#: ../wxui/main.py:2264
+#: ../wxui/main.py:2269
 msgid "Invalid or unsupported module file"
 msgstr ""
 
@@ -2692,7 +2697,7 @@ msgstr ""
 msgid "Invalid receive frequency"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:666
+#: ../wxui/programming_assistant.py:718
 msgid "Invalid request"
 msgstr ""
 
@@ -2735,7 +2740,7 @@ msgstr ""
 msgid "LIVE"
 msgstr "LIVE"
 
-#: ../drivers/radtel_rt490.py:1028 ../wxui/main.py:892 ../wxui/main.py:2032
+#: ../drivers/radtel_rt490.py:1028 ../wxui/main.py:892 ../wxui/main.py:2037
 msgid "Language"
 msgstr ""
 
@@ -2792,7 +2797,7 @@ msgstr ""
 msgid "Limit results to this distance (mi) from coordinates"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:397
+#: ../wxui/programming_assistant.py:408
 msgid "Limit to memory range:"
 msgstr ""
 
@@ -2801,7 +2806,7 @@ msgstr ""
 msgid "Limit use"
 msgstr "Περιορισμός Μπαντών"
 
-#: ../wxui/main.py:2119
+#: ../wxui/main.py:2124
 #, fuzzy
 msgid "Live Radio"
 msgstr "Πομποδέκτης"
@@ -2821,11 +2826,11 @@ msgstr "Φόρτωση Module"
 msgid "Load module from issue..."
 msgstr "Φόρτωση Module"
 
-#: ../wxui/main.py:2468
+#: ../wxui/main.py:2473
 msgid "Loading a module will not affect open tabs. It is recommended (unless instructed otherwise) to close all tabs before loading a module."
 msgstr ""
 
-#: ../wxui/main.py:2271
+#: ../wxui/main.py:2276
 msgid "Loading modules can be extremely dangerous, leading to damage to your computer, radio, or both. NEVER load a module from a source you do not trust, and especially not from anywhere other than the main CHIRP website (chirpmyradio.com). Loading a module from another source is akin to giving them direct access to your computer and everything on it! Proceed despite this risk?"
 msgstr ""
 
@@ -2833,19 +2838,19 @@ msgstr ""
 msgid "Loading settings"
 msgstr "Φόρτωση ρυθμίσεων"
 
-#: ../wxui/programming_assistant.py:1122
+#: ../wxui/programming_assistant.py:1174
 msgid "Loc"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:95
+#: ../wxui/programming_assistant.py:96
 msgid "Location"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:316
+#: ../wxui/programming_assistant.py:327
 msgid "Location:"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:990
+#: ../wxui/programming_assistant.py:1042
 #, python-format
 msgid "Location: %s"
 msgstr ""
@@ -2855,7 +2860,7 @@ msgid "Locator"
 msgstr ""
 
 #: ../wxui/profileapply.py:82 ../wxui/profileeditor.py:97
-#: ../wxui/profileeditor.py:405
+#: ../wxui/profileeditor.py:416
 msgid "Logical ID"
 msgstr ""
 
@@ -2890,7 +2895,7 @@ msgstr "Γεωγραφικό μήκος"
 msgid "Lost information: %s"
 msgstr ""
 
-#: ../wxui/memcolorlegend.py:51 ../wxui/programming_assistant.py:71
+#: ../wxui/memcolorlegend.py:51 ../wxui/programming_assistant.py:72
 msgid "MURS"
 msgstr ""
 
@@ -2903,7 +2908,7 @@ msgstr ""
 msgid "Marine"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:74
+#: ../wxui/programming_assistant.py:75
 msgid "Marine (receive-only)"
 msgstr ""
 
@@ -2915,11 +2920,11 @@ msgstr ""
 msgid "Match ALL of these conditions:"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:101
+#: ../wxui/programming_assistant.py:102
 msgid "Maximum channels"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:368
+#: ../wxui/programming_assistant.py:379
 msgid "Maximum channels:"
 msgstr ""
 
@@ -2967,7 +2972,7 @@ msgid "Message"
 msgstr ""
 
 #: ../wxui/memedit.py:673 ../wxui/profileeditor.py:141
-#: ../wxui/programming_assistant.py:1124 ../wxui/memcolordialog.py:285
+#: ../wxui/programming_assistant.py:1176 ../wxui/memcolordialog.py:285
 #: ../wxui/query_sources.py:626 ../wxui/query_sources.py:779
 #, fuzzy
 msgid "Mode"
@@ -2977,7 +2982,7 @@ msgstr "Λειτουργία"
 msgid "Model"
 msgstr "Μοντέλο"
 
-#: ../wxui/programming_assistant.py:736
+#: ../wxui/programming_assistant.py:788
 msgid "Model name:"
 msgstr ""
 
@@ -2989,16 +2994,16 @@ msgstr ""
 msgid "Modify"
 msgstr ""
 
-#: ../wxui/main.py:2268
+#: ../wxui/main.py:2273
 msgid "Module"
 msgstr "Module"
 
-#: ../wxui/main.py:2240
+#: ../wxui/main.py:2245
 #, fuzzy
 msgid "Module Loaded"
 msgstr "Module"
 
-#: ../wxui/main.py:2479
+#: ../wxui/main.py:2484
 msgid "Module loaded successfully"
 msgstr ""
 
@@ -3041,7 +3046,7 @@ msgstr ""
 msgid "NO"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:72
+#: ../wxui/programming_assistant.py:73
 msgid "NOAA Weather"
 msgstr ""
 
@@ -3053,9 +3058,9 @@ msgstr ""
 msgid "NOAA/Weather"
 msgstr ""
 
-#: ../wxui/profileeditor.py:100 ../wxui/profileeditor.py:281
-#: ../wxui/profileeditor.py:347 ../wxui/profileeditor.py:405
-#: ../wxui/programming_assistant.py:1122 ../wxui/memcolordialog.py:287
+#: ../wxui/profileeditor.py:100 ../wxui/profileeditor.py:292
+#: ../wxui/profileeditor.py:358 ../wxui/profileeditor.py:416
+#: ../wxui/programming_assistant.py:1174 ../wxui/memcolordialog.py:287
 #: ../wxui/memcolordialog.py:455
 msgid "Name"
 msgstr ""
@@ -3064,19 +3069,19 @@ msgstr ""
 msgid "Name:"
 msgstr ""
 
-#: ../wxui/profileeditor.py:330
+#: ../wxui/profileeditor.py:341
 msgid "Naming Style"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:102
+#: ../wxui/programming_assistant.py:103
 msgid "Naming style"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:375
+#: ../wxui/programming_assistant.py:386
 msgid "Naming style:"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:997
+#: ../wxui/programming_assistant.py:1049
 #, python-format
 msgid "Naming style: %s"
 msgstr ""
@@ -3085,7 +3090,7 @@ msgstr ""
 msgid "New Window"
 msgstr ""
 
-#: ../wxui/main.py:2589
+#: ../wxui/main.py:2594
 msgid "New version available"
 msgstr "Διαθέσιμη νέα έκδοση"
 
@@ -3093,8 +3098,12 @@ msgstr "Διαθέσιμη νέα έκδοση"
 msgid "No"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:415
+#: ../wxui/programming_assistant.py:426
 msgid "No AI provider configured -- fill in the fields below directly, or configure a provider above."
+msgstr ""
+
+#: ../wxui/main.py:1886
+msgid "No Profile is currently loaded. Create or open a Profile before applying it."
 msgstr ""
 
 #: ../wxui/profileapply.py:225
@@ -3114,7 +3123,7 @@ msgstr "Καμία κενή σειρά από κάτω!"
 msgid "No example for %s"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1306
+#: ../wxui/programming_assistant.py:1358
 msgid "No memory editor tab is available for this radio; nothing was applied."
 msgstr ""
 
@@ -3139,10 +3148,6 @@ msgstr ""
 msgid "No profile is open."
 msgstr ""
 
-#: ../wxui/main.py:1886
-msgid "No profile is open. Use Profile > Open Profile or Create Profile from Current Image first."
-msgstr ""
-
 #: ../sources/przemienniki_net.py:55 ../sources/mapy73pl.py:57
 #: ../sources/przemienniki_eu.py:53
 #, fuzzy
@@ -3153,7 +3158,7 @@ msgstr "Κανένα αποτέλεσμα!"
 msgid "No results!"
 msgstr "Κανένα αποτέλεσμα!"
 
-#: ../wxui/main.py:2489
+#: ../wxui/main.py:2494
 msgid "No traces stored"
 msgstr ""
 
@@ -3161,15 +3166,15 @@ msgstr ""
 msgid "No transmit frequency configured."
 msgstr ""
 
-#: ../wxui/main.py:2583
+#: ../wxui/main.py:2588
 msgid "No update available"
 msgstr ""
 
-#: ../wxui/profileeditor.py:504
+#: ../wxui/profileeditor.py:515
 msgid "No validation issues."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:81
+#: ../wxui/programming_assistant.py:82
 msgid "None"
 msgstr ""
 
@@ -3202,6 +3207,10 @@ msgstr ""
 msgid "Number"
 msgstr "Αριθμός"
 
+#: ../wxui/profileeditor.py:264
+msgid "OK saves your changes to this Profile. To write it to an open memory image, close this dialog and use Profile > Apply Profile to Current Image."
+msgstr ""
+
 #: ../wxui/memedit.py:344
 msgid "Offset"
 msgstr ""
@@ -3220,7 +3229,7 @@ msgid ""
 "TX Freq"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:709
+#: ../wxui/programming_assistant.py:761
 msgid "Ollama (local)"
 msgstr ""
 
@@ -3275,7 +3284,7 @@ msgstr "Άνοιγμα προεπιλεγμένων ρυθμίσεων"
 msgid "Open a file"
 msgstr "Άνοιγμα αρχείου"
 
-#: ../wxui/main.py:2286
+#: ../wxui/main.py:2291
 msgid "Open a module"
 msgstr "Άνοιγμα αρθρώματος"
 
@@ -3291,6 +3300,10 @@ msgstr ""
 msgid "Open last serial trace"
 msgstr ""
 
+#: ../wxui/main.py:1899
+msgid "Open or create a compatible memory image before applying the Profile."
+msgstr ""
+
 #: ../wxui/query_sources.py:402
 msgid "Open repeaters only"
 msgstr ""
@@ -3300,7 +3313,7 @@ msgstr ""
 msgid "Open stock config directory"
 msgstr "Άνοιγμα προεπιλεγμένων ρυθμίσεων"
 
-#: ../wxui/programming_assistant.py:709
+#: ../wxui/programming_assistant.py:761
 msgid "OpenAI-compatible"
 msgstr ""
 
@@ -3405,12 +3418,12 @@ msgstr ""
 msgid "Pending"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1095
+#: ../wxui/programming_assistant.py:1147
 #, python-format
 msgid "Plan built: %i candidate(s) ready to review."
 msgstr ""
 
-#: ../wxui/main.py:2593
+#: ../wxui/main.py:2598
 msgid "Please be sure to quit CHIRP before installing the new version!"
 msgstr "Παρακαλούμε βεβαιωθείτε ότι έχετε κλείσει το CHIRP πριν εγκαταστήσετε την νέα έκδοση!"
 
@@ -3418,7 +3431,7 @@ msgstr "Παρακαλούμε βεβαιωθείτε ότι έχετε κλεί
 msgid "Please check the bug number and try again. If you do actually want to report against this bug, please comment on it via the website and ask for it to be re-opened."
 msgstr ""
 
-#: ../wxui/main.py:2384
+#: ../wxui/main.py:2389
 msgid "Please note that developer mode is intended for use by developers of the CHIRP project, or under the direction of a developer. It enables behaviors and functions that can damage your computer and your radio if not used with EXTREME care. You have been warned! Proceed anyway?"
 msgstr ""
 
@@ -3450,11 +3463,11 @@ msgstr ""
 msgid "Prefixes"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:380
+#: ../wxui/programming_assistant.py:391
 msgid "Preserve existing memories (recommended)"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:998
+#: ../wxui/programming_assistant.py:1050
 #, python-format
 msgid "Preserve existing memories: %s"
 msgstr ""
@@ -3498,23 +3511,23 @@ msgid ""
 "%s"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1425
+#: ../wxui/programming_assistant.py:1477
 msgid "Programming Assistant"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1417
+#: ../wxui/programming_assistant.py:1469
 msgid ""
 "Programming Assistant could not create a new memory editor.\n"
 "\n"
 "No compatible memory editor is currently available. Create a new radio image manually and try again."
 msgstr ""
 
-#: ../wxui/main.py:2434
+#: ../wxui/main.py:2439
 #, python-format
 msgid "Programming Assistant is now %s. CHIRP must be restarted to take effect"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1313
+#: ../wxui/programming_assistant.py:1365
 msgid "Programming Assistant plan"
 msgstr ""
 
@@ -3544,11 +3557,11 @@ msgstr "Ιδιότητες"
 msgid "Property Value"
 msgstr "Ιδιότητες"
 
-#: ../wxui/programming_assistant.py:403
+#: ../wxui/programming_assistant.py:414
 msgid "Protected ranges (e.g. 0-9, 90-99):"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:715
+#: ../wxui/programming_assistant.py:767
 msgid "Provider:"
 msgstr ""
 
@@ -3556,7 +3569,7 @@ msgstr ""
 msgid "Public Safety"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:75
+#: ../wxui/programming_assistant.py:76
 msgid "Public Safety (receive-only)"
 msgstr ""
 
@@ -3568,7 +3581,7 @@ msgstr ""
 msgid "QTH Locator"
 msgstr ""
 
-#: ../wxui/main.py:2520
+#: ../wxui/main.py:2525
 #, python-format
 msgid "Query %s"
 msgstr "Ερώτημα %s"
@@ -3600,7 +3613,7 @@ msgstr "Ερώτημα %s"
 msgid "RX DTCS"
 msgstr "DTCS Λήψης"
 
-#: ../wxui/programming_assistant.py:1123
+#: ../wxui/programming_assistant.py:1175
 msgid "RX Freq"
 msgstr ""
 
@@ -3637,15 +3650,15 @@ msgid ""
 "<small>Premium account required</small>"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:96
+#: ../wxui/programming_assistant.py:97
 msgid "Radius"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:322
+#: ../wxui/programming_assistant.py:333
 msgid "Radius (miles):"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:991
+#: ../wxui/programming_assistant.py:1043
 #, python-format
 msgid "Radius: %s miles"
 msgstr ""
@@ -3654,7 +3667,7 @@ msgstr ""
 msgid "Railroad"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:77
+#: ../wxui/programming_assistant.py:78
 msgid "Railroad (receive-only)"
 msgstr ""
 
@@ -3685,7 +3698,7 @@ msgid "Receive frequency"
 msgstr "Εισάγετε συχνότητα"
 
 #: ../wxui/memcolorlegend.py:37 ../wxui/profileeditor.py:42
-#: ../wxui/programming_assistant.py:1224 ../wxui/memcolordialog.py:290
+#: ../wxui/programming_assistant.py:1276 ../wxui/memcolordialog.py:290
 msgid "Receive-only"
 msgstr ""
 
@@ -3717,15 +3730,15 @@ msgstr "Απαιτείται επανεκκίνηση"
 msgid "Refreshed memory %s"
 msgstr "Ανανεώθηκε η μνήμη %s"
 
-#: ../wxui/profileeditor.py:292
+#: ../wxui/profileeditor.py:303
 msgid "Region"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1163
+#: ../wxui/programming_assistant.py:1215
 msgid "Regulatory & Privacy Details"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1147
+#: ../wxui/programming_assistant.py:1199
 msgid "Regulatory && Privacy Details..."
 msgstr ""
 
@@ -3749,7 +3762,7 @@ msgstr "Επαναφόρτωση Οδηγού και Αρχείου"
 msgid "Reload required"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:754
+#: ../wxui/programming_assistant.py:806
 msgid "Remember API key on this computer (obfuscated, NOT securely encrypted -- no OS keyring is available)"
 msgstr ""
 
@@ -3766,7 +3779,7 @@ msgstr ""
 msgid "Remove Condition"
 msgstr ""
 
-#: ../wxui/profileeditor.py:350
+#: ../wxui/profileeditor.py:361
 msgid "Remove Group"
 msgstr ""
 
@@ -3810,19 +3823,23 @@ msgstr "Αναφορές ενεργοποιημένες"
 msgid "Reporting enabled"
 msgstr "Αναφορές ενεργοποιημένες"
 
-#: ../wxui/main.py:2404
+#: ../wxui/main.py:2409
 msgid "Reporting helps the CHIRP project know which radio models and OS platforms to spend our limited efforts on. We would really appreciate if you left it enabled. Really disable reporting?"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:100
+#: ../wxui/programming_assistant.py:592
+msgid "Requested band/record type filter"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:101
 msgid "Requested services"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:355
+#: ../wxui/programming_assistant.py:366
 msgid "Requested services:"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:995
+#: ../wxui/programming_assistant.py:1047
 #, python-format
 msgid "Requested services: %s"
 msgstr ""
@@ -3843,7 +3860,7 @@ msgstr ""
 msgid "Reset all built-in category colors to their defaults? Custom rules are not affected."
 msgstr ""
 
-#: ../wxui/main.py:2049 ../wxui/main.py:2398 ../wxui/main.py:2436
+#: ../wxui/main.py:2054 ../wxui/main.py:2403 ../wxui/main.py:2441
 msgid "Restart Required"
 msgstr "Απαιτείται επανεκκίνηση"
 
@@ -3859,7 +3876,7 @@ msgstr[1] "Επαναφορά %i καρτελών"
 msgid "Restore tabs on start"
 msgstr "Επαναφορά %i καρτελών"
 
-#: ../wxui/profileapply.py:82 ../wxui/programming_assistant.py:1287
+#: ../wxui/profileapply.py:82 ../wxui/programming_assistant.py:1339
 msgid "Result"
 msgstr ""
 
@@ -3875,11 +3892,11 @@ msgstr "Ρυθμίσεις ανακτήθηκαν"
 msgid "Revert failed profile apply"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:958
+#: ../wxui/programming_assistant.py:1010
 msgid "Review the interpreted request below. Nothing is queried or built until you continue -- go back to correct anything."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1130
+#: ../wxui/programming_assistant.py:1182
 msgid "Review the proposed plan"
 msgstr ""
 
@@ -3929,7 +3946,7 @@ msgstr ""
 msgid "Save Profile As..."
 msgstr ""
 
-#: ../wxui/main.py:1923
+#: ../wxui/main.py:1928
 msgid "Save before closing?"
 msgstr "Αποθήκευση πριν το κλείσιμο;"
 
@@ -3975,7 +3992,7 @@ msgstr "Επιλογή χάρτη συχνοτήτων"
 msgid "Select Bands"
 msgstr "Επιλογή Μπαντών"
 
-#: ../wxui/main.py:2032
+#: ../wxui/main.py:2037
 #, fuzzy
 msgid "Select Language"
 msgstr "Επιλογή Μπαντών"
@@ -3988,11 +4005,11 @@ msgstr ""
 msgid "Select Modes to Import"
 msgstr ""
 
-#: ../wxui/main.py:2500
+#: ../wxui/main.py:2505
 msgid "Select a bandplan"
 msgstr "Επιλογή χάρτη συνοτήτων"
 
-#: ../wxui/programming_assistant.py:834
+#: ../wxui/programming_assistant.py:886
 msgid "Select a provider (not Disabled) to validate."
 msgstr ""
 
@@ -4047,7 +4064,7 @@ msgstr "Ρυθμίσεις"
 msgid "Settings are read-only due to unsupported firmware version"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:973
+#: ../wxui/programming_assistant.py:1025
 msgid "Share precise coordinates with network sources (off = distance sorting is skipped; only your entered state/location text is used)"
 msgstr ""
 
@@ -4055,7 +4072,7 @@ msgstr ""
 msgid "Shift amount (or transmit frequency) controlled by duplex"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:87
+#: ../wxui/programming_assistant.py:88
 msgid "Short (radio-constrained)"
 msgstr ""
 
@@ -4092,7 +4109,7 @@ msgstr ""
 msgid "Show image backup location"
 msgstr "Εμφάνιση τοποθεσίας αρχείου καταγραφής αποσφαλμάτωσης"
 
-#: ../wxui/profileeditor.py:46 ../wxui/programming_assistant.py:1228
+#: ../wxui/profileeditor.py:46 ../wxui/programming_assistant.py:1280
 msgid "Simplex"
 msgstr ""
 
@@ -4104,7 +4121,7 @@ msgstr ""
 msgid "Skip state"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1341
+#: ../wxui/programming_assistant.py:1393
 #, python-format
 msgid "Skipped (not included or invalid): %i"
 msgstr ""
@@ -4174,19 +4191,19 @@ msgstr "Αντικατάσταση μνημών;"
 msgid "Sorting"
 msgstr "Εκτύπωση"
 
-#: ../wxui/programming_assistant.py:1125
+#: ../wxui/programming_assistant.py:1177
 msgid "Source"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1170
+#: ../wxui/programming_assistant.py:1222
 msgid "Source Details"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1151
+#: ../wxui/programming_assistant.py:1203
 msgid "Source Details..."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1351
+#: ../wxui/programming_assistant.py:1403
 #, python-format
 msgid "Sources with no data: %s"
 msgstr ""
@@ -4207,16 +4224,16 @@ msgstr "Πολιτεία"
 msgid "State/Province"
 msgstr "Πολιτεία / Επαρχία"
 
-#: ../wxui/programming_assistant.py:1124
+#: ../wxui/programming_assistant.py:1176
 #, fuzzy
 msgid "Status"
 msgstr "Πολιτεία"
 
-#: ../wxui/main.py:2480
+#: ../wxui/main.py:2485
 msgid "Success"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:907
+#: ../wxui/programming_assistant.py:959
 #, python-format
 msgid ""
 "Successfully connected.\n"
@@ -4232,7 +4249,7 @@ msgstr ""
 msgid "Successfully sent bug report:"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1123
+#: ../wxui/programming_assistant.py:1175
 msgid "TX Freq / RX-only"
 msgstr ""
 
@@ -4244,7 +4261,7 @@ msgstr ""
 msgid "TX-RX DTCS polarity (normal or reversed)"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:82
+#: ../wxui/programming_assistant.py:83
 msgid "Technician"
 msgstr ""
 
@@ -4267,7 +4284,7 @@ msgstr ""
 msgid "Text color:"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:595
+#: ../wxui/programming_assistant.py:647
 msgid ""
 "The AI interpretation completed successfully.\n"
 "\n"
@@ -4297,11 +4314,11 @@ msgid ""
 "'DATA MODE' to select USER-U, USER-L and RTTY \n"
 msgstr ""
 
-#: ../wxui/main.py:2421
+#: ../wxui/main.py:2426
 msgid "The Programming Assistant is experimental. It only proposes memories from public/curated data and your own answers -- it never verifies your license, never transmits, and never uploads to a radio by itself. You review and Apply (or discard) everything it proposes, and Apply is a single undoable action. Enable it?"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:106
+#: ../wxui/programming_assistant.py:107
 msgid "The Programming Assistant organizes publicly available and curated frequency information into a proposed set of radio memories. It does not verify your license or authorization to transmit, and a radio's technical ability to transmit on a frequency does not establish legal authorization or equipment certification for that service. You remain responsible for operating lawfully. Aviation, weather, marine, public safety, business, and railroad channels are always programmed as receive-only in this release."
 msgstr ""
 
@@ -4315,10 +4332,6 @@ msgstr ""
 
 #: ../wxui/developer.py:674
 msgid "The author of this module is not a recognized CHIRP developer. It is recommended that you not load this module as it could pose a security risk. Proceed anyway?"
-msgstr ""
-
-#: ../wxui/main.py:1894
-msgid "The current tab has no memories to apply a profile to."
 msgstr ""
 
 #: ../wxui/main.py:1758
@@ -4349,11 +4362,11 @@ msgstr ""
 msgid "The memory editor requires a reload in order to change the workflow. That will happen now. Any other open tabs will be updated the next time they are loaded."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:1355
+#: ../wxui/programming_assistant.py:1407
 msgid "The open image has been updated. Nothing has been uploaded to a radio -- use Radio > Upload to Radio when you are ready."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:726
+#: ../wxui/programming_assistant.py:778
 msgid "The provider posts directly to this exact URL. For Ollama, include the path: http://localhost:11434/api/chat -- entering only http://localhost:11434 will fail with an HTTP 405 error. Use \"Validate AI Config\" below to check this before use."
 msgstr ""
 
@@ -4383,6 +4396,10 @@ msgstr ""
 msgid "This Memory"
 msgstr "Μνήμη DV"
 
+#: ../wxui/main.py:1892
+msgid "This Profile has no channels to apply."
+msgstr ""
+
 #: ../wxui/profileapply.py:192
 msgid "This change is BLOCKED for safety and cannot be approved."
 msgstr ""
@@ -4408,11 +4425,11 @@ msgstr ""
 msgid "This installs a desktop launcher for a running CHIRP AppImage. CHIRP does not appear to be running from an AppImage right now, so there is nothing to install a launcher for. Download and run the CHIRP AppImage to use this feature."
 msgstr ""
 
-#: ../wxui/main.py:2116
+#: ../wxui/main.py:2121
 msgid "This is a live-mode radio, which means changes are sent to the radio in real-time as you make them. Upload is not necessary!"
 msgstr ""
 
-#: ../wxui/main.py:2122
+#: ../wxui/main.py:2127
 msgid "This is a radio-independent file and cannot be uploaded directly to a radio. Open a radio image (or download one from a radio) and then copy/paste items from this tab into that one in order to upload"
 msgstr ""
 
@@ -4463,7 +4480,7 @@ msgstr "Διαγραφή %i μνημών και μετακίνηση ομάδα�
 msgid "This option may break your radio! Each radio has a unique set of calibration data and uploading the data from the image will cause physical harm to the radio if it is from a different piece of hardware. Do not use this unless you know what you are doing and accept the risk of destroying your radio!"
 msgstr ""
 
-#: ../wxui/profileeditor.py:511
+#: ../wxui/profileeditor.py:522
 msgid ""
 "This profile has validation problems and cannot be saved until they are fixed:\n"
 "\n"
@@ -4497,14 +4514,14 @@ msgstr ""
 msgid "This will load a module from a website issue"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:456
+#: ../wxui/programming_assistant.py:467
 msgid ""
 "This will remove all information entered on the Describe page.\n"
 "\n"
 "Your AI provider configuration, radio image, and application settings will not be changed."
 msgstr ""
 
-#: ../wxui/memedit.py:523 ../wxui/programming_assistant.py:1124
+#: ../wxui/memedit.py:523 ../wxui/programming_assistant.py:1176
 msgid "Tone"
 msgstr "Τόνος"
 
@@ -4525,7 +4542,7 @@ msgstr ""
 msgid "Tone squelch mode"
 msgstr "Τόνος Φίμωσης"
 
-#: ../wxui/profileeditor.py:111 ../wxui/profileeditor.py:405
+#: ../wxui/profileeditor.py:111 ../wxui/profileeditor.py:416
 msgid "Transmit"
 msgstr ""
 
@@ -4620,7 +4637,7 @@ msgstr ""
 msgid "Unable to set %s on this memory"
 msgstr "Πατήστε enter για καταχώρηση στη μνήμη"
 
-#: ../wxui/main.py:2126
+#: ../wxui/main.py:2131
 #, fuzzy
 msgid "Unable to upload this file"
 msgstr "Πατήστε enter για καταχώρηση στη μνήμη"
@@ -4709,7 +4726,7 @@ msgstr "Χρήση μεγαλύτερης γραμματοσειράς"
 msgid "Username"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:743
+#: ../wxui/programming_assistant.py:795
 msgid "Using CHIRP_ASSISTANT_API_KEY environment variable"
 msgstr ""
 
@@ -4717,27 +4734,27 @@ msgstr ""
 msgid "VHF marine band."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:764
+#: ../wxui/programming_assistant.py:816
 msgid "Validate AI Config"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:852
+#: ../wxui/programming_assistant.py:904
 msgid "Validating..."
 msgstr ""
 
-#: ../wxui/profileeditor.py:514
+#: ../wxui/profileeditor.py:525
 msgid "Validation Failed"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:900
+#: ../wxui/programming_assistant.py:952
 msgid "Validation cancelled."
 msgstr ""
 
-#: ../wxui/programming_assistant.py:920
+#: ../wxui/programming_assistant.py:972
 msgid "Validation failed."
 msgstr ""
 
-#: ../wxui/profileeditor.py:261
+#: ../wxui/profileeditor.py:271
 msgid "Validation:"
 msgstr ""
 
@@ -4797,7 +4814,7 @@ msgstr "Εμφάνιση"
 msgid "WARNING!"
 msgstr ""
 
-#: ../wxui/memedit.py:2722 ../wxui/main.py:2280 ../wxui/main.py:2472
+#: ../wxui/memedit.py:2722 ../wxui/main.py:2285 ../wxui/main.py:2477
 #: ../wxui/bugreport.py:234
 msgid "Warning"
 msgstr "Προειδοποίηση"
@@ -4839,7 +4856,7 @@ msgstr ""
 msgid "Yes"
 msgstr ""
 
-#: ../wxui/main.py:2582
+#: ../wxui/main.py:2587
 msgid "You are running the latest version of CHIRP."
 msgstr ""
 
@@ -4863,7 +4880,7 @@ msgstr ""
 msgid "Your cable appears to be on port:"
 msgstr "Το καλώδιο σας φαίνεται να είανι στη θύρα:"
 
-#: ../wxui/programming_assistant.py:589
+#: ../wxui/programming_assistant.py:641
 #, python-format
 msgid ""
 "Your description was successfully interpreted.\n"
@@ -4873,6 +4890,11 @@ msgid ""
 "%s\n"
 "\n"
 "Review the interpreted values before continuing."
+msgstr ""
+
+#: ../wxui/programming_assistant.py:605
+#, python-format
+msgid "band(s): %s"
 msgstr ""
 
 #: ../wxui/developer.py:194
@@ -4891,11 +4913,11 @@ msgstr "bytes το καθένα"
 msgid "contains"
 msgstr ""
 
-#: ../wxui/main.py:2381 ../wxui/main.py:2418
+#: ../wxui/main.py:2386 ../wxui/main.py:2423
 msgid "disabled"
 msgstr ""
 
-#: ../wxui/main.py:2381 ../wxui/main.py:2418
+#: ../wxui/main.py:2386 ../wxui/main.py:2423
 msgid "enabled"
 msgstr ""
 
@@ -4911,8 +4933,13 @@ msgstr ""
 msgid "starts with"
 msgstr ""
 
-#: ../wxui/programming_assistant.py:394
+#: ../wxui/programming_assistant.py:405
 msgid "to"
+msgstr ""
+
+#: ../wxui/programming_assistant.py:608
+#, python-format
+msgid "type(s): %s"
 msgstr ""
 
 #: ../drivers/vx5.py:116
