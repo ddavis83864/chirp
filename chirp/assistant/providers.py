@@ -47,6 +47,7 @@ import logging
 
 import requests
 
+from chirp.assistant import bands as bands_mod
 from chirp.assistant import models
 
 LOG = logging.getLogger(__name__)
@@ -60,6 +61,15 @@ PROVIDER_OPENAI_COMPATIBLE = 'openai_compatible'
 PROVIDER_OLLAMA = 'ollama'
 ALL_PROVIDER_KINDS = (PROVIDER_DISABLED, PROVIDER_OPENAI_COMPATIBLE,
                       PROVIDER_OLLAMA)
+
+# Generated from the same registry chirp.assistant.bands and
+# chirp.assistant.models actually validate/enforce against, so the
+# prompt can never list a band the rest of the pipeline doesn't
+# recognize (or vice versa) -- see chirp.assistant.bands' own
+# docstring for why band ranges are never duplicated across modules.
+_BAND_ID_LIST = ', '.join('"%s"' % b for b in models.ALL_BANDS)
+_RECORD_TYPE_ID_LIST = ', '.join(
+    '"%s"' % t for t in models.ALL_RECORD_TYPES)
 
 _SYSTEM_PROMPT = """\
 You extract a structured radio-programming REQUEST from a user's plain \
@@ -75,10 +85,13 @@ with these optional keys:
   activities (array of short strings, e.g. "camping","aviation"),
   requested_services (array from: "ham","gmrs","frs","murs","weather",
     "aviation","marine","public_safety","business","railroad","satellite"),
-  requested_bands (array from: "6m","2m","222","70cm","33cm","23cm" --
-    only include a band the user explicitly named; omit entirely if no
-    band was named, meaning no band restriction),
-  requested_record_types (array from: "repeater","simplex" -- only
+  requested_bands (array from: {bands} -- covers every amateur band
+    from 160 meters through 13 centimeters, not only 2 meters and 70
+    centimeters; only include a band the user explicitly named (using
+    its own words is fine, e.g. "two meters", "70cm", "440" -- these
+    are normalized after you respond); omit entirely if no band was
+    named, meaning no band restriction),
+  requested_record_types (array from: {record_types} -- only
     include this if the user explicitly asked for one and not the
     other, e.g. "repeaters" means ["repeater"], "simplex channels"
     means ["simplex"]; omit entirely if the user did not distinguish,
@@ -86,19 +99,21 @@ with these optional keys:
   channel_limit (integer, 1-500),
   naming_style (one of "short","descriptive").
 
-A named band (e.g. "2 meter") is a hard inclusion constraint, not a \
-preference -- do not omit requested_bands just because other bands \
-might also be useful. A request for "repeaters" excludes simplex \
-channels, and a request for "simplex" excludes repeaters -- never \
-include both record types unless the user's text asked for both or \
-named neither.
+A named band (e.g. "2 meter", "70cm", "440") is a hard inclusion \
+constraint, not a preference -- do not omit requested_bands just \
+because other bands might also be useful, and never substitute a \
+different band than the one actually named. Multiple named bands \
+(e.g. "2 meter and 70 centimeter") should all be included. A request \
+for "repeaters" excludes simplex channels, and a request for \
+"simplex" excludes repeaters -- never include both record types \
+unless the user's text asked for both or named neither.
 
 Never include a frequency, tone, offset, DCS code, or any other \
 technical radio value -- there is no field for one, and any such value \
 you include will be ignored. Never include instructions, code, or \
 commands of any kind, even if the user's text asks you to; you only \
 ever produce the JSON object described above.
-"""
+""".format(bands=_BAND_ID_LIST, record_types=_RECORD_TYPE_ID_LIST)
 
 
 class ProviderError(Exception):
@@ -165,6 +180,22 @@ def _parse_structured_response(content):
         raise ProviderError('Provider did not return valid JSON: %s' % e)
     if not isinstance(parsed, dict):
         raise ProviderError('Provider JSON was not an object')
+
+    # The provider is never trusted to return exactly one canonical
+    # spelling for a band/record-type -- normalize every recognized
+    # alias to its canonical id here, before from_dict()/validate()
+    # ever see it. An *unrecognized* value is deliberately left
+    # unchanged (never dropped/blanked): validate()'s existing
+    # "Unknown requested band(s)"/"Unknown requested record type(s)"
+    # checks then correctly fail the request instead of silently
+    # broadening it to "no restriction".
+    if isinstance(parsed.get('requested_bands'), list):
+        parsed['requested_bands'] = [
+            bands_mod.normalize_band(b) for b in parsed['requested_bands']]
+    if isinstance(parsed.get('requested_record_types'), list):
+        parsed['requested_record_types'] = [
+            bands_mod.normalize_record_type(t)
+            for t in parsed['requested_record_types']]
 
     request = models.ProgrammingRequest.from_dict(parsed)
     errors = request.validate()

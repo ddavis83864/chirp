@@ -35,13 +35,36 @@ LICENSE_EXTRA = 'extra'
 AMATEUR_LICENSES = (LICENSE_NONE, LICENSE_TECHNICIAN, LICENSE_GENERAL,
                     LICENSE_EXTRA)
 
+#: Every amateur band this release can request/classify against -- not
+#: limited to 2m/70cm, and covering the full HF-through-microwave range
+#: chirp.bandplan_na already has authoritative edges for (see
+#: chirp.assistant.bands, which derives BAND_FREQ_RANGES_HZ from that
+#: module rather than duplicating these numbers here). 60m is
+#: deliberately not included: it is a channelized (five discrete
+#: frequencies), not a contiguous, allocation, and no authoritative
+#: channel list exists elsewhere in this codebase to derive it from --
+#: see docs/programming_assistant.md's Known limitations.
+BAND_160M = '160m'
+BAND_80M = '80m'
+BAND_40M = '40m'
+BAND_30M = '30m'
+BAND_20M = '20m'
+BAND_17M = '17m'
+BAND_15M = '15m'
+BAND_12M = '12m'
+BAND_10M = '10m'
 BAND_6M = '6m'
 BAND_2M = '2m'
 BAND_222 = '222'
 BAND_70CM = '70cm'
 BAND_33CM = '33cm'
 BAND_23CM = '23cm'
-ALL_BANDS = (BAND_6M, BAND_2M, BAND_222, BAND_70CM, BAND_33CM, BAND_23CM)
+BAND_13CM = '13cm'
+ALL_BANDS = (
+    BAND_160M, BAND_80M, BAND_40M, BAND_30M, BAND_20M, BAND_17M, BAND_15M,
+    BAND_12M, BAND_10M, BAND_6M, BAND_2M, BAND_222, BAND_70CM, BAND_33CM,
+    BAND_23CM, BAND_13CM,
+)
 
 # A repeater-capable candidate's record type -- whether it represents a
 # repeater (distinct transmit/receive frequencies) or a simplex channel

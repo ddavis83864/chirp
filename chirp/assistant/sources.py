@@ -50,6 +50,7 @@ import time
 import requests
 
 from chirp import chirp_common
+from chirp.assistant import bands as bands_mod
 from chirp.assistant import converter
 from chirp.assistant import models
 from chirp.assistant import provenance as provenance_mod
@@ -183,28 +184,17 @@ def _resolve_us_state(name):
     return _STATE_ABBREVIATIONS.get(name.upper())
 
 
-# Standard amateur radio band edges (Hz) -- the same, internationally
-# ordinary "2 meter"/"70 centimeter"/etc. band names hams use every
-# day (see e.g. chirp.bandplan_na for the same allocations in more
-# regulatory detail than this lookup needs). Used only to narrow a
-# RepeaterBook query to specific bands when the request asks for them
+# Band edges live in chirp.assistant.bands (derived from
+# chirp.bandplan_na's own authoritative band-plan data), not
+# duplicated here -- used only to narrow a RepeaterBook query to
+# specific bands when the request asks for them
 # (chirp.sources.repeaterbook.RepeaterBook.do_fetch already has its
 # own included_band() filter -- it was simply never given real band
 # data to filter by before, always receiving bands=[], meaning "every
-# band").
-_BAND_RANGES_HZ = {
-    models.BAND_6M: (50000000, 54000000),
-    models.BAND_2M: (144000000, 148000000),
-    models.BAND_222: (219000000, 225000000),
-    models.BAND_70CM: (420000000, 450000000),
-    models.BAND_33CM: (902000000, 928000000),
-    models.BAND_23CM: (1240000000, 1300000000),
-}
-
-
-def _band_ranges(requested_bands):
-    return [_BAND_RANGES_HZ[b] for b in requested_bands
-            if b in _BAND_RANGES_HZ]
+# band"). The same chirp.assistant.bands.band_ranges_hz() is also the
+# defense-in-depth enforcement boundary below (_matches_requested_
+# constraints), so both layers always agree by construction.
+_band_ranges = bands_mod.band_ranges_hz
 
 
 def fetch_repeaterbook(request, service, status=None):
