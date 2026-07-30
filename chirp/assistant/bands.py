@@ -27,7 +27,7 @@ Band", "70 Centimeter Band", ...); every other entry in each tuple is
 a sub-allocation within it, which this module has no need for.
 
 This is the *only* place band ranges are defined for the assistant;
-chirp.assistant.sources, the AI system prompt, and any future Review/
+chirp.assistant.sources, the AI system prompt, and any later Review/
 Apply-layer check must all import from here rather than hard-coding
 their own copies (section 6 of the corrective task this module was
 written for).
