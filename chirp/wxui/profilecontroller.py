@@ -62,21 +62,13 @@ def get_memedit(editorset):
 def enumerate_memories(radio):
     """Read every memory (including empty slots) off @radio.
 
-    Pure read access -- never called from inside an apply transaction.
+    Thin wrapper over the pure-Python
+    chirp.profiles.extraction.enumerate_source_memories() -- kept here
+    too since it is this module's established entry point for both
+    callers below, and so existing callers/tests referring to
+    chirp.wxui.profilecontroller.enumerate_memories keep working.
     """
-    features = radio.get_features()
-    if features.has_infinite_number:
-        raise profile_errors.CapabilityUnknownError(
-            'This radio has no fixed memory count; enumerating all '
-            'memories is not supported')
-    lo, hi = features.memory_bounds
-    memories = []
-    for number in range(lo, hi + 1):
-        try:
-            memories.append(radio.get_memory(number))
-        except Exception as e:
-            LOG.warning('Failed to read memory %s: %s', number, e)
-    return memories
+    return extraction.enumerate_source_memories(radio)
 
 
 def create_profile_from_editorset(editorset, name='', description='',
@@ -84,11 +76,19 @@ def create_profile_from_editorset(editorset, name='', description='',
     """Extract a Profile from @editorset's currently-open image.
 
     :returns: a chirp.profiles.extraction.ExtractionResult.
+    :raises profile_errors.NoPopulatedMemoriesError: the image has no
+        populated memories (every enumerable slot is empty or a
+        special channel) -- nothing to build a profile from.
     """
     radio = editorset.radio
     memories = enumerate_memories(radio)
-    return extraction.extract_profile(
+    result = extraction.extract_profile(
         radio, memories, name=name, description=description, region=region)
+    if result.summary.channels_extracted == 0:
+        raise profile_errors.NoPopulatedMemoriesError(
+            _('No populated memories are available to create a '
+              'profile.'))
+    return result
 
 
 def build_changeset_for_editorset(

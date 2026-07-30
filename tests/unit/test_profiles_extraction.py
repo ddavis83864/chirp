@@ -1,6 +1,7 @@
 import unittest
 
 from chirp import chirp_common
+from chirp.profiles import errors
 from chirp.profiles import extraction
 from chirp.profiles import schema
 from tests.unit import fake_radios
@@ -191,3 +192,144 @@ class DeterminismTest(unittest.TestCase):
         ids1 = [c.logical_id for c in r1.profile.channels]
         ids2 = [c.logical_id for c in r2.profile.channels]
         self.assertEqual(ids1, ids2)
+
+
+class _BoundedMemoryRadio(_NamedFakeRadio):
+    """A fixed-capacity radio: get_memory() works for the declared
+    memory_bounds range and nowhere else, matching how a real
+    hardware/image-backed driver behaves."""
+
+    def __init__(self, memories):
+        features = fake_radios.build_features(
+            memory_bounds=(0, len(memories) - 1))
+        super().__init__(features)
+        self._memories = list(memories)
+
+    def get_memory(self, number):
+        return self._memories[number]
+
+
+class _DynamicMemoryRadio(_NamedFakeRadio):
+    """A dynamic, file-backed radio in the same shape as
+    chirp.drivers.generic_csv.CSVRadio: has_infinite_number=True (no
+    fixed ceiling on how large the backing list may grow later), but
+    memory_bounds always reflects the *actual current* length of a
+    real, concrete, in-memory list -- never an unbounded range."""
+
+    def __init__(self, memories):
+        features = fake_radios.build_features(
+            memory_bounds=(0, len(memories) - 1),
+            has_infinite_number=True)
+        super().__init__(features)
+        self._memories = list(memories)
+
+    def get_memory(self, number):
+        return self._memories[number]
+
+
+class _FlakyReadRadio(_BoundedMemoryRadio):
+    """Raises reading one specific memory number, to prove a single
+    bad read does not abort enumeration of the rest."""
+
+    def __init__(self, memories, fail_number):
+        super().__init__(memories)
+        self._fail_number = fail_number
+
+    def get_memory(self, number):
+        if number == self._fail_number:
+            raise IOError('simulated read failure')
+        return super().get_memory(number)
+
+
+class _MalformedFeatures:
+    """A real chirp_common.RadioFeatures validates memory_bounds on
+    every assignment (a 2-item NTUPLE), so no conformant driver can
+    ever produce a malformed value there -- this plain stand-in exists
+    only to prove enumerate_source_memories() fails closed with a
+    specific, typed error rather than an unhandled exception if a
+    future/adversarial get_features() implementation ever managed to
+    return one anyway."""
+
+    memory_bounds = None
+
+
+class _UnenumerableRadio:
+    """A radio whose declared memory_bounds cannot be interpreted as a
+    (lo, hi) pair at all -- the only case enumerate_source_memories()
+    still refuses, regardless of has_infinite_number."""
+
+    def get_features(self):
+        return _MalformedFeatures()
+
+    def get_memory(self, number):
+        raise AssertionError('should never be called')
+
+
+class EnumerateSourceMemoriesTest(unittest.TestCase):
+    def test_fixed_capacity_radio_enumerates_full_declared_range(self):
+        memories = [_mem(i, name='CH%d' % i, empty=(i % 2 == 0))
+                    for i in range(5)]
+        radio = _BoundedMemoryRadio(memories)
+        result = extraction.enumerate_source_memories(radio)
+        self.assertEqual([m.number for m in memories],
+                         [m.number for m in result])
+
+    def test_dynamic_radio_is_no_longer_refused(self):
+        memories = [_mem(0, name='TEST', empty=False)]
+        radio = _DynamicMemoryRadio(memories)
+        result = extraction.enumerate_source_memories(radio)
+        self.assertEqual(1, len(result))
+        self.assertEqual('TEST', result[0].name)
+
+    def test_dynamic_radio_enumerates_exactly_its_current_bounds(self):
+        # No arbitrary ceiling (100/500/1000/...) is ever invented --
+        # a 3-row backing list yields exactly 3 enumerated slots.
+        memories = [_mem(i, empty=True) for i in range(3)]
+        radio = _DynamicMemoryRadio(memories)
+        result = extraction.enumerate_source_memories(radio)
+        self.assertEqual(3, len(result))
+
+    def test_dynamic_radio_partially_populated_extracts_only_populated(
+            self):
+        memories = [
+            _mem(0, name='A', empty=False),
+            _mem(1, empty=True),
+            _mem(2, name='B', empty=False),
+            _mem(3, empty=True),
+        ]
+        radio = _DynamicMemoryRadio(memories)
+        enumerated = extraction.enumerate_source_memories(radio)
+        result = extraction.extract_profile(radio, enumerated)
+        names = [c.name for c in result.profile.channels]
+        self.assertEqual(['A', 'B'], names)
+        self.assertEqual(2, result.summary.channels_extracted)
+        self.assertEqual(2, result.summary.channels_omitted)
+
+    def test_dynamic_radio_entirely_empty_produces_zero_channels(self):
+        memories = [_mem(i, empty=True) for i in range(4)]
+        radio = _DynamicMemoryRadio(memories)
+        enumerated = extraction.enumerate_source_memories(radio)
+        result = extraction.extract_profile(radio, enumerated)
+        self.assertEqual(0, result.summary.channels_extracted)
+        self.assertEqual(0, len(result.profile.channels))
+
+    def test_flaky_read_is_skipped_not_fatal(self):
+        memories = [_mem(i, name='CH%d' % i, empty=False) for i in range(3)]
+        radio = _FlakyReadRadio(memories, fail_number=1)
+        result = extraction.enumerate_source_memories(radio)
+        self.assertEqual(2, len(result))
+        self.assertEqual(['CH0', 'CH2'], [m.name for m in result])
+
+    def test_unenumerable_radio_raises_capability_unknown_error(self):
+        radio = _UnenumerableRadio()
+        with self.assertRaises(errors.CapabilityUnknownError):
+            extraction.enumerate_source_memories(radio)
+
+    def test_dynamic_radio_ordering_is_deterministic(self):
+        memories = [_mem(i, name='CH%d' % i, empty=False)
+                    for i in range(6)]
+        radio = _DynamicMemoryRadio(memories)
+        r1 = [m.number for m in extraction.enumerate_source_memories(radio)]
+        r2 = [m.number for m in extraction.enumerate_source_memories(radio)]
+        self.assertEqual(r1, r2)
+        self.assertEqual(list(range(6)), r1)

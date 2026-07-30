@@ -60,6 +60,11 @@ class CapabilityUnknownError(ProfileError):
     """
 
 
+class NoPopulatedMemoriesError(ProfileError):
+    """A source image has no populated memories to extract into a
+    profile (every enumerable slot is empty or a special channel)."""
+
+
 class CapacityExceededError(ProfileError):
     """The target radio does not have enough memory slots for the plan."""
 

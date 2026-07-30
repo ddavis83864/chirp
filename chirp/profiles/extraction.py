@@ -28,13 +28,57 @@ canonical identity.
 """
 
 import dataclasses
+import logging
 import re
 
 from chirp import directory
+from chirp.profiles import errors
 from chirp.profiles import model
 from chirp.profiles import schema
 
+LOG = logging.getLogger(__name__)
+
 _SLUG_RE = re.compile(r'[^a-z0-9]+')
+
+
+def enumerate_source_memories(radio):
+    """Read every memory (including empty slots) off @radio.
+
+    Pure read access -- never called from inside an apply transaction.
+    Works the same way for a fixed-capacity radio and a dynamic,
+    file-backed one (e.g. a CSV-backed image): chirp_common.
+    RadioFeatures.memory_bounds always describes the radio's *current*
+    enumerable range. has_infinite_number only means the radio has no
+    fixed *ceiling* on how large that range may grow later (it
+    suppresses the "out of range" validation warning in
+    RadioFeatures.validate_memory() for memory numbers beyond the
+    current bounds) -- it says nothing about whether the current
+    bounds are safe to read right now, which they always are. A
+    radio's actual, present memory list is never an unbounded integer
+    range to scan; it is always exactly what memory_bounds reports at
+    the moment this is called.
+
+    :raises errors.CapabilityUnknownError: @radio does not expose a
+        usable memory_bounds at all (not merely "no fixed ceiling") --
+        the only case left genuinely unsupported.
+    """
+    features = radio.get_features()
+    try:
+        lo, hi = features.memory_bounds
+    except (TypeError, ValueError):
+        raise errors.CapabilityUnknownError(
+            'This radio does not expose an enumerable memory list')
+    if hi < lo - 1:
+        raise errors.CapabilityUnknownError(
+            'This radio does not expose an enumerable memory list')
+    memories = []
+    for number in range(lo, hi + 1):
+        try:
+            memories.append(radio.get_memory(number))
+        except Exception as e:
+            LOG.warning('Failed to read memory %s: %s', number, e)
+    return memories
+
 
 #: Memory.skip -> portable scan intent (inverse of
 #: schema.SCAN_INTENT_TO_SKIP).
