@@ -1504,11 +1504,11 @@ def do_programming_assistant(parent, event):
             # memedit) tab that was active when this function started.
             context = AssistantContext(wizard, parent)
             if context.memedit is None:
-                # Reachable only if a future change breaks the
-                # invariant _ensure_blank_memory_document's own
-                # docstring proves today -- kept as a real check
-                # rather than an assumption, per the same "do not
-                # leave a partially initialized assistant open"
+                # Reachable only if this invariant, proven by
+                # _ensure_blank_memory_document's own docstring today,
+                # is ever broken by a later change -- kept as a real
+                # check rather than an assumption, per the same "do
+                # not leave a partially initialized assistant open"
                 # principle as the branch above.
                 LOG.error(
                     'Blank memory document created but no compatible '
