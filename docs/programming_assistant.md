@@ -387,3 +387,15 @@ tox -e unit -- tests/unit/test_assistant_*.py tests/unit/test_wxui_programming_a
 a real (not mocked) `wx.App`, since `wx.adv.Wizard` page-chaining isn't
 meaningfully testable behind a mock — see the top of
 `tests/unit/test_wxui_programming_assistant.py` for why.
+
+## Relationship to Radio Profiles
+
+The Programming Assistant and Radio Profiles (see `docs/profiles.md`)
+are independent, complementary features. The assistant creates and
+populates a normal, device-specific memory image (or adds to one
+that's already open); a profile is a separate, portable, radio-
+independent description of channels that can be applied to any
+compatible target. The assistant does not automatically save its
+output as a profile — Profile > Create Profile from Current Image
+turns any open image, including one the assistant just built, into a
+profile, but only when the user explicitly chooses to do that.

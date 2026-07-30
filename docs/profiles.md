@@ -339,6 +339,17 @@ module exists yet.
 - `docs/examples/north_idaho_camping.chirp-profile.json` -- a fixture kept
   valid by `tests/unit/test_profiles_examples.py` as the schema evolves.
 
+## Relationship to the Programming Assistant
+
+Radio Profiles and the Programming Assistant (see
+`docs/programming_assistant.md`) are independent, complementary
+features. A profile is a portable, radio-independent description of
+channels; the assistant instead creates and populates a normal,
+device-specific memory image. Profile > Create Profile from Current
+Image can turn any open image, including one the assistant built,
+into a profile, but this is always an explicit, user-initiated step —
+the assistant never produces or updates a profile on its own.
+
 ## Known limitations
 
 - Target-specific overrides are validated and preserved through save/load,
