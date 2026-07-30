@@ -36,6 +36,7 @@ import wx.adv
 import wx.lib.newevent
 
 from chirp.assistant import audit
+from chirp.assistant import bands as bands_mod
 from chirp.assistant import models
 from chirp.assistant import providers
 from chirp.assistant import service as service_mod
@@ -309,6 +310,16 @@ class DescribePage(AssistantPage):
         self.interpret_status = wx.StaticText(self, label='')
         vbox.Add(self.interpret_status, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
+        # requested_bands/requested_record_types have no widget of
+        # their own (there is no per-band/record-type checkbox list),
+        # so unlike every other interpreted field they are not
+        # visible anywhere else on this page -- this is their only
+        # durable, always-visible (not just a one-time dialog)
+        # display, kept in sync by _refresh_band_filter_status().
+        self.band_filter_status = wx.StaticText(self, label='')
+        vbox.Add(self.band_filter_status, 0,
+                 wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
         grid = wx.FlexGridSizer(cols=2, gap=(8, 6))
         grid.AddGrowableCol(1)
 
@@ -469,9 +480,12 @@ class DescribePage(AssistantPage):
     def _clear_all_fields(self):
         """Restores every Describe-page control to exactly the value
         it had when the page was first built (see _build() above),
-        including anything an AI interpretation populated -- there is
-        no separate "AI state" to clear beyond these same widgets, see
-        _apply_request_to_fields(), which only ever writes into them.
+        including anything an AI interpretation populated. The one
+        exception is requested_bands/requested_record_types, which
+        have no widget of their own (see _apply_request_to_fields())
+        -- replacing self.context.request with a fresh instance below
+        already resets those the same way it resets every other
+        request field an interpretation may have touched.
         Strictly scoped to this page: context.plan (Confirm/Review/
         Result state), radio data, and application configuration are
         never touched here.
@@ -500,6 +514,7 @@ class DescribePage(AssistantPage):
         # way for a stale value to survive under a field this method
         # forgot to reset.
         self.context.request = models.ProgrammingRequest()
+        self._refresh_band_filter_status()
         # Re-evaluates the wizard's Next button and the "check at
         # least one service" status text immediately -- same call
         # _on_services_changed() makes for a real user click; without
@@ -551,11 +566,48 @@ class DescribePage(AssistantPage):
         # what was already entered is otherwise indistinguishable from
         # one that silently did nothing.
         before = self._describe_field_snapshot()
+        bands_before = (self.context.request.requested_bands,
+                        self.context.request.requested_record_types)
         self._apply_request_to_fields(event.request)
+        # requested_bands/requested_record_types have no widget to
+        # round-trip through (see band_filter_status in _build()), and
+        # DescribePage.validate_success() -- the only other place
+        # self.context.request gets written to -- never touches them
+        # either. Without this, whatever the AI actually returned was
+        # silently lost the instant this method returned: this is the
+        # reported defect (a band-scoped "Interpret with AI" request
+        # behaved identically to an unrestricted one) -- every other
+        # interpreted field survives via its widget and
+        # validate_success(); these two must be committed directly.
+        self.context.request.requested_bands = event.request.requested_bands
+        self.context.request.requested_record_types = (
+            event.request.requested_record_types)
+        self._refresh_band_filter_status()
         after = self._describe_field_snapshot()
         changed_labels = [label for key, label in _INTERPRET_FIELD_LABELS
                           if before[key] != after[key]]
+        bands_after = (self.context.request.requested_bands,
+                       self.context.request.requested_record_types)
+        if bands_before != bands_after:
+            changed_labels.append(_('Requested band/record type filter'))
         self._show_interpretation_complete(changed_labels)
+
+    def _refresh_band_filter_status(self):
+        req = self.context.request
+        if not req.requested_bands and not req.requested_record_types:
+            self.band_filter_status.SetLabel('')
+            return
+        parts = []
+        if req.requested_bands:
+            names = ', '.join(
+                bands_mod.BAND_DISPLAY_NAMES.get(b, b)
+                for b in req.requested_bands)
+            parts.append(_('band(s): %s') % names)
+        if req.requested_record_types:
+            parts.append(
+                _('type(s): %s') % ', '.join(req.requested_record_types))
+        self.band_filter_status.SetLabel(
+            _('Interpreted filter -- %s') % '; '.join(parts))
 
     def _describe_field_snapshot(self):
         """A plain-value snapshot of every field _apply_request_to_

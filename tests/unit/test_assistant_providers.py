@@ -41,6 +41,51 @@ class ParseStructuredResponseTest(unittest.TestCase):
         self.assertEqual(('2m',), req.requested_bands)
         self.assertEqual(('repeater',), req.requested_record_types)
 
+    def test_alias_2_meter_normalizes_to_canonical(self):
+        req = providers._parse_structured_response(
+            '{"requested_services": ["ham"], '
+            '"requested_bands": ["2 meter"]}')
+        self.assertEqual(('2m',), req.requested_bands)
+
+    def test_alias_two_meters_normalizes_to_canonical(self):
+        req = providers._parse_structured_response(
+            '{"requested_services": ["ham"], '
+            '"requested_bands": ["two meters"]}')
+        self.assertEqual(('2m',), req.requested_bands)
+
+    def test_alias_70cm_normalizes_to_canonical(self):
+        req = providers._parse_structured_response(
+            '{"requested_services": ["ham"], '
+            '"requested_bands": ["70 centimeter"]}')
+        self.assertEqual(('70cm',), req.requested_bands)
+
+    def test_alias_440_band_normalizes_to_70cm(self):
+        req = providers._parse_structured_response(
+            '{"requested_services": ["ham"], '
+            '"requested_bands": ["440 band"]}')
+        self.assertEqual(('70cm',), req.requested_bands)
+
+    def test_alias_repeaters_normalizes_to_repeater(self):
+        req = providers._parse_structured_response(
+            '{"requested_services": ["ham"], '
+            '"requested_record_types": ["repeaters"]}')
+        self.assertEqual(('repeater',), req.requested_record_types)
+
+    def test_multi_band_request_preserves_both_bands(self):
+        req = providers._parse_structured_response(
+            '{"requested_services": ["ham"], '
+            '"requested_bands": ["2 meter", "70 centimeter"]}')
+        self.assertEqual(('2m', '70cm'), req.requested_bands)
+
+    def test_unknown_explicit_band_fails_validation_not_unrestricted(self):
+        # Must not silently become an empty (== unrestricted) tuple --
+        # see chirp.assistant.bands.normalize_band()'s own docstring.
+        with self.assertRaises(providers.ProviderError) as cm:
+            providers._parse_structured_response(
+                '{"requested_services": ["ham"], '
+                '"requested_bands": ["not-a-real-band"]}')
+        self.assertIn('Unknown requested band', str(cm.exception))
+
 
 class SystemPromptTest(unittest.TestCase):
     """The provider only extracts fields it is explicitly told about

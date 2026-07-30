@@ -2564,6 +2564,139 @@ class InterpretationCompletionDialogTest(ProgrammingAssistantWxTestBase):
         self.assertNotIn('Location', message)
 
 
+class InterpretedBandConstraintCommitTest(ProgrammingAssistantWxTestBase):
+    """Direct reproduction and regression coverage for the Windows
+    validation defect: "all the 2 meter repeaters..." and "all the
+    70cm repeaters..." produced the same, unfiltered result through
+    the real Interpret with AI button. Root cause: requested_bands/
+    requested_record_types have no Describe-page widget, and
+    DescribePage.validate_success() -- the method that rebuilds
+    self.context.request from the page's widgets when the user
+    leaves it -- never touched them, so whatever a successful
+    interpretation put in the *local* event.request object was
+    silently discarded the moment _interpret_done() returned. These
+    tests drive the real _interpret_done() handler (the same handler
+    _on_interpret()'s background thread posts to; only the network
+    call itself is mocked, per this corrective task's own "mock only
+    external provider and network boundaries" instruction) and check
+    the wizard's actual, persisted self.context.request -- not a
+    freshly, directly constructed ProgrammingRequest.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.describe = self.context.get_page(
+            'describe', programming_assistant.DescribePage)
+
+    def _interpret_event(self, request=None, error=None):
+        return programming_assistant.InterpretThreadEvent(
+            self.describe.GetId(), request=request, error=error)
+
+    def _interpret(self, request):
+        with mock.patch(
+                'chirp.wxui.programming_assistant.wx.MessageDialog'):
+            self.describe._interpret_done(
+                self._interpret_event(request=request))
+
+    def test_2m_request_commits_band_to_wizard_state(self):
+        self._interpret(models.ProgrammingRequest(
+            location_text="Coeur d'Alene, Idaho",
+            requested_services=(models.SERVICE_HAM,),
+            requested_bands=(models.BAND_2M,),
+            requested_record_types=(models.RECORD_TYPE_REPEATER,)))
+
+        self.assertEqual((models.BAND_2M,),
+                         self.context.request.requested_bands)
+        self.assertEqual((models.RECORD_TYPE_REPEATER,),
+                         self.context.request.requested_record_types)
+
+    def test_70cm_request_commits_a_different_band_than_2m(self):
+        self._interpret(models.ProgrammingRequest(
+            location_text="Coeur d'Alene, Idaho",
+            requested_services=(models.SERVICE_HAM,),
+            requested_bands=(models.BAND_70CM,),
+            requested_record_types=(models.RECORD_TYPE_REPEATER,)))
+
+        self.assertEqual((models.BAND_70CM,),
+                         self.context.request.requested_bands)
+        self.assertNotEqual((models.BAND_2M,),
+                            self.context.request.requested_bands)
+
+    def test_reinterpretation_replaces_the_prior_band_not_unions_it(self):
+        # Phase 8: interpreting 2m then 70cm must leave only 70cm, not
+        # both (a union) and not the original unrestricted state.
+        self._interpret(models.ProgrammingRequest(
+            requested_services=(models.SERVICE_HAM,),
+            requested_bands=(models.BAND_2M,)))
+        self.assertEqual((models.BAND_2M,),
+                         self.context.request.requested_bands)
+
+        self._interpret(models.ProgrammingRequest(
+            requested_services=(models.SERVICE_HAM,),
+            requested_bands=(models.BAND_70CM,)))
+        self.assertEqual((models.BAND_70CM,),
+                         self.context.request.requested_bands)
+
+    def test_reinterpreting_with_no_band_clears_the_prior_band(self):
+        self._interpret(models.ProgrammingRequest(
+            requested_services=(models.SERVICE_HAM,),
+            requested_bands=(models.BAND_2M,)))
+        self.assertEqual((models.BAND_2M,),
+                         self.context.request.requested_bands)
+
+        self._interpret(models.ProgrammingRequest(
+            requested_services=(models.SERVICE_HAM,)))
+        self.assertEqual((), self.context.request.requested_bands)
+
+    def test_band_filter_status_label_reflects_current_interpretation(self):
+        self.assertEqual('', self.describe.band_filter_status.GetLabel())
+
+        self._interpret(models.ProgrammingRequest(
+            requested_services=(models.SERVICE_HAM,),
+            requested_bands=(models.BAND_2M,),
+            requested_record_types=(models.RECORD_TYPE_REPEATER,)))
+
+        label = self.describe.band_filter_status.GetLabel()
+        self.assertIn('2 meters', label)
+        self.assertIn('repeater', label)
+
+    def test_clear_all_entries_clears_the_committed_band_and_status(self):
+        self._interpret(models.ProgrammingRequest(
+            requested_services=(models.SERVICE_HAM,),
+            requested_bands=(models.BAND_2M,)))
+        self.assertEqual((models.BAND_2M,),
+                         self.context.request.requested_bands)
+
+        self.describe._clear_all_fields()
+
+        self.assertEqual((), self.context.request.requested_bands)
+        self.assertEqual('', self.describe.band_filter_status.GetLabel())
+
+    def test_multi_band_request_commits_both_bands(self):
+        self._interpret(models.ProgrammingRequest(
+            requested_services=(models.SERVICE_HAM,),
+            requested_bands=(models.BAND_2M, models.BAND_70CM),
+            requested_record_types=(models.RECORD_TYPE_REPEATER,)))
+
+        self.assertEqual((models.BAND_2M, models.BAND_70CM),
+                         self.context.request.requested_bands)
+
+    def test_committed_band_survives_into_confirm_page_signature(self):
+        # Phase 8's cache-invalidation requirement in practice:
+        # ConfirmPage._current_signature() snapshots the whole request
+        # dataclass, so once requested_bands is actually committed (the
+        # bug this class covers), the existing staleness machinery
+        # already picks up the change with no further wiring needed.
+        confirm = self.context.get_page(
+            'confirm', programming_assistant.ConfirmPage)
+        self._interpret(models.ProgrammingRequest(
+            requested_services=(models.SERVICE_HAM,),
+            requested_bands=(models.BAND_2M,)))
+
+        signature = confirm._current_signature()
+        self.assertEqual((models.BAND_2M,), signature[0].requested_bands)
+
+
 class DescribePageClearAllEntriesTest(ProgrammingAssistantWxTestBase):
     """Coverage for the "Clear All Entries" button: restores the
     Describe page to exactly its first-opened state (including
