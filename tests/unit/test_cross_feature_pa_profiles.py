@@ -526,8 +526,19 @@ class RealPathProfileWorkflowTest(CrossFeatureTestCase):
             self.tmpdir, 'preload' + profile_schema.FILE_EXTENSION)
         profile_serialization.save(profile, path)
 
-        with _mock_file_dialog(path):
+        with _mock_file_dialog(path), \
+                mock.patch.object(
+                    wxmain.profileeditor, 'ProfileEditorDialog'
+                    ) as editor_dlg:
+            editor_dlg.return_value.ShowModal.return_value = wx.ID_OK
             self.frame._menu_profile_open(None)
+
+        # Defect 2 (Windows validation): Open Profile must produce a
+        # visible result, not just update internal state.
+        editor_dlg.assert_called_once()
+        _call_args, call_kwargs = editor_dlg.call_args
+        self.assertEqual(path, call_kwargs.get('path'))
+        editor_dlg.return_value.ShowModal.assert_called_once()
 
         self.assertEqual(path, self.frame._current_profile_path)
         self.assertEqual(profile.profile_id,
@@ -551,6 +562,87 @@ class RealPathProfileWorkflowTest(CrossFeatureTestCase):
         self.assertEqual(
             [], [f for f in os.listdir(self.tmpdir)
                  if f.endswith(profile_schema.FILE_EXTENSION)])
+
+    def test_cancel_open_produces_no_editor_and_no_error(self):
+        with _mock_file_dialog(cancel=True), \
+                mock.patch.object(
+                    wxmain.profileeditor, 'ProfileEditorDialog'
+                    ) as editor_dlg, \
+                mock.patch(
+                    'chirp.wxui.common.error_proof.show_error'
+                    ) as show_error:
+            self.frame._menu_profile_open(None)
+
+        editor_dlg.assert_not_called()
+        show_error.assert_not_called()
+        self.assertIsNone(self.frame._current_profile)
+        self.assertIsNone(self.frame._current_profile_path)
+
+    def test_open_malformed_json_shows_actionable_error_no_editor(self):
+        bad_path = os.path.join(
+            self.tmpdir, 'bad' + profile_schema.FILE_EXTENSION)
+        with open(bad_path, 'w') as f:
+            f.write('{not valid json')
+
+        with _mock_file_dialog(bad_path), \
+                mock.patch.object(
+                    wxmain.profileeditor, 'ProfileEditorDialog'
+                    ) as editor_dlg, \
+                mock.patch(
+                    'chirp.wxui.common.error_proof.show_error'
+                    ) as show_error:
+            self.frame._menu_profile_open(None)
+
+        editor_dlg.assert_not_called()
+        show_error.assert_called_once()
+        from chirp.profiles import errors as profile_errors
+        self.assertIsInstance(show_error.call_args[0][0],
+                              profile_errors.ProfileParseError)
+        self.assertIsNone(self.frame._current_profile)
+
+    def test_open_missing_file_shows_actionable_error_no_editor(self):
+        missing_path = os.path.join(
+            self.tmpdir, 'does-not-exist' + profile_schema.FILE_EXTENSION)
+
+        with _mock_file_dialog(missing_path), \
+                mock.patch.object(
+                    wxmain.profileeditor, 'ProfileEditorDialog'
+                    ) as editor_dlg, \
+                mock.patch(
+                    'chirp.wxui.common.error_proof.show_error'
+                    ) as show_error:
+            self.frame._menu_profile_open(None)
+
+        editor_dlg.assert_not_called()
+        show_error.assert_called_once()
+        from chirp.profiles import errors as profile_errors
+        self.assertIsInstance(show_error.call_args[0][0],
+                              profile_errors.ProfileIOError)
+        self.assertIsNone(self.frame._current_profile)
+
+    def test_open_succeeds_with_no_memory_grid_open(self):
+        from chirp.profiles import model as profile_model
+        from chirp.profiles import serialization as profile_serialization
+
+        self.assertIsNone(self.frame.current_editorset)
+        profile = profile_model.Profile(name='NoGrid')
+        path = os.path.join(
+            self.tmpdir, 'nogrid' + profile_schema.FILE_EXTENSION)
+        profile_serialization.save(profile, path)
+
+        with _mock_file_dialog(path), \
+                mock.patch.object(
+                    wxmain.profileeditor, 'ProfileEditorDialog'
+                    ) as editor_dlg, \
+                mock.patch(
+                    'chirp.wxui.common.error_proof.show_error'
+                    ) as show_error:
+            editor_dlg.return_value.ShowModal.return_value = wx.ID_OK
+            self.frame._menu_profile_open(None)
+
+        show_error.assert_not_called()
+        editor_dlg.assert_called_once()
+        self.assertEqual('NoGrid', self.frame._current_profile.name)
 
     def test_entirely_blank_dynamic_grid_shows_actionable_message(self):
         eset = self._blank_csv_editorset()

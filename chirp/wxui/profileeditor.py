@@ -22,6 +22,7 @@ placement logic belongs here (section 3.4).
 """
 
 import logging
+import os
 
 import wx
 import wx.lib.scrolledpanel
@@ -235,11 +236,15 @@ class ChannelEditDialog(wx.Dialog):
 class ProfileEditorDialog(wx.Dialog):
     """Edit profile identity, defaults, groups, and channels."""
 
-    def __init__(self, parent, profile):
+    def __init__(self, parent, profile, path=None):
+        title = _('Edit Radio Profile')
+        if path:
+            title = '%s - %s' % (title, os.path.basename(path))
         super().__init__(
-            parent, title=_('Edit Radio Profile'),
+            parent, title=title,
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
         self.profile = profile
+        self.path = path
 
         notebook = wx.Notebook(self)
         notebook.AddPage(self._build_identity_page(notebook), _('Identity'))

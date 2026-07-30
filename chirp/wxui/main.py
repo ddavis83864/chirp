@@ -1818,6 +1818,14 @@ class ChirpMain(wx.Frame):
 
         self._current_profile = profile_serialization.load(path)
         self._current_profile_path = path
+        # Without this, a successful Open loaded the profile only into
+        # internal state -- no window, status update, or confirmation
+        # of any kind ever appeared, so there was no way to tell Open
+        # had done anything at all. Reuses the exact same editor
+        # Create Profile from Current Image already opens after
+        # extraction, rather than inventing a second, different
+        # "viewer" workflow.
+        self._menu_profile_edit(None)
 
     def _show_profile_saved_message(self, path):
         wx.MessageBox(
@@ -1866,7 +1874,8 @@ class ChirpMain(wx.Frame):
     def _menu_profile_edit(self, event):
         if self._current_profile is None:
             self._current_profile = profile_model.Profile()
-        dlg = profileeditor.ProfileEditorDialog(self, self._current_profile)
+        dlg = profileeditor.ProfileEditorDialog(
+            self, self._current_profile, path=self._current_profile_path)
         dlg.ShowModal()
         dlg.Destroy()
 
