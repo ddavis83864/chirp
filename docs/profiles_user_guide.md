@@ -14,7 +14,10 @@ All of this lives under the new **Profile** menu.
 
 ## Creating a profile from a radio image
 
-1. Open (or download) the radio image you want to base a profile on.
+1. Open (or download) the radio image you want to base a profile on. This
+   includes CSV-backed images -- for example, the blank memory grid the
+   Programming Assistant creates and lets you fill in -- not only
+   downloaded/cloned images from a specific radio model.
 2. **Profile > Create Profile from Current Image**.
 3. Give the profile a name.
 4. CHIRP shows a summary: how many channels were extracted, how many were
@@ -24,6 +27,13 @@ All of this lives under the new **Profile** menu.
    receive-only.
 5. The new profile opens in the profile editor so you can review or adjust
    it right away.
+6. If you haven't saved the profile yet, CHIRP asks whether to save it now
+   (see "Saving, sharing, and importing/exporting profiles" below) -- you
+   can also decline and save later from **Profile > Save Profile**.
+
+Only *populated* memories become channels; a completely blank image (no
+memories programmed into it yet) has nothing to extract, and CHIRP tells
+you so directly rather than creating an empty profile.
 
 Each channel gets a stable **logical ID** derived from its name (e.g. a
 memory named "CDA Repeater" becomes `cda-repeater`). This ID is what CHIRP
@@ -126,6 +136,18 @@ Profiles are saved as plain, human-readable JSON files (extension
 only one profile file format today); they're separate menu entries so a
 future release can add other interchange formats without changing this one.
 
+Profiles are ordinary files: you choose exactly where to save one, the same
+way you choose where to save any other document in CHIRP -- there is no
+separate, managed "profiles folder". **Save Profile As** opens a normal save
+dialog defaulting to the same directory CHIRP last used for a profile (or
+the platform's usual default location the first time), and after a
+successful save CHIRP shows you the full path the file was written to.
+
+To reopen a saved profile later, use **Profile > Open Profile**, which opens
+in that same last-used directory. Opening (or drag-and-drop) always shows
+you the picked file's real path, so there is no ambiguity about which file
+you loaded.
+
 Because it's just a file, you can email it, put it in version control, or
 share it with your club exactly like any other document. Opening someone
 else's profile is safe: profile files cannot contain or execute code, and a
@@ -135,6 +157,15 @@ than silently doing something unexpected.
 See `docs/examples/north_idaho_camping.chirp-profile.json` for a worked
 example (a fictionalized camping/travel profile -- verify any real
 frequency against an authoritative source before using it).
+
+## Relationship to the Programming Assistant
+
+The Programming Assistant (Radio > Programming Assistant...) and Radio
+Profiles are separate, complementary tools. The assistant creates and
+populates a normal memory image; it never creates or saves a profile by
+itself. If you want to turn assistant-programmed memories into a reusable
+profile, do that explicitly with **Profile > Create Profile from Current
+Image**, described above.
 
 ## A note on frequencies
 

@@ -52,6 +52,24 @@ integration lives entirely under `chirp/wxui/profile*.py` and
 `chirp/wxui/main.py`'s Profile menu section, and reaches the domain layer
 only through `chirp.wxui.profilecontroller`.
 
+### Reading a source radio's memories
+
+`extraction.enumerate_source_memories(radio)` is the one place a radio's
+current memory list is read for profile purposes (both extracting a
+profile from a source image, and reading a target image's existing
+memories before placement). It uses `RadioFeatures.memory_bounds`
+unconditionally, for both fixed-capacity and dynamic/file-backed radios
+(e.g. `chirp.drivers.generic_csv.CSVRadio`) alike: `memory_bounds` always
+describes a radio's *current*, concrete, enumerable range, regardless of
+`has_infinite_number` -- that flag means only "no fixed ceiling on how
+large this may grow later" (it suppresses an out-of-range validation
+warning), never "the current range is unsafe to read" or "this cannot be
+enumerated." There is no invented maximum (100/500/1000/...) anywhere in
+this path; a radio with N memories right now yields exactly N reads.
+`errors.CapabilityUnknownError` is reserved for the genuinely different
+case of a radio whose `memory_bounds` cannot be interpreted as a `(lo,
+hi)` pair at all.
+
 ## Schema versioning
 
 `schema.SCHEMA_VERSION = '1.0'` (`SCHEMA_MAJOR = 1`, `SCHEMA_MINOR = 0`).
