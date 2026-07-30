@@ -74,7 +74,17 @@ class CrossFeatureTestCase(unittest.TestCase):
         # assistant here never touches, or is affected by, a real
         # user's persisted CHIRP config.
         config._CONFIG = config.ChirpConfig(tempfile.mkdtemp())
+        # programming_assistant.CONF is a ChirpConfigProxy captured
+        # once, at that module's own first import, bound to whatever
+        # config._CONFIG was at that moment -- reassigning
+        # config._CONFIG here (above) does not retarget it. So
+        # set_assistant_enabled(True) below writes through to the
+        # same config store for the rest of this process's lifetime
+        # regardless of this test's own isolation, and must be
+        # restored explicitly, or it leaks into any later test in the
+        # same run that checks assistant_enabled().
         programming_assistant.set_assistant_enabled(True)
+        self.addCleanup(programming_assistant.set_assistant_enabled, False)
         self.frame = wxmain.ChirpMain(None, title='test')
         self.addCleanup(self.frame.Destroy)
 
