@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: CHIRP\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-29 19:42-0700\n"
+"POT-Creation-Date: 2026-07-29 21:19-0700\n"
 "PO-Revision-Date: 2015-01-28 13:47+0100\n"
 "Last-Translator: Attila Joubert <joubert.attila@gmail.com>\n"
 "Language-Team: English\n"
@@ -74,7 +74,7 @@ msgstr ""
 msgid "%s already exists and was not created by CHIRP; refusing to overwrite it"
 msgstr ""
 
-#: ../wxui/main.py:1912
+#: ../wxui/main.py:1921
 #, fuzzy, python-format
 msgid "%s has not been saved. Save before closing?"
 msgstr "A fájl megváltozott! Menti bezárás előtt?"
@@ -114,7 +114,7 @@ msgstr ""
 msgid "(LOW CONTRAST)"
 msgstr ""
 
-#: ../wxui/profileeditor.py:50
+#: ../wxui/profileeditor.py:51
 msgid "(inherit default)"
 msgstr ""
 
@@ -126,16 +126,16 @@ msgstr ""
 msgid "(no Desktop directory could be found)"
 msgstr ""
 
-#: ../wxui/radioinfo.py:50 ../wxui/profileeditor.py:125 ../wxui/main.py:1784
+#: ../wxui/radioinfo.py:50 ../wxui/profileeditor.py:126 ../wxui/main.py:1784
 #: ../wxui/main.py:1785
 msgid "(none)"
 msgstr ""
 
-#: ../wxui/profileeditor.py:46
+#: ../wxui/profileeditor.py:47
 msgid "+ offset"
 msgstr ""
 
-#: ../wxui/profileeditor.py:47
+#: ../wxui/profileeditor.py:48
 msgid "- offset"
 msgstr ""
 
@@ -772,11 +772,11 @@ msgid ""
 "It will may not work if you turn on the radio with the cable already attached"
 msgstr ""
 
-#: ../wxui/profileeditor.py:446
+#: ../wxui/profileeditor.py:451
 msgid "A channel with this logical ID already exists"
 msgstr ""
 
-#: ../wxui/main.py:2578
+#: ../wxui/main.py:2587
 msgid "A new CHIRP version is available. Please visit the website as soon as possible to download it!"
 msgstr ""
 
@@ -816,7 +816,7 @@ msgstr ""
 msgid "About"
 msgstr ""
 
-#: ../wxui/main.py:2288
+#: ../wxui/main.py:2297
 msgid "About CHIRP"
 msgstr ""
 
@@ -846,7 +846,7 @@ msgstr ""
 msgid "Adapted"
 msgstr ""
 
-#: ../wxui/profileapply.py:38 ../wxui/profileeditor.py:404
+#: ../wxui/profileapply.py:38 ../wxui/profileeditor.py:409
 msgid "Add"
 msgstr ""
 
@@ -854,7 +854,7 @@ msgstr ""
 msgid "Add CHIRP to the application menu"
 msgstr ""
 
-#: ../wxui/profileeditor.py:447
+#: ../wxui/profileeditor.py:452
 msgid "Add Channel"
 msgstr ""
 
@@ -875,8 +875,8 @@ msgstr ""
 msgid "Add Custom Column..."
 msgstr ""
 
-#: ../wxui/profileeditor.py:344 ../wxui/profileeditor.py:368
-#: ../wxui/profileeditor.py:373 ../wxui/profileeditor.py:376
+#: ../wxui/profileeditor.py:349 ../wxui/profileeditor.py:373
+#: ../wxui/profileeditor.py:378 ../wxui/profileeditor.py:381
 msgid "Add Group"
 msgstr ""
 
@@ -897,7 +897,7 @@ msgstr ""
 msgid "Adjusted for this radio: %i"
 msgstr ""
 
-#: ../wxui/main.py:2343
+#: ../wxui/main.py:2352
 msgid "Agree"
 msgstr ""
 
@@ -1010,12 +1010,12 @@ msgstr ""
 msgid "Apply"
 msgstr ""
 
-#: ../wxui/profilecontroller.py:191
+#: ../wxui/profilecontroller.py:211
 #, python-format
 msgid "Apply %s profile"
 msgstr ""
 
-#: ../wxui/main.py:1879 ../wxui/main.py:1887
+#: ../wxui/main.py:1888 ../wxui/main.py:1896
 msgid "Apply Profile"
 msgstr ""
 
@@ -1052,7 +1052,7 @@ msgstr ""
 msgid "Approved"
 msgstr ""
 
-#: ../wxui/main.py:2009
+#: ../wxui/main.py:2018
 #, fuzzy
 msgid "Automatic from system"
 msgstr "Automatic Repeater Offset"
@@ -1077,7 +1077,7 @@ msgstr ""
 msgid "Background:"
 msgstr ""
 
-#: ../wxui/main.py:2492
+#: ../wxui/main.py:2501
 msgid "Bandplan"
 msgstr ""
 
@@ -1160,11 +1160,11 @@ msgstr ""
 msgid "Business/industrial land-mobile band."
 msgstr ""
 
-#: ../wxui/main.py:1806 ../wxui/main.py:1846
+#: ../wxui/main.py:1806 ../wxui/main.py:1854
 msgid "CHIRP Profile Files"
 msgstr ""
 
-#: ../wxui/main.py:2038
+#: ../wxui/main.py:2047
 msgid "CHIRP must be restarted for the new selection to take effect"
 msgstr ""
 
@@ -1197,7 +1197,7 @@ msgstr ""
 msgid "Categories"
 msgstr ""
 
-#: ../wxui/profileeditor.py:153 ../wxui/memcolordialog.py:203
+#: ../wxui/profileeditor.py:154 ../wxui/memcolordialog.py:203
 msgid "Category"
 msgstr ""
 
@@ -1210,7 +1210,7 @@ msgstr ""
 msgid "Channel limit: %i"
 msgstr ""
 
-#: ../wxui/profileeditor.py:248
+#: ../wxui/profileeditor.py:253
 msgid "Channels"
 msgstr ""
 
@@ -1336,11 +1336,11 @@ msgstr ""
 msgid "Clear Recent Files"
 msgstr ""
 
-#: ../wxui/main.py:2329
+#: ../wxui/main.py:2338
 msgid "Click here for full license text"
 msgstr ""
 
-#: ../wxui/main.py:2308
+#: ../wxui/main.py:2317
 msgid "Click here for online documentation"
 msgstr ""
 
@@ -1374,7 +1374,7 @@ msgstr "Letöltés a rádióról"
 msgid "Cloning to radio"
 msgstr "Feltöltés a rádióra"
 
-#: ../wxui/main.py:1240 ../wxui/main.py:2344
+#: ../wxui/main.py:1240 ../wxui/main.py:2353
 msgid "Close"
 msgstr ""
 
@@ -1401,7 +1401,7 @@ msgstr[1] "Memóriasorok összehasonlítása"
 msgid "Cluster memory"
 msgstr ""
 
-#: ../wxui/memedit.py:704 ../wxui/profileeditor.py:102
+#: ../wxui/memedit.py:704 ../wxui/profileeditor.py:103
 #: ../wxui/memcolordialog.py:288
 msgid "Comment"
 msgstr "Megjegyzés"
@@ -1553,7 +1553,7 @@ msgid ""
 "Polarity"
 msgstr "DTCS pol."
 
-#: ../wxui/profileeditor.py:135
+#: ../wxui/profileeditor.py:136
 msgid "DTCS Code"
 msgstr ""
 
@@ -1566,7 +1566,7 @@ msgstr ""
 msgid "DV Memory"
 msgstr "ez a memória"
 
-#: ../wxui/main.py:2381
+#: ../wxui/main.py:2390
 msgid "Danger Ahead"
 msgstr ""
 
@@ -1575,19 +1575,19 @@ msgstr ""
 msgid "Dec"
 msgstr "Érzékelés"
 
-#: ../wxui/profileeditor.py:310
+#: ../wxui/profileeditor.py:315
 msgid "Default Mode"
 msgstr ""
 
-#: ../wxui/profileeditor.py:315
+#: ../wxui/profileeditor.py:320
 msgid "Default Power Preference"
 msgstr ""
 
-#: ../wxui/profileeditor.py:320
+#: ../wxui/profileeditor.py:325
 msgid "Default Scan Intent"
 msgstr ""
 
-#: ../wxui/profileeditor.py:246
+#: ../wxui/profileeditor.py:251
 msgid "Defaults"
 msgstr ""
 
@@ -1595,7 +1595,7 @@ msgstr ""
 msgid "Degraded"
 msgstr ""
 
-#: ../wxui/memedit.py:2913 ../wxui/memedit.py:3075 ../wxui/profileeditor.py:406
+#: ../wxui/memedit.py:2913 ../wxui/memedit.py:3075 ../wxui/profileeditor.py:411
 #: ../wxui/memcolordialog.py:470
 msgid "Delete"
 msgstr "Törlés"
@@ -1633,7 +1633,7 @@ msgstr ""
 msgid "Describe your request in plain language, or just fill in the fields below directly -- AI is entirely optional and nothing here requires it."
 msgstr ""
 
-#: ../wxui/profileeditor.py:283
+#: ../wxui/profileeditor.py:288
 msgid "Description"
 msgstr ""
 
@@ -1667,7 +1667,7 @@ msgstr ""
 msgid "Developer Mode"
 msgstr "Fejlesztői"
 
-#: ../wxui/main.py:2387
+#: ../wxui/main.py:2396
 #, python-format
 msgid "Developer state is now %s. CHIRP must be restarted to take effect"
 msgstr ""
@@ -1689,7 +1689,7 @@ msgstr "Digitális kód"
 msgid "Digital Modes"
 msgstr "Digitális kód"
 
-#: ../wxui/main.py:2399
+#: ../wxui/main.py:2408
 msgid "Disable reporting"
 msgstr ""
 
@@ -1759,7 +1759,7 @@ msgstr ""
 msgid "Dual-mode digital repeaters that support analog will be shown as FM"
 msgstr ""
 
-#: ../wxui/memedit.py:557 ../wxui/profileeditor.py:115
+#: ../wxui/memedit.py:557 ../wxui/profileeditor.py:116
 #: ../wxui/memcolordialog.py:283
 msgid "Duplex"
 msgstr "Duplex"
@@ -1768,11 +1768,11 @@ msgstr "Duplex"
 msgid "Duplicate"
 msgstr ""
 
-#: ../wxui/profileeditor.py:330
+#: ../wxui/profileeditor.py:335
 msgid "Duplicate-Handling Policy"
 msgstr ""
 
-#: ../wxui/profileeditor.py:405
+#: ../wxui/profileeditor.py:410
 msgid "Edit"
 msgstr "Sz_erkesztés"
 
@@ -1977,7 +1977,7 @@ msgstr ""
 msgid "Existing memories replaced: %i"
 msgstr ""
 
-#: ../wxui/main.py:2418
+#: ../wxui/main.py:2427
 msgid "Experimental Feature"
 msgstr ""
 
@@ -2105,8 +2105,8 @@ msgid "File does not exist: %s"
 msgstr ""
 
 #: ../wxui/main.py:1528 ../wxui/main.py:1634 ../wxui/main.py:1644
-#: ../wxui/main.py:1677 ../wxui/main.py:1735 ../wxui/main.py:2258
-#: ../wxui/main.py:2259
+#: ../wxui/main.py:1677 ../wxui/main.py:1735 ../wxui/main.py:2267
+#: ../wxui/main.py:2268
 #, fuzzy
 msgid "Files"
 msgstr "_Fájl"
@@ -2132,7 +2132,7 @@ msgstr ""
 msgid "Filter:"
 msgstr ""
 
-#: ../wxui/main.py:1967
+#: ../wxui/main.py:1976
 #, fuzzy
 msgid "Find"
 msgstr "RFinder"
@@ -2352,7 +2352,7 @@ msgstr ""
 msgid "Found empty list value for %(name)s: %(value)r"
 msgstr ""
 
-#: ../wxui/memedit.py:348 ../wxui/profileeditor.py:400
+#: ../wxui/memedit.py:348 ../wxui/profileeditor.py:405
 msgid "Frequency"
 msgstr "Frekvencia"
 
@@ -2440,16 +2440,16 @@ msgstr ""
 msgid "Group"
 msgstr ""
 
-#: ../wxui/profileeditor.py:368
+#: ../wxui/profileeditor.py:373
 msgid "Group ID (slug):"
 msgstr ""
 
-#: ../wxui/profileeditor.py:376
+#: ../wxui/profileeditor.py:381
 msgid "Group Name:"
 msgstr ""
 
-#: ../wxui/profileeditor.py:159 ../wxui/profileeditor.py:247
-#: ../wxui/profileeditor.py:401
+#: ../wxui/profileeditor.py:160 ../wxui/profileeditor.py:252
+#: ../wxui/profileeditor.py:406
 msgid "Groups"
 msgstr ""
 
@@ -2531,7 +2531,7 @@ msgstr ""
 msgid "I have a GMRS license"
 msgstr ""
 
-#: ../wxui/profileeditor.py:341
+#: ../wxui/profileeditor.py:346
 msgid "ID"
 msgstr ""
 
@@ -2539,7 +2539,7 @@ msgstr ""
 msgid "Icon name"
 msgstr ""
 
-#: ../wxui/profileeditor.py:245
+#: ../wxui/profileeditor.py:250
 msgid "Identity"
 msgstr ""
 
@@ -2663,7 +2663,7 @@ msgstr ""
 msgid "Invalid %(value)s (use decimal degrees)"
 msgstr "Érvénytelen érték! Egész szám kell legyen."
 
-#: ../wxui/profileeditor.py:177
+#: ../wxui/profileeditor.py:178
 msgid "Invalid Channel"
 msgstr ""
 
@@ -2682,7 +2682,7 @@ msgstr ""
 msgid "Invalid edit: %s"
 msgstr "Érvénytelen érték %s"
 
-#: ../wxui/profileeditor.py:373
+#: ../wxui/profileeditor.py:378
 msgid "Invalid group ID"
 msgstr ""
 
@@ -2691,11 +2691,11 @@ msgstr ""
 msgid "Invalid locator"
 msgstr "Érvénytelen érték %s"
 
-#: ../wxui/main.py:2255
+#: ../wxui/main.py:2264
 msgid "Invalid or unsupported module file"
 msgstr ""
 
-#: ../wxui/profileeditor.py:191
+#: ../wxui/profileeditor.py:192
 msgid "Invalid receive frequency"
 msgstr ""
 
@@ -2741,7 +2741,7 @@ msgstr ""
 msgid "LIVE"
 msgstr ""
 
-#: ../drivers/radtel_rt490.py:1028 ../wxui/main.py:892 ../wxui/main.py:2023
+#: ../drivers/radtel_rt490.py:1028 ../wxui/main.py:892 ../wxui/main.py:2032
 #, fuzzy
 msgid "Language"
 msgstr "Nyelv választás"
@@ -2805,7 +2805,7 @@ msgstr ""
 msgid "Limit use"
 msgstr ""
 
-#: ../wxui/main.py:2110
+#: ../wxui/main.py:2119
 #, fuzzy
 msgid "Live Radio"
 msgstr "Rádió"
@@ -2825,11 +2825,11 @@ msgstr "Modul betöltése"
 msgid "Load module from issue..."
 msgstr "Modul betöltése"
 
-#: ../wxui/main.py:2459
+#: ../wxui/main.py:2468
 msgid "Loading a module will not affect open tabs. It is recommended (unless instructed otherwise) to close all tabs before loading a module."
 msgstr ""
 
-#: ../wxui/main.py:2262
+#: ../wxui/main.py:2271
 msgid "Loading modules can be extremely dangerous, leading to damage to your computer, radio, or both. NEVER load a module from a source you do not trust, and especially not from anywhere other than the main CHIRP website (chirpmyradio.com). Loading a module from another source is akin to giving them direct access to your computer and everything on it! Proceed despite this risk?"
 msgstr ""
 
@@ -2858,12 +2858,12 @@ msgstr ""
 msgid "Locator"
 msgstr ""
 
-#: ../wxui/profileapply.py:82 ../wxui/profileeditor.py:96
-#: ../wxui/profileeditor.py:400
+#: ../wxui/profileapply.py:82 ../wxui/profileeditor.py:97
+#: ../wxui/profileeditor.py:405
 msgid "Logical ID"
 msgstr ""
 
-#: ../wxui/profileeditor.py:186
+#: ../wxui/profileeditor.py:187
 msgid "Logical ID must be a lowercase slug (letters, digits, single hyphens), e.g. \"local-2m-repeater-01\""
 msgstr ""
 
@@ -2970,7 +2970,7 @@ msgstr ""
 msgid "Message"
 msgstr ""
 
-#: ../wxui/memedit.py:673 ../wxui/profileeditor.py:140
+#: ../wxui/memedit.py:673 ../wxui/profileeditor.py:141
 #: ../wxui/programming_assistant.py:1124 ../wxui/memcolordialog.py:285
 #: ../wxui/query_sources.py:626 ../wxui/query_sources.py:779
 #, fuzzy
@@ -2994,17 +2994,17 @@ msgstr "Mód"
 msgid "Modify"
 msgstr ""
 
-#: ../wxui/main.py:2259
+#: ../wxui/main.py:2268
 #, fuzzy
 msgid "Module"
 msgstr "Modul betöltése"
 
-#: ../wxui/main.py:2231
+#: ../wxui/main.py:2240
 #, fuzzy
 msgid "Module Loaded"
 msgstr "Modul betöltése"
 
-#: ../wxui/main.py:2470
+#: ../wxui/main.py:2479
 msgid "Module loaded successfully"
 msgstr ""
 
@@ -3060,8 +3060,8 @@ msgstr ""
 msgid "NOAA/Weather"
 msgstr ""
 
-#: ../wxui/profileeditor.py:99 ../wxui/profileeditor.py:276
-#: ../wxui/profileeditor.py:342 ../wxui/profileeditor.py:400
+#: ../wxui/profileeditor.py:100 ../wxui/profileeditor.py:281
+#: ../wxui/profileeditor.py:347 ../wxui/profileeditor.py:405
 #: ../wxui/programming_assistant.py:1122 ../wxui/memcolordialog.py:287
 #: ../wxui/memcolordialog.py:455
 msgid "Name"
@@ -3071,7 +3071,7 @@ msgstr "Név"
 msgid "Name:"
 msgstr ""
 
-#: ../wxui/profileeditor.py:325
+#: ../wxui/profileeditor.py:330
 msgid "Naming Style"
 msgstr ""
 
@@ -3092,7 +3092,7 @@ msgstr ""
 msgid "New Window"
 msgstr ""
 
-#: ../wxui/main.py:2580
+#: ../wxui/main.py:2589
 #, fuzzy
 msgid "New version available"
 msgstr "A CHIRP egy új verziója érhető el:"
@@ -3140,15 +3140,15 @@ msgstr ""
 msgid "No more space available; some memories were not applied"
 msgstr ""
 
-#: ../wxui/profilecontroller.py:89
+#: ../wxui/profilecontroller.py:109
 msgid "No populated memories are available to create a profile."
 msgstr ""
 
-#: ../wxui/main.py:1830 ../wxui/main.py:1842
+#: ../wxui/main.py:1838 ../wxui/main.py:1850
 msgid "No profile is open."
 msgstr ""
 
-#: ../wxui/main.py:1877
+#: ../wxui/main.py:1886
 msgid "No profile is open. Use Profile > Open Profile or Create Profile from Current Image first."
 msgstr ""
 
@@ -3161,7 +3161,7 @@ msgstr ""
 msgid "No results!"
 msgstr ""
 
-#: ../wxui/main.py:2480
+#: ../wxui/main.py:2489
 msgid "No traces stored"
 msgstr ""
 
@@ -3169,11 +3169,11 @@ msgstr ""
 msgid "No transmit frequency configured."
 msgstr ""
 
-#: ../wxui/main.py:2574
+#: ../wxui/main.py:2583
 msgid "No update available"
 msgstr ""
 
-#: ../wxui/profileeditor.py:499
+#: ../wxui/profileeditor.py:504
 msgid "No validation issues."
 msgstr ""
 
@@ -3214,7 +3214,7 @@ msgstr ""
 msgid "Offset"
 msgstr "Offszet"
 
-#: ../wxui/profileeditor.py:118
+#: ../wxui/profileeditor.py:119
 msgid "Offset (MHz)"
 msgstr ""
 
@@ -3284,7 +3284,7 @@ msgstr "A csoportos beállítás megnyitása"
 msgid "Open a file"
 msgstr ""
 
-#: ../wxui/main.py:2277
+#: ../wxui/main.py:2286
 msgid "Open a module"
 msgstr ""
 
@@ -3420,7 +3420,7 @@ msgstr ""
 msgid "Plan built: %i candidate(s) ready to review."
 msgstr ""
 
-#: ../wxui/main.py:2584
+#: ../wxui/main.py:2593
 msgid "Please be sure to quit CHIRP before installing the new version!"
 msgstr ""
 
@@ -3428,7 +3428,7 @@ msgstr ""
 msgid "Please check the bug number and try again. If you do actually want to report against this bug, please comment on it via the website and ask for it to be re-opened."
 msgstr ""
 
-#: ../wxui/main.py:2375
+#: ../wxui/main.py:2384
 msgid "Please note that developer mode is intended for use by developers of the CHIRP project, or under the direction of a developer. It enables behaviors and functions that can damage your computer and your radio if not used with EXTREME care. You have been warned! Proceed anyway?"
 msgstr ""
 
@@ -3452,7 +3452,7 @@ msgstr "Port"
 msgid "Power"
 msgstr "Teljesítmény"
 
-#: ../wxui/profileeditor.py:145
+#: ../wxui/profileeditor.py:146
 msgid "Power Preference"
 msgstr ""
 
@@ -3486,7 +3486,7 @@ msgstr ""
 msgid "Profile"
 msgstr ""
 
-#: ../wxui/profileeditor.py:80
+#: ../wxui/profileeditor.py:81
 msgid "Profile Channel"
 msgstr ""
 
@@ -3494,7 +3494,7 @@ msgstr ""
 msgid "Profile Created"
 msgstr ""
 
-#: ../wxui/main.py:1825
+#: ../wxui/main.py:1833
 msgid "Profile Saved"
 msgstr ""
 
@@ -3502,7 +3502,7 @@ msgstr ""
 msgid "Profile name:"
 msgstr ""
 
-#: ../wxui/main.py:1824
+#: ../wxui/main.py:1832
 #, python-format
 msgid ""
 "Profile saved to:\n"
@@ -3520,7 +3520,7 @@ msgid ""
 "No compatible memory editor is currently available. Create a new radio image manually and try again."
 msgstr ""
 
-#: ../wxui/main.py:2425
+#: ../wxui/main.py:2434
 #, python-format
 msgid "Programming Assistant is now %s. CHIRP must be restarted to take effect"
 msgstr ""
@@ -3577,7 +3577,7 @@ msgstr ""
 msgid "QTH Locator"
 msgstr ""
 
-#: ../wxui/main.py:2511
+#: ../wxui/main.py:2520
 #, fuzzy, python-format
 msgid "Query %s"
 msgstr "Lekérdezés hiba"
@@ -3684,11 +3684,11 @@ msgstr ""
 msgid "Receive DTCS code"
 msgstr "DTCS kód"
 
-#: ../wxui/profileeditor.py:105
+#: ../wxui/profileeditor.py:106
 msgid "Receive Frequency (MHz)"
 msgstr ""
 
-#: ../wxui/profileeditor.py:132
+#: ../wxui/profileeditor.py:133
 msgid "Receive Tone (Hz)"
 msgstr ""
 
@@ -3697,7 +3697,7 @@ msgstr ""
 msgid "Receive frequency"
 msgstr "Frekvencia"
 
-#: ../wxui/memcolorlegend.py:37 ../wxui/profileeditor.py:41
+#: ../wxui/memcolorlegend.py:37 ../wxui/profileeditor.py:42
 #: ../wxui/programming_assistant.py:1224 ../wxui/memcolordialog.py:290
 msgid "Receive-only"
 msgstr ""
@@ -3729,7 +3729,7 @@ msgstr ""
 msgid "Refreshed memory %s"
 msgstr "ezek a memóriák"
 
-#: ../wxui/profileeditor.py:287
+#: ../wxui/profileeditor.py:292
 msgid "Region"
 msgstr ""
 
@@ -3778,7 +3778,7 @@ msgstr ""
 msgid "Remove Condition"
 msgstr ""
 
-#: ../wxui/profileeditor.py:345
+#: ../wxui/profileeditor.py:350
 msgid "Remove Group"
 msgstr ""
 
@@ -3822,7 +3822,7 @@ msgstr "Listázás letiltva"
 msgid "Reporting enabled"
 msgstr "Listázás letiltva"
 
-#: ../wxui/main.py:2395
+#: ../wxui/main.py:2404
 msgid "Reporting helps the CHIRP project know which radio models and OS platforms to spend our limited efforts on. We would really appreciate if you left it enabled. Really disable reporting?"
 msgstr ""
 
@@ -3855,7 +3855,7 @@ msgstr ""
 msgid "Reset all built-in category colors to their defaults? Custom rules are not affected."
 msgstr ""
 
-#: ../wxui/main.py:2040 ../wxui/main.py:2389 ../wxui/main.py:2427
+#: ../wxui/main.py:2049 ../wxui/main.py:2398 ../wxui/main.py:2436
 msgid "Restart Required"
 msgstr ""
 
@@ -3882,7 +3882,7 @@ msgstr ""
 msgid "Retrieved settings"
 msgstr ""
 
-#: ../wxui/profilecontroller.py:220
+#: ../wxui/profilecontroller.py:240
 msgid "Revert failed profile apply"
 msgstr ""
 
@@ -3927,12 +3927,12 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
-#: ../wxui/main.py:1059 ../wxui/main.py:1799 ../wxui/main.py:1830
-#: ../wxui/main.py:1842
+#: ../wxui/main.py:1059 ../wxui/main.py:1799 ../wxui/main.py:1838
+#: ../wxui/main.py:1850
 msgid "Save Profile"
 msgstr ""
 
-#: ../wxui/main.py:1852
+#: ../wxui/main.py:1860
 msgid "Save Profile As"
 msgstr ""
 
@@ -3940,7 +3940,7 @@ msgstr ""
 msgid "Save Profile As..."
 msgstr ""
 
-#: ../wxui/main.py:1914
+#: ../wxui/main.py:1923
 msgid "Save before closing?"
 msgstr ""
 
@@ -3957,7 +3957,7 @@ msgstr ""
 msgid "Saved settings"
 msgstr "Beállítás"
 
-#: ../wxui/profileeditor.py:150
+#: ../wxui/profileeditor.py:151
 msgid "Scan Intent"
 msgstr ""
 
@@ -3988,7 +3988,7 @@ msgstr "Oszlopok kiválasztása"
 msgid "Select Bands"
 msgstr "Oszlopok kiválasztása"
 
-#: ../wxui/main.py:2023
+#: ../wxui/main.py:2032
 #, fuzzy
 msgid "Select Language"
 msgstr "Oszlopok kiválasztása"
@@ -4002,7 +4002,7 @@ msgstr "Oszlopok kiválasztása"
 msgid "Select Modes to Import"
 msgstr ""
 
-#: ../wxui/main.py:2491
+#: ../wxui/main.py:2500
 msgid "Select a bandplan"
 msgstr ""
 
@@ -4106,7 +4106,7 @@ msgstr ""
 msgid "Show image backup location"
 msgstr ""
 
-#: ../wxui/profileeditor.py:45 ../wxui/programming_assistant.py:1228
+#: ../wxui/profileeditor.py:46 ../wxui/programming_assistant.py:1228
 msgid "Simplex"
 msgstr ""
 
@@ -4206,11 +4206,11 @@ msgstr ""
 msgid "Sources with no data: %s"
 msgstr ""
 
-#: ../wxui/profileeditor.py:48
+#: ../wxui/profileeditor.py:49
 msgid "Split"
 msgstr ""
 
-#: ../wxui/profileeditor.py:121
+#: ../wxui/profileeditor.py:122
 msgid "Split Transmit Frequency (MHz)"
 msgstr ""
 
@@ -4226,7 +4226,7 @@ msgstr ""
 msgid "Status"
 msgstr ""
 
-#: ../wxui/main.py:2471
+#: ../wxui/main.py:2480
 msgid "Success"
 msgstr ""
 
@@ -4311,7 +4311,7 @@ msgid ""
 "'DATA MODE' to select USER-U, USER-L and RTTY \n"
 msgstr ""
 
-#: ../wxui/main.py:2412
+#: ../wxui/main.py:2421
 msgid "The Programming Assistant is experimental. It only proposes memories from public/curated data and your own answers -- it never verifies your license, never transmits, and never uploads to a radio by itself. You review and Apply (or discard) everything it proposes, and Apply is a single undoable action. Enable it?"
 msgstr ""
 
@@ -4331,7 +4331,7 @@ msgstr ""
 msgid "The author of this module is not a recognized CHIRP developer. It is recommended that you not load this module as it could pose a security risk. Proceed anyway?"
 msgstr ""
 
-#: ../wxui/main.py:1885
+#: ../wxui/main.py:1894
 msgid "The current tab has no memories to apply a profile to."
 msgstr ""
 
@@ -4422,11 +4422,11 @@ msgstr ""
 msgid "This installs a desktop launcher for a running CHIRP AppImage. CHIRP does not appear to be running from an AppImage right now, so there is nothing to install a launcher for. Download and run the CHIRP AppImage to use this feature."
 msgstr ""
 
-#: ../wxui/main.py:2107
+#: ../wxui/main.py:2116
 msgid "This is a live-mode radio, which means changes are sent to the radio in real-time as you make them. Upload is not necessary!"
 msgstr ""
 
-#: ../wxui/main.py:2113
+#: ../wxui/main.py:2122
 msgid "This is a radio-independent file and cannot be uploaded directly to a radio. Open a radio image (or download one from a radio) and then copy/paste items from this tab into that one in order to upload"
 msgstr ""
 
@@ -4473,7 +4473,7 @@ msgstr "... és a tömböt felfelé lépteti"
 msgid "This option may break your radio! Each radio has a unique set of calibration data and uploading the data from the image will cause physical harm to the radio if it is from a different piece of hardware. Do not use this unless you know what you are doing and accept the risk of destroying your radio!"
 msgstr ""
 
-#: ../wxui/profileeditor.py:506
+#: ../wxui/profileeditor.py:511
 msgid ""
 "This profile has validation problems and cannot be saved until they are fixed:\n"
 "\n"
@@ -4518,7 +4518,7 @@ msgstr ""
 msgid "Tone"
 msgstr "CTCSS"
 
-#: ../wxui/memedit.py:2005 ../wxui/profileeditor.py:126
+#: ../wxui/memedit.py:2005 ../wxui/profileeditor.py:127
 msgid "Tone Mode"
 msgstr "Hang (CTCSS) mód"
 
@@ -4536,7 +4536,7 @@ msgstr ""
 msgid "Tone squelch mode"
 msgstr "ToneSql"
 
-#: ../wxui/profileeditor.py:110 ../wxui/profileeditor.py:400
+#: ../wxui/profileeditor.py:111 ../wxui/profileeditor.py:405
 msgid "Transmit"
 msgstr ""
 
@@ -4544,11 +4544,11 @@ msgstr ""
 msgid "Transmit Power"
 msgstr ""
 
-#: ../wxui/profileeditor.py:129
+#: ../wxui/profileeditor.py:130
 msgid "Transmit Tone (Hz)"
 msgstr ""
 
-#: ../wxui/profileeditor.py:40
+#: ../wxui/profileeditor.py:41
 msgid "Transmit enabled"
 msgstr ""
 
@@ -4633,7 +4633,7 @@ msgstr "Ennél a modellnél nem változtatható"
 msgid "Unable to set %s on this memory"
 msgstr "Ennél a modellnél nem változtatható"
 
-#: ../wxui/main.py:2117
+#: ../wxui/main.py:2126
 #, fuzzy
 msgid "Unable to upload this file"
 msgstr "Ennél a modellnél nem változtatható"
@@ -4662,7 +4662,7 @@ msgstr ""
 msgid "Unsafe"
 msgstr ""
 
-#: ../wxui/profileeditor.py:42
+#: ../wxui/profileeditor.py:43
 msgid "Unspecified"
 msgstr ""
 
@@ -4740,7 +4740,7 @@ msgstr ""
 msgid "Validating..."
 msgstr ""
 
-#: ../wxui/profileeditor.py:509
+#: ../wxui/profileeditor.py:514
 msgid "Validation Failed"
 msgstr ""
 
@@ -4752,7 +4752,7 @@ msgstr ""
 msgid "Validation failed."
 msgstr ""
 
-#: ../wxui/profileeditor.py:256
+#: ../wxui/profileeditor.py:261
 msgid "Validation:"
 msgstr ""
 
@@ -4813,7 +4813,7 @@ msgstr "Né_zet"
 msgid "WARNING!"
 msgstr ""
 
-#: ../wxui/memedit.py:2722 ../wxui/main.py:2271 ../wxui/main.py:2463
+#: ../wxui/memedit.py:2722 ../wxui/main.py:2280 ../wxui/main.py:2472
 #: ../wxui/bugreport.py:234
 msgid "Warning"
 msgstr ""
@@ -4855,7 +4855,7 @@ msgstr ""
 msgid "Yes"
 msgstr ""
 
-#: ../wxui/main.py:2573
+#: ../wxui/main.py:2582
 msgid "You are running the latest version of CHIRP."
 msgstr ""
 
@@ -4907,12 +4907,12 @@ msgstr ""
 msgid "contains"
 msgstr ""
 
-#: ../wxui/main.py:2372 ../wxui/main.py:2409
+#: ../wxui/main.py:2381 ../wxui/main.py:2418
 #, fuzzy
 msgid "disabled"
 msgstr "Engedélyezve"
 
-#: ../wxui/main.py:2372 ../wxui/main.py:2409
+#: ../wxui/main.py:2381 ../wxui/main.py:2418
 #, fuzzy
 msgid "enabled"
 msgstr "Engedélyezve"
