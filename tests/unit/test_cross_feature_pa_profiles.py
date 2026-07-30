@@ -32,6 +32,24 @@ _SAMPLE_IMAGE = os.path.join(
     os.path.dirname(__file__), '..', 'images', 'Icom_IC-V80.img')
 
 
+def _mock_file_dialog(path=None, cancel=False):
+    """Patch chirp.wxui.main.wx.FileDialog so a real Save/Open Profile
+    menu handler can run in a test without a real native file dialog:
+    ShowModal() reports Cancel (@cancel) or OK with @path as both
+    GetPath() and (its containing directory as) GetDirectory().
+    """
+    import wx
+    instance = mock.MagicMock()
+    instance.__enter__.return_value = instance
+    instance.ShowModal.return_value = (
+        wx.ID_CANCEL if cancel else wx.ID_OK)
+    if path is not None:
+        instance.GetPath.return_value = path
+        instance.GetDirectory.return_value = os.path.dirname(path)
+    return mock.patch('chirp.wxui.main.wx.FileDialog',
+                      return_value=instance)
+
+
 @unittest.skipUnless(_HAS_DISPLAY, 'requires a real or virtual X display')
 class CrossFeatureTestCase(unittest.TestCase):
     """Mirrors test_wxui_profiles.py's ProfileGuiTestCase (see that
@@ -94,6 +112,15 @@ class CrossFeatureTestCase(unittest.TestCase):
         self.frame.open_file(path)
         return self.frame.current_editorset
 
+    def _blank_csv_editorset(self):
+        """The exact document Programming Assistant's automatic
+        blank-document workflow creates (see
+        chirp.wxui.programming_assistant._ensure_blank_memory_document):
+        the same chirpmain.open_file('Untitled.csv', exists=False)
+        call Radio > New uses."""
+        self.frame.open_file('Untitled.csv', exists=False)
+        return self.frame.current_editorset
+
 
 class MenuStructureTest(CrossFeatureTestCase):
     """Both menus must exist, be uniquely bound, and never collide --
@@ -154,8 +181,6 @@ class MenuStructureTest(CrossFeatureTestCase):
 
 class ProfileMenuSurvivesAssistantLaunchTest(CrossFeatureTestCase):
     def test_profile_menu_functional_after_pa_creates_blank_document(self):
-        from chirp.profiles import errors as profile_errors
-
         self.assertIsNone(self.frame.current_editorset)
 
         with mock.patch.object(wx.adv.Wizard, 'RunWizard',
@@ -169,22 +194,19 @@ class ProfileMenuSurvivesAssistantLaunchTest(CrossFeatureTestCase):
         self.assertIsNotNone(memedit_widget)
 
         # The blank document the assistant creates is a
-        # generic_csv.CSVRadio(None) -- unbounded memory count by
-        # design (a CSV can always grow). chirp.profiles' own
-        # capability layer correctly refuses to enumerate an
-        # infinite-capacity radio for extraction (see
-        # profilecontroller.py / capabilities.has_infinite_number)
-        # rather than silently extracting nothing or crashing. The
-        # cross-feature guarantee this proves is narrower than "you
-        # can make a profile from a brand new PA document" (that is
-        # not a supported workflow, on either branch, independent of
-        # this merge): it's that the Profile menu's own entry point
-        # reaches that same, correct, pre-existing refusal -- not a
-        # merge-introduced crash or a silent no-op -- when pointed at
-        # a tab the assistant created.
-        with self.assertRaises(profile_errors.CapabilityUnknownError):
-            profilecontroller.create_profile_from_editorset(
-                self.frame.current_editorset, name='From Blank Doc')
+        # generic_csv.CSVRadio(None) -- has_infinite_number=True (no
+        # fixed ceiling on how large it may grow), but its current
+        # memory_bounds is always a real, concrete, enumerable range
+        # (see chirp.profiles.extraction.enumerate_source_memories()).
+        # generic_csv.CSVRadio(None) is not fully empty either --
+        # _blank(setDefault=True) pre-populates memory 0 with a
+        # default 146.010 MHz entry -- so extraction from a freshly
+        # created blank document succeeds with exactly that one
+        # channel, not a CapabilityUnknownError and not zero channels.
+        result = profilecontroller.create_profile_from_editorset(
+            self.frame.current_editorset, name='From Blank Doc')
+        self.assertEqual(1, result.summary.channels_extracted)
+        self.assertEqual(146010000, result.profile.channels[0].rx_freq_hz)
 
 
 class ExtractFromAssistantPopulatedGridTest(CrossFeatureTestCase):
@@ -414,3 +436,199 @@ class ReceiveOnlySafetyRoundTripTest(CrossFeatureTestCase):
                 pass
         memedit_widget.refresh()
         return eset, memedit_widget
+
+
+class RealPathProfileWorkflowTest(CrossFeatureTestCase):
+    """Exercises the real Profile menu handlers end to end (section 8
+    of the dynamic-memory-extraction corrective task): the exact
+    document Programming Assistant's automatic blank-document workflow
+    creates, the exact memory-write path its own apply step uses, and
+    the actual ChirpMain._menu_profile_create/_save/_save_as/_open/
+    _apply handlers -- not only the lower-level
+    chirp.wxui.profilecontroller functions those handlers call, which
+    is what every other test in this module (and the prior, incorrect
+    assertion this corrective phase replaced -- see
+    ProfileMenuSurvivesAssistantLaunchTest above) exercised instead.
+    This is the level Windows testing actually exercises, and where
+    the save/open discoverability gap was found.
+    """
+
+    def _populate_via_pa_write_path(self, eset, number, freq, name,
+                                    duplex=''):
+        """The exact write path Programming Assistant's own apply
+        step uses (see programming_assistant.ResultPage._apply():
+        one undo_context() wrapping memedit_editor.set_memory(memory)
+        calls) -- not radio.set_memory() directly."""
+        memedit_widget = profilecontroller.get_memedit(eset)
+        mem = chirp_common.Memory()
+        mem.number = number
+        mem.freq = freq
+        mem.name = name
+        mem.duplex = duplex
+        with memedit_widget.undo_context('Test Populate'):
+            memedit_widget.set_memory(mem)
+        return memedit_widget
+
+    def test_create_populated_dynamic_grid_reaches_editor_and_saves(self):
+        eset = self._blank_csv_editorset()
+        self._populate_via_pa_write_path(eset, 5, 146520000, 'REAL')
+        save_path = os.path.join(
+            self.tmpdir, 'roundtrip' + profile_schema.FILE_EXTENSION)
+
+        with mock.patch.object(wxmain.wx, 'TextEntryDialog') as name_dlg, \
+                mock.patch.object(wxmain.wx, 'MessageBox') as msgbox, \
+                mock.patch.object(
+                    wxmain.wx, 'MessageDialog') as save_prompt, \
+                mock.patch.object(
+                    wxmain.profileeditor, 'ProfileEditorDialog'
+                    ) as editor_dlg, \
+                _mock_file_dialog(save_path), \
+                mock.patch(
+                    'chirp.wxui.common.error_proof.show_error'
+                    ) as show_error:
+            name_dlg.return_value.ShowModal.return_value = wx.ID_OK
+            name_dlg.return_value.GetValue.return_value = 'Round Trip'
+            save_prompt.return_value.ShowModal.return_value = wx.ID_YES
+            editor_dlg.return_value.ShowModal.return_value = wx.ID_OK
+
+            self.frame._menu_profile_create(None)
+
+        # No fixed-memory-count / capability error -- the whole point
+        # of this corrective phase.
+        show_error.assert_not_called()
+
+        self.assertTrue(os.path.exists(save_path))
+        self.assertEqual(save_path, self.frame._current_profile_path)
+
+        saved_confirmation = [
+            c for c in msgbox.call_args_list if 'Profile Saved' in str(c)]
+        self.assertTrue(
+            saved_confirmation,
+            'no path-visible confirmation was shown after save')
+        self.assertIn(save_path, str(saved_confirmation[0]))
+
+        from chirp.profiles import serialization as profile_serialization
+        reloaded = profile_serialization.load(save_path)
+        self.assertEqual('REAL', reloaded.channels[-1].name)
+
+    def test_reopen_through_real_menu_preserves_content(self):
+        from chirp.profiles import model as profile_model
+        from chirp.profiles import serialization as profile_serialization
+
+        profile = profile_model.Profile(name='Preload')
+        profile.add_channel(profile_model.ProfileChannel(
+            logical_id='preload-ch', name='PRE',
+            rx_freq_hz=146_500_000,
+            transmit=profile_model.TransmitBehavior(
+                mode=profile_schema.TRANSMIT_ENABLED,
+                duplex=profile_schema.DUPLEX_NONE)))
+        path = os.path.join(
+            self.tmpdir, 'preload' + profile_schema.FILE_EXTENSION)
+        profile_serialization.save(profile, path)
+
+        with _mock_file_dialog(path):
+            self.frame._menu_profile_open(None)
+
+        self.assertEqual(path, self.frame._current_profile_path)
+        self.assertEqual(profile.profile_id,
+                         self.frame._current_profile.profile_id)
+        self.assertEqual(
+            ['PRE'], [c.name for c in self.frame._current_profile.channels])
+
+    def test_cancel_save_as_performs_no_write_and_raises_no_error(self):
+        from chirp.profiles import model as profile_model
+        self.frame._current_profile = profile_model.Profile(name='Unsaved')
+        self.frame._current_profile_path = None
+
+        with _mock_file_dialog(cancel=True), \
+                mock.patch(
+                    'chirp.wxui.common.error_proof.show_error'
+                    ) as show_error:
+            self.frame._menu_profile_save_as(None)
+
+        show_error.assert_not_called()
+        self.assertIsNone(self.frame._current_profile_path)
+        self.assertEqual(
+            [], [f for f in os.listdir(self.tmpdir)
+                 if f.endswith(profile_schema.FILE_EXTENSION)])
+
+    def test_entirely_blank_dynamic_grid_shows_actionable_message(self):
+        eset = self._blank_csv_editorset()
+        memedit_widget = profilecontroller.get_memedit(eset)
+        features = eset.radio.get_features()
+        lo, hi = features.memory_bounds
+        for n in range(lo, hi + 1):
+            try:
+                eset.radio.erase_memory(n)
+            except Exception:
+                pass
+        memedit_widget.refresh()
+
+        from chirp.profiles import errors as profile_errors
+
+        with mock.patch.object(wxmain.wx, 'TextEntryDialog') as name_dlg, \
+                mock.patch.object(
+                    wxmain.profileeditor, 'ProfileEditorDialog'
+                    ) as editor_dlg, \
+                mock.patch(
+                    'chirp.wxui.common.error_proof.show_error'
+                    ) as show_error:
+            name_dlg.return_value.ShowModal.return_value = wx.ID_OK
+            name_dlg.return_value.GetValue.return_value = 'Empty'
+
+            self.frame._menu_profile_create(None)
+
+        editor_dlg.assert_not_called()
+        show_error.assert_called_once()
+        shown_error = show_error.call_args[0][0]
+        self.assertIsInstance(shown_error,
+                              profile_errors.NoPopulatedMemoriesError)
+        self.assertIn('No populated memories', str(shown_error))
+        # The old, no-longer-applicable message is gone.
+        self.assertNotIn('fixed memory count', str(shown_error))
+
+    def test_apply_through_real_menu_handler_writes_intended_memories(self):
+        eset = self._blank_csv_editorset()
+        self._populate_via_pa_write_path(eset, 3, 146520000, 'SRC')
+        result = profilecontroller.create_profile_from_editorset(
+            eset, name='ApplyViaMenu')
+
+        target_eset, target_memedit = self._empty_target_csv()
+        # open_file() (inside _empty_target_csv -> _blank_csv_editorset)
+        # already made target_eset the active tab -- current_editorset
+        # is a read-only, notebook-selection-derived property.
+        self.assertIs(target_eset, self.frame.current_editorset)
+        self.frame._current_profile = result.profile
+        self.frame._current_profile_path = None
+
+        def _approve_and_ok(parent, change_set):
+            for item in change_set.items:
+                if not item.blocked:
+                    change_set.set_approval(
+                        item.logical_id, profile_schema.APPROVAL_APPROVED)
+            dlg = mock.MagicMock()
+            dlg.ShowModal.return_value = wx.ID_OK
+            return dlg
+
+        with mock.patch.object(
+                wxmain.profileapply, 'ProfileApplyPreviewDialog',
+                side_effect=_approve_and_ok) as preview_dlg, \
+                mock.patch(
+                    'chirp.wxui.common.error_proof.show_error'
+                    ) as show_error:
+            self.frame._menu_profile_apply(None)
+
+        show_error.assert_not_called()
+        preview_dlg.assert_called_once()
+        applied_names = [
+            target_eset.radio.get_memory(n).name
+            for n in range(*target_eset.radio.get_features().memory_bounds)
+            if not target_eset.radio.get_memory(n).empty]
+        self.assertIn('SRC', applied_names)
+
+    def _empty_target_csv(self):
+        target_eset = self._blank_csv_editorset()
+        memedit_widget = profilecontroller.get_memedit(target_eset)
+        target_eset.radio.erase_memory(0)
+        memedit_widget.refresh()
+        return target_eset, memedit_widget
