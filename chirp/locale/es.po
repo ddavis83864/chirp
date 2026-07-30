@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: CHIRP\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-29 18:02-0700\n"
+"POT-Creation-Date: 2026-07-29 19:42-0700\n"
 "PO-Revision-Date: 2026-01-30 23:45-0300\n"
 "Last-Translator: MELERIX\n"
 "Language-Team: \n"
@@ -76,7 +76,7 @@ msgstr ""
 msgid "%s already exists and was not created by CHIRP; refusing to overwrite it"
 msgstr ""
 
-#: ../wxui/main.py:1894
+#: ../wxui/main.py:1912
 #, python-format
 msgid "%s has not been saved. Save before closing?"
 msgstr "%s no ha sido guardado. ¿Guardar antes de cerrar?"
@@ -1137,7 +1137,7 @@ msgstr ""
 msgid "A channel with this logical ID already exists"
 msgstr ""
 
-#: ../wxui/main.py:2560
+#: ../wxui/main.py:2578
 msgid "A new CHIRP version is available. Please visit the website as soon as possible to download it!"
 msgstr "Una nueva versión de CHIRP está disponible, ¡Por favor visita el sitio web tan pronto como sea posible para descargarla!"
 
@@ -1177,7 +1177,7 @@ msgstr ""
 msgid "About"
 msgstr "Acerca de"
 
-#: ../wxui/main.py:2270
+#: ../wxui/main.py:2288
 msgid "About CHIRP"
 msgstr "Acerca de CHIRP"
 
@@ -1258,7 +1258,7 @@ msgstr ""
 msgid "Adjusted for this radio: %i"
 msgstr ""
 
-#: ../wxui/main.py:2325
+#: ../wxui/main.py:2343
 msgid "Agree"
 msgstr "De acuerdo"
 
@@ -1375,7 +1375,7 @@ msgstr ""
 msgid "Apply %s profile"
 msgstr ""
 
-#: ../wxui/main.py:1861 ../wxui/main.py:1869
+#: ../wxui/main.py:1879 ../wxui/main.py:1887
 msgid "Apply Profile"
 msgstr ""
 
@@ -1412,7 +1412,7 @@ msgstr ""
 msgid "Approved"
 msgstr ""
 
-#: ../wxui/main.py:1991
+#: ../wxui/main.py:2009
 msgid "Automatic from system"
 msgstr "Automático del sistema"
 
@@ -1436,7 +1436,7 @@ msgstr ""
 msgid "Background:"
 msgstr ""
 
-#: ../wxui/main.py:2474
+#: ../wxui/main.py:2492
 msgid "Bandplan"
 msgstr "Plan de banda"
 
@@ -1519,11 +1519,11 @@ msgstr ""
 msgid "Business/industrial land-mobile band."
 msgstr ""
 
-#: ../wxui/main.py:1797 ../wxui/main.py:1831
+#: ../wxui/main.py:1806 ../wxui/main.py:1846
 msgid "CHIRP Profile Files"
 msgstr ""
 
-#: ../wxui/main.py:2020
+#: ../wxui/main.py:2038
 msgid "CHIRP must be restarted for the new selection to take effect"
 msgstr "CHIRP debe ser reiniciado para que la nueva selección tome efecto"
 
@@ -1693,11 +1693,11 @@ msgstr ""
 msgid "Clear Recent Files"
 msgstr ""
 
-#: ../wxui/main.py:2311
+#: ../wxui/main.py:2329
 msgid "Click here for full license text"
 msgstr "Cliquea aquí para el texto de licencia completo"
 
-#: ../wxui/main.py:2290
+#: ../wxui/main.py:2308
 msgid "Click here for online documentation"
 msgstr "Cliquea aquí para la documentación en línea"
 
@@ -1735,7 +1735,7 @@ msgstr "Clonando desde radio"
 msgid "Cloning to radio"
 msgstr "Clonando a radio"
 
-#: ../wxui/main.py:1240 ../wxui/main.py:2326
+#: ../wxui/main.py:1240 ../wxui/main.py:2344
 msgid "Close"
 msgstr "Cerrar"
 
@@ -1926,7 +1926,7 @@ msgstr "Decodificación DTMF"
 msgid "DV Memory"
 msgstr "Memoria DV"
 
-#: ../wxui/main.py:2363
+#: ../wxui/main.py:2381
 msgid "Danger Ahead"
 msgstr "Peligro adelante"
 
@@ -2024,7 +2024,7 @@ msgstr ""
 msgid "Developer Mode"
 msgstr "Modo desarrollador"
 
-#: ../wxui/main.py:2369
+#: ../wxui/main.py:2387
 #, python-format
 msgid "Developer state is now %s. CHIRP must be restarted to take effect"
 msgstr "Estado de desarrollador ahora está %s. CHIRP debe ser reiniciado para que tome efecto"
@@ -2045,7 +2045,7 @@ msgstr "Código digital"
 msgid "Digital Modes"
 msgstr "Modos digitales"
 
-#: ../wxui/main.py:2381
+#: ../wxui/main.py:2399
 msgid "Disable reporting"
 msgstr "Deshabilitar reportes"
 
@@ -2325,7 +2325,7 @@ msgstr "Excluir repetidores privados y cerrados"
 msgid "Existing memories replaced: %i"
 msgstr ""
 
-#: ../wxui/main.py:2400
+#: ../wxui/main.py:2418
 msgid "Experimental Feature"
 msgstr ""
 
@@ -2453,8 +2453,8 @@ msgid "File does not exist: %s"
 msgstr "El archivo no existe: %s"
 
 #: ../wxui/main.py:1528 ../wxui/main.py:1634 ../wxui/main.py:1644
-#: ../wxui/main.py:1677 ../wxui/main.py:1735 ../wxui/main.py:2240
-#: ../wxui/main.py:2241
+#: ../wxui/main.py:1677 ../wxui/main.py:1735 ../wxui/main.py:2258
+#: ../wxui/main.py:2259
 msgid "Files"
 msgstr "Archivos"
 
@@ -2478,7 +2478,7 @@ msgstr "Filtrar..."
 msgid "Filter:"
 msgstr ""
 
-#: ../wxui/main.py:1949
+#: ../wxui/main.py:1967
 msgid "Find"
 msgstr "Buscar"
 
@@ -3120,7 +3120,7 @@ msgstr ""
 msgid "Invalid locator"
 msgstr "Localizador inválido"
 
-#: ../wxui/main.py:2237
+#: ../wxui/main.py:2255
 msgid "Invalid or unsupported module file"
 msgstr "Archivo de módulo inválido o no soportado"
 
@@ -3170,7 +3170,7 @@ msgstr ""
 msgid "LIVE"
 msgstr "EN VIVO"
 
-#: ../drivers/radtel_rt490.py:1028 ../wxui/main.py:892 ../wxui/main.py:2005
+#: ../drivers/radtel_rt490.py:1028 ../wxui/main.py:892 ../wxui/main.py:2023
 msgid "Language"
 msgstr "Lenguaje"
 
@@ -3233,7 +3233,7 @@ msgstr ""
 msgid "Limit use"
 msgstr "Limitar uso"
 
-#: ../wxui/main.py:2092
+#: ../wxui/main.py:2110
 msgid "Live Radio"
 msgstr "Radio en vivo"
 
@@ -3249,11 +3249,11 @@ msgstr "Cargar módulo desde problema"
 msgid "Load module from issue..."
 msgstr "Cargar módulo desde problema..."
 
-#: ../wxui/main.py:2441
+#: ../wxui/main.py:2459
 msgid "Loading a module will not affect open tabs. It is recommended (unless instructed otherwise) to close all tabs before loading a module."
 msgstr "Cargar un módulo no afectará las pestañas abiertas. Se recomienda (a menos que se indique lo contrario) cerrar todas las pestañas antes de cargar un módulo."
 
-#: ../wxui/main.py:2244
+#: ../wxui/main.py:2262
 msgid "Loading modules can be extremely dangerous, leading to damage to your computer, radio, or both. NEVER load a module from a source you do not trust, and especially not from anywhere other than the main CHIRP website (chirpmyradio.com). Loading a module from another source is akin to giving them direct access to your computer and everything on it! Proceed despite this risk?"
 msgstr "Cargar módulos puede ser extremadamente peligroso, pudiendo dañar tu computador, radio o ambos. NUNCA cargues un módulo desde una fuente que no confíes, y especialmente desde ningún sitio que no sea el sitio web principal de CHIRP (chirpmyradio.com). ¡Cargar un módulo desde otra fuente es como darles acceso directo a tu computador y a todo en este! ¿Proceder a pesar de este riesgo?"
 
@@ -3416,15 +3416,15 @@ msgstr "Modos"
 msgid "Modify"
 msgstr ""
 
-#: ../wxui/main.py:2241
+#: ../wxui/main.py:2259
 msgid "Module"
 msgstr "Módulo"
 
-#: ../wxui/main.py:2213
+#: ../wxui/main.py:2231
 msgid "Module Loaded"
 msgstr "Módulo cargado"
 
-#: ../wxui/main.py:2452
+#: ../wxui/main.py:2470
 msgid "Module loaded successfully"
 msgstr "Módulo cargado exitosamente"
 
@@ -3510,7 +3510,7 @@ msgstr ""
 msgid "New Window"
 msgstr "Nueva ventana"
 
-#: ../wxui/main.py:2562
+#: ../wxui/main.py:2580
 msgid "New version available"
 msgstr "Nueva versión disponible"
 
@@ -3556,11 +3556,15 @@ msgstr "No se encontraron módulos en problema %i"
 msgid "No more space available; some memories were not applied"
 msgstr "No hay más espacio disponible; algunas memorias no fueron aplicadas"
 
-#: ../wxui/main.py:1816 ../wxui/main.py:1827
+#: ../wxui/profilecontroller.py:89
+msgid "No populated memories are available to create a profile."
+msgstr ""
+
+#: ../wxui/main.py:1830 ../wxui/main.py:1842
 msgid "No profile is open."
 msgstr ""
 
-#: ../wxui/main.py:1859
+#: ../wxui/main.py:1877
 msgid "No profile is open. Use Profile > Open Profile or Create Profile from Current Image first."
 msgstr ""
 
@@ -3573,7 +3577,7 @@ msgstr "No hay resultados"
 msgid "No results!"
 msgstr "¡No hay resultados!"
 
-#: ../wxui/main.py:2462
+#: ../wxui/main.py:2480
 msgid "No traces stored"
 msgstr "No hay trazas almacenadas"
 
@@ -3581,7 +3585,7 @@ msgstr "No hay trazas almacenadas"
 msgid "No transmit frequency configured."
 msgstr ""
 
-#: ../wxui/main.py:2556
+#: ../wxui/main.py:2574
 msgid "No update available"
 msgstr ""
 
@@ -3676,7 +3680,7 @@ msgstr "Sólo repetidores funcionando"
 msgid "Open"
 msgstr "Abrir"
 
-#: ../wxui/main.py:1801
+#: ../wxui/main.py:1810
 msgid "Open Profile"
 msgstr ""
 
@@ -3696,7 +3700,7 @@ msgstr "Abrir configuración original"
 msgid "Open a file"
 msgstr "Abrir un archivo"
 
-#: ../wxui/main.py:2259
+#: ../wxui/main.py:2277
 msgid "Open a module"
 msgstr "Abrir un módulo"
 
@@ -3829,7 +3833,7 @@ msgstr ""
 msgid "Plan built: %i candidate(s) ready to review."
 msgstr ""
 
-#: ../wxui/main.py:2566
+#: ../wxui/main.py:2584
 msgid "Please be sure to quit CHIRP before installing the new version!"
 msgstr "¡Por favor asegúrate de salir de CHIRP antes de instalar la nueva versión!"
 
@@ -3837,7 +3841,7 @@ msgstr "¡Por favor asegúrate de salir de CHIRP antes de instalar la nueva vers
 msgid "Please check the bug number and try again. If you do actually want to report against this bug, please comment on it via the website and ask for it to be re-opened."
 msgstr "Por favor comprueba el número de error e intenta de nuevo. Si realmente quieres reportar sobre este error, por favor coméntalo vía sitio web y pregunta por este para que se reabra."
 
-#: ../wxui/main.py:2357
+#: ../wxui/main.py:2375
 msgid "Please note that developer mode is intended for use by developers of the CHIRP project, or under the direction of a developer. It enables behaviors and functions that can damage your computer and your radio if not used with EXTREME care. You have been warned! Proceed anyway?"
 msgstr "Por favor te en cuenta que el modo desarrollador está pensado para uso por desarrolladores del proyecto CHIRP, o bajo la dirección de un desarrollador. Esto habilita comportamientos y funciones que pueden dañar tu computador y tu radio si no se usan con EXTREMO cuidado. ¡has sido advertido! ¿Proceder de todos modos?"
 
@@ -3902,8 +3906,19 @@ msgstr ""
 msgid "Profile Created"
 msgstr ""
 
+#: ../wxui/main.py:1825
+msgid "Profile Saved"
+msgstr ""
+
 #: ../wxui/main.py:1764
 msgid "Profile name:"
+msgstr ""
+
+#: ../wxui/main.py:1824
+#, python-format
+msgid ""
+"Profile saved to:\n"
+"%s"
 msgstr ""
 
 #: ../wxui/programming_assistant.py:1425
@@ -3917,7 +3932,7 @@ msgid ""
 "No compatible memory editor is currently available. Create a new radio image manually and try again."
 msgstr ""
 
-#: ../wxui/main.py:2407
+#: ../wxui/main.py:2425
 #, python-format
 msgid "Programming Assistant is now %s. CHIRP must be restarted to take effect"
 msgstr ""
@@ -3974,7 +3989,7 @@ msgstr ""
 msgid "QTH Locator"
 msgstr "Localizador de QTH"
 
-#: ../wxui/main.py:2493
+#: ../wxui/main.py:2511
 #, python-format
 msgid "Query %s"
 msgstr "Consulta %s"
@@ -4214,7 +4229,7 @@ msgstr "Reportando un nuevo error: %r"
 msgid "Reporting enabled"
 msgstr "Reportes habilitados"
 
-#: ../wxui/main.py:2377
+#: ../wxui/main.py:2395
 msgid "Reporting helps the CHIRP project know which radio models and OS platforms to spend our limited efforts on. We would really appreciate if you left it enabled. Really disable reporting?"
 msgstr "Reportes ayudan al proyecto CHIRP a saber en cuales modelos de radio y plataformas de SO gastar nuestros limitados esfuerzos. Apreciamos mucho si lo dejas habilitado. ¿Realmente deshabilitar reportes?"
 
@@ -4247,7 +4262,7 @@ msgstr ""
 msgid "Reset all built-in category colors to their defaults? Custom rules are not affected."
 msgstr ""
 
-#: ../wxui/main.py:2022 ../wxui/main.py:2371 ../wxui/main.py:2409
+#: ../wxui/main.py:2040 ../wxui/main.py:2389 ../wxui/main.py:2427
 msgid "Restart Required"
 msgstr "Reinicio requerido"
 
@@ -4319,11 +4334,12 @@ msgstr ""
 msgid "Save"
 msgstr "Guardar"
 
-#: ../wxui/main.py:1059 ../wxui/main.py:1816 ../wxui/main.py:1827
+#: ../wxui/main.py:1059 ../wxui/main.py:1799 ../wxui/main.py:1830
+#: ../wxui/main.py:1842
 msgid "Save Profile"
 msgstr ""
 
-#: ../wxui/main.py:1837
+#: ../wxui/main.py:1852
 msgid "Save Profile As"
 msgstr ""
 
@@ -4331,13 +4347,17 @@ msgstr ""
 msgid "Save Profile As..."
 msgstr ""
 
-#: ../wxui/main.py:1896
+#: ../wxui/main.py:1914
 msgid "Save before closing?"
 msgstr "¿Guardar antes de cerrar?"
 
 #: ../wxui/main.py:1239 ../wxui/main.py:1648 ../wxui/main.py:1675
 msgid "Save file"
 msgstr "Guardar archivo"
+
+#: ../wxui/main.py:1797
+msgid "Save this profile now? You can also save it later from Profile > Save Profile."
+msgstr ""
 
 #: ../wxui/common.py:340
 msgid "Saved settings"
@@ -4372,7 +4392,7 @@ msgstr "Seleccionar plan de banda..."
 msgid "Select Bands"
 msgstr "Seleccionar bandas"
 
-#: ../wxui/main.py:2005
+#: ../wxui/main.py:2023
 msgid "Select Language"
 msgstr "Seleccionar lenguaje"
 
@@ -4384,7 +4404,7 @@ msgstr "Seleccionar modos"
 msgid "Select Modes to Import"
 msgstr ""
 
-#: ../wxui/main.py:2473
+#: ../wxui/main.py:2491
 msgid "Select a bandplan"
 msgstr "Seleccionar plan de banda"
 
@@ -4605,7 +4625,7 @@ msgstr "Estado/Provincia"
 msgid "Status"
 msgstr "Estado"
 
-#: ../wxui/main.py:2453
+#: ../wxui/main.py:2471
 msgid "Success"
 msgstr "Éxito"
 
@@ -4707,7 +4727,7 @@ msgstr ""
 "'DATA MODE' para seleccionar USER-U, USER-L y RTTY\n"
 "\n"
 
-#: ../wxui/main.py:2394
+#: ../wxui/main.py:2412
 msgid "The Programming Assistant is experimental. It only proposes memories from public/curated data and your own answers -- it never verifies your license, never transmits, and never uploads to a radio by itself. You review and Apply (or discard) everything it proposes, and Apply is a single undoable action. Enable it?"
 msgstr ""
 
@@ -4731,7 +4751,7 @@ msgstr ""
 msgid "The author of this module is not a recognized CHIRP developer. It is recommended that you not load this module as it could pose a security risk. Proceed anyway?"
 msgstr "El autor de este módulo no está reconocido por el desarrollador de CHIRP. Se recomienda que no cargues este módulo ya que podría poner un riesgo de seguridad. ¿Proceder de todos modos?"
 
-#: ../wxui/main.py:1867
+#: ../wxui/main.py:1885
 msgid "The current tab has no memories to apply a profile to."
 msgstr ""
 
@@ -4821,11 +4841,11 @@ msgstr "Esta imagen es de solo lectura debido a que proviene de una radio con fi
 msgid "This installs a desktop launcher for a running CHIRP AppImage. CHIRP does not appear to be running from an AppImage right now, so there is nothing to install a launcher for. Download and run the CHIRP AppImage to use this feature."
 msgstr ""
 
-#: ../wxui/main.py:2089
+#: ../wxui/main.py:2107
 msgid "This is a live-mode radio, which means changes are sent to the radio in real-time as you make them. Upload is not necessary!"
 msgstr "Este es un modo de radio en vivo, lo que significa que los cambios son enviados a la radio en tiempo real cuando los haces. ¡Cargar no es necesario!"
 
-#: ../wxui/main.py:2095
+#: ../wxui/main.py:2113
 msgid "This is a radio-independent file and cannot be uploaded directly to a radio. Open a radio image (or download one from a radio) and then copy/paste items from this tab into that one in order to upload"
 msgstr "Este es un archivo de radio independiente y no puede ser cargado directamente a una radio. Abre una imagen de radio (o descarga una de una radio) y entonces copia/pega los elementos desde esta pestaña a esa para cargar"
 
@@ -5039,7 +5059,7 @@ msgstr "No se puede revelar %s en este sistema"
 msgid "Unable to set %s on this memory"
 msgstr "No se puede establecer %s en esta memoria"
 
-#: ../wxui/main.py:2099
+#: ../wxui/main.py:2117
 msgid "Unable to upload this file"
 msgstr "No se puede cargar este archivo"
 
@@ -5214,7 +5234,7 @@ msgstr "Ver"
 msgid "WARNING!"
 msgstr "¡ADVERTENCIA!"
 
-#: ../wxui/memedit.py:2722 ../wxui/main.py:2253 ../wxui/main.py:2445
+#: ../wxui/memedit.py:2722 ../wxui/main.py:2271 ../wxui/main.py:2463
 #: ../wxui/bugreport.py:234
 msgid "Warning"
 msgstr "Advertencia"
@@ -5256,7 +5276,7 @@ msgstr ""
 msgid "Yes"
 msgstr ""
 
-#: ../wxui/main.py:2555
+#: ../wxui/main.py:2573
 msgid "You are running the latest version of CHIRP."
 msgstr ""
 
@@ -5308,11 +5328,11 @@ msgstr "bytes cada"
 msgid "contains"
 msgstr ""
 
-#: ../wxui/main.py:2354 ../wxui/main.py:2391
+#: ../wxui/main.py:2372 ../wxui/main.py:2409
 msgid "disabled"
 msgstr "deshabilitado"
 
-#: ../wxui/main.py:2354 ../wxui/main.py:2391
+#: ../wxui/main.py:2372 ../wxui/main.py:2409
 msgid "enabled"
 msgstr "habilitado"
 
