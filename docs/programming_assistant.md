@@ -130,14 +130,39 @@ authoritative than it actually is. Network source failures produce a
 warning and an empty contribution for that source — they never crash
 the assistant or fall back to guessed data.
 
-Requesting the ham service always includes both a real RepeaterBook
-query (when a state resolves and network sources are allowed) *and*
-the static calling-frequency table — these are additive, not
+Requesting the ham service includes both a real RepeaterBook query
+(when a state resolves and network sources are allowed) *and* the
+static calling-frequency table by default — these are additive, not
 either/or, and stay visually distinguishable in Review by their Group
 column: RepeaterBook results with a real transmit offset group under
 "Local Amateur Repeaters", while the static calling table always
 groups under "Amateur Simplex" — so a plan that includes both never
 misrepresents a simplex suggestion as a local repeater.
+
+### Explicit band and repeater/simplex constraints
+
+A request can narrow both dimensions explicitly, and both are
+enforced, not just requested:
+
+- **Band** — naming a band (e.g. "2 meter") is a hard inclusion
+  constraint: "all the 2 meter repeaters in the Coeur d'Alene Idaho
+  area" returns only 2-meter results, never 70cm or any other band,
+  even if RepeaterBook's own query returns something outside it.
+- **Repeater vs. simplex** — asking for "repeaters" excludes simplex
+  results (including the static calling table); asking for "simplex"
+  excludes repeaters. Naming neither includes both, exactly as before.
+  A candidate is classified as a repeater purely by frequency/duplex
+  evidence (a real, distinct transmit frequency) — never by a tone
+  field or a source label.
+
+This is enforced twice: RepeaterBook's own query is already narrowed
+to the requested band, and every candidate returned by any source is
+independently re-checked against the request's band and record-type
+constraints before it can reach Review — a provider that ignores its
+own query parameters (or a static table that isn't organized by band
+at all) cannot bypass what was actually requested. The AI-interpreted
+path extracts both constraints the same way the deterministic wizard's
+own request does; see `chirp.assistant.providers._SYSTEM_PROMPT`.
 
 ## Receive-only and transmit policy
 

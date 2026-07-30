@@ -33,7 +33,11 @@ All of this lives under the new **Profile** menu.
 
 Only *populated* memories become channels; a completely blank image (no
 memories programmed into it yet) has nothing to extract, and CHIRP tells
-you so directly rather than creating an empty profile.
+you so directly rather than creating an empty profile. A brand new CSV
+grid's own starter row (the one pre-filled entry that gives a new
+document something to click on) doesn't count as programmed either --
+Create Profile treats it the same as an untouched row until you (or
+Programming Assistant) actually change it.
 
 Each channel gets a stable **logical ID** derived from its name (e.g. a
 memory named "CDA Repeater" becomes `cda-repeater`). This ID is what CHIRP
@@ -144,9 +148,13 @@ the platform's usual default location the first time), and after a
 successful save CHIRP shows you the full path the file was written to.
 
 To reopen a saved profile later, use **Profile > Open Profile**, which opens
-in that same last-used directory. Opening (or drag-and-drop) always shows
-you the picked file's real path, so there is no ambiguity about which file
-you loaded.
+in that same last-used directory. A successful Open brings up the profile
+editor on the loaded profile, with the filename shown in its title, so
+there is no ambiguity about which file you loaded or whether Open did
+anything at all. Opening does not touch any memory grid by itself --
+applying the profile is always a separate, deliberate step (**Profile >
+Apply Profile to Current Image...**), and you can inspect a profile this
+way even with no memory grid open at all.
 
 Because it's just a file, you can email it, put it in version control, or
 share it with your club exactly like any other document. Opening someone

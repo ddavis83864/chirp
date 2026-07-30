@@ -70,6 +70,20 @@ this path; a radio with N memories right now yields exactly N reads.
 case of a radio whose `memory_bounds` cannot be interpreted as a `(lo,
 hi)` pair at all.
 
+A radio's own `Memory.empty` flag isn't always enough to decide "does
+this represent something a user actually intended to program." A radio
+may optionally define `get_untouched_placeholder_numbers()` (currently
+only `chirp.drivers.generic_csv.CSVRadio`, whose `_blank(setDefault=
+True)` seeds one non-empty starter row into a brand new document so
+manual editing has something to click on) to identify memory numbers
+that are still exactly that auto-seeded content, not real data.
+`chirp.wxui.profilecontroller.create_profile_from_editorset()` excludes
+these before extraction via a plain `getattr(radio, ..., None)` check --
+an optional capability, not an `isinstance`/class-name check -- so a
+radio that doesn't define it (every driver but `CSVRadio` today) is
+completely unaffected, and a placeholder stops being excluded the
+moment any of its fields actually changes.
+
 ## Schema versioning
 
 `schema.SCHEMA_VERSION = '1.0'` (`SCHEMA_MAJOR = 1`, `SCHEMA_MINOR = 0`).
