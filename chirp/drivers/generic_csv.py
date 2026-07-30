@@ -22,6 +22,37 @@ from chirp import chirp_common, errors, directory
 
 LOG = logging.getLogger(__name__)
 DEFAULT_POWER_LEVEL = chirp_common.AutoNamedPowerLevel(50)
+#: The single starter channel _blank(setDefault=True) seeds into a
+#: brand new CSV-backed document's memory 0, so a manually-edited new
+#: document isn't a totally empty grid with nothing to click on.
+DEFAULT_SEED_FREQ = 146010000
+#: Every other field a freshly-seeded memory 0 must still match to be
+#: considered untouched -- see _is_untouched_default_seed().
+_SEED_COMPARISON_FIELDS = (
+    'name', 'vfo', 'rtone', 'ctone', 'dtcs', 'rx_dtcs', 'tmode',
+    'cross_mode', 'dtcs_polarity', 'skip', 'duplex', 'offset', 'mode',
+    'tuning_step', 'comment', 'immutable',
+)
+
+
+def _is_untouched_default_seed(memory):
+    """True only if @memory is still byte-for-byte identical to the
+    starter channel _blank(setDefault=True) seeds into a brand new
+    document's memory 0 -- i.e. nothing (not the user, not another
+    CHIRP feature) has actually changed it since the document was
+    created. This is a full-field comparison against a freshly built
+    reference, not a bare frequency check: any real edit to any field
+    (a different frequency, a name, a different power level, a tone,
+    ...) makes this False.
+    """
+    if memory.number != 0 or memory.empty:
+        return False
+    if memory.freq != DEFAULT_SEED_FREQ or memory.power != \
+            DEFAULT_POWER_LEVEL:
+        return False
+    reference = chirp_common.Memory(0, False)
+    return all(getattr(memory, field) == getattr(reference, field)
+               for field in _SEED_COMPARISON_FIELDS)
 
 
 class OmittedHeaderError(Exception):
@@ -90,12 +121,23 @@ class CSVRadio(chirp_common.FileBackedRadio):
                          for i in range(0, max_memory + 1)]
         if (setDefault):
             self.memories[0].empty = False
-            self.memories[0].freq = 146010000
+            self.memories[0].freq = DEFAULT_SEED_FREQ
             # Default to 50W
             self.memories[0].power = DEFAULT_POWER_LEVEL
 
     def clear(self):
         self.memories = []
+
+    def get_untouched_placeholder_numbers(self):
+        """Memory numbers that are still exactly the starter channel
+        _blank(setDefault=True) auto-seeds for a brand new document --
+        not real user (or any CHIRP feature's) data. Consulted by
+        chirp.wxui.profilecontroller so a never-programmed new CSV
+        document isn't treated as having a populated channel just
+        because this starter row exists; the row itself is untouched
+        everywhere else (Radio > New, the grid display, CSV export)."""
+        return [n for n, memory in enumerate(self.memories)
+                if _is_untouched_default_seed(memory)]
 
     def __init__(self, pipe, max_memory=999):
         chirp_common.FileBackedRadio.__init__(self, None)

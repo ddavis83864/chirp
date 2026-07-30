@@ -71,17 +71,37 @@ def enumerate_memories(radio):
     return extraction.enumerate_source_memories(radio)
 
 
+def _without_untouched_placeholders(radio, memories):
+    """Drop any memory a radio itself identifies as an auto-seeded
+    starter placeholder rather than real data (see
+    chirp.drivers.generic_csv.CSVRadio.get_untouched_placeholder_
+    numbers) -- an optional capability, not a class-name check: a
+    radio that doesn't define it (every driver but CSVRadio today)
+    is completely unaffected.
+    """
+    get_placeholders = getattr(
+        radio, 'get_untouched_placeholder_numbers', None)
+    if get_placeholders is None:
+        return memories
+    placeholder_numbers = set(get_placeholders())
+    if not placeholder_numbers:
+        return memories
+    return [m for m in memories if m.number not in placeholder_numbers]
+
+
 def create_profile_from_editorset(editorset, name='', description='',
                                   region=None):
     """Extract a Profile from @editorset's currently-open image.
 
     :returns: a chirp.profiles.extraction.ExtractionResult.
     :raises profile_errors.NoPopulatedMemoriesError: the image has no
-        populated memories (every enumerable slot is empty or a
-        special channel) -- nothing to build a profile from.
+        populated memories (every enumerable slot is empty, a special
+        channel, or an untouched auto-seeded placeholder) -- nothing
+        to build a profile from.
     """
     radio = editorset.radio
-    memories = enumerate_memories(radio)
+    memories = _without_untouched_placeholders(
+        radio, enumerate_memories(radio))
     result = extraction.extract_profile(
         radio, memories, name=name, description=description, region=region)
     if result.summary.channels_extracted == 0:

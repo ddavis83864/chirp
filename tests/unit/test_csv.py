@@ -246,6 +246,76 @@ class RTCSV(unittest.TestCase):
         self._test_open('rtcsv_%s.csv' % arg)
 
 
+class UntouchedPlaceholderTest(unittest.TestCase):
+    """chirp.wxui.profilecontroller consults
+    CSVRadio.get_untouched_placeholder_numbers() so that a brand new,
+    never-programmed CSV document (the automatic blank document
+    Programming Assistant creates, or Radio > New) isn't mistaken for
+    having a real, user-intended channel just because _blank(
+    setDefault=True) seeds one starter row so the grid isn't
+    completely empty to click on."""
+
+    def test_fresh_blank_document_has_one_placeholder(self):
+        radio = generic_csv.CSVRadio(None)
+        self.assertEqual([0], radio.get_untouched_placeholder_numbers())
+
+    def test_editing_the_placeholder_frequency_clears_it(self):
+        radio = generic_csv.CSVRadio(None)
+        mem = radio.get_memory(0)
+        mem.freq = 147000000
+        radio.set_memory(mem)
+        self.assertEqual([], radio.get_untouched_placeholder_numbers())
+
+    def test_naming_the_placeholder_clears_it(self):
+        radio = generic_csv.CSVRadio(None)
+        mem = radio.get_memory(0)
+        mem.name = 'My Channel'
+        radio.set_memory(mem)
+        self.assertEqual([], radio.get_untouched_placeholder_numbers())
+
+    def test_changing_the_placeholder_tone_clears_it(self):
+        radio = generic_csv.CSVRadio(None)
+        mem = radio.get_memory(0)
+        mem.tmode = 'Tone'
+        mem.rtone = 100.0
+        radio.set_memory(mem)
+        self.assertEqual([], radio.get_untouched_placeholder_numbers())
+
+    def test_erasing_the_placeholder_clears_it(self):
+        radio = generic_csv.CSVRadio(None)
+        radio.erase_memory(0)
+        self.assertEqual([], radio.get_untouched_placeholder_numbers())
+
+    def test_a_second_real_channel_is_never_a_placeholder(self):
+        radio = generic_csv.CSVRadio(None)
+        mem = chirp_common.Memory()
+        mem.number = 1
+        mem.freq = 146520000
+        mem.name = 'CH1'
+        radio.set_memory(mem)
+        self.assertEqual([0], radio.get_untouched_placeholder_numbers())
+
+    def test_programmed_then_cleared_grid_has_no_placeholder(self):
+        # Populated and then cleared must be treated as blank, not as
+        # "still has the starter placeholder" -- erase_memory()
+        # already produces a real empty memory, distinct from the
+        # untouched-starter case.
+        radio = generic_csv.CSVRadio(None)
+        mem = radio.get_memory(0)
+        mem.name = 'Temporary'
+        radio.set_memory(mem)
+        radio.erase_memory(0)
+        self.assertEqual([], radio.get_untouched_placeholder_numbers())
+
+    def test_loaded_from_file_has_no_placeholder(self):
+        # _blank(setDefault=True) only ever runs for a brand new
+        # document with no backing file -- loading real, saved CSV
+        # content must never be treated as having a placeholder.
+        radio = generic_csv.CSVRadio(None)
+        radio.load_from(CHIRP_CSV_MODERN)
+        self.assertEqual([], radio.get_untouched_placeholder_numbers())
+
+
 class TestTSV(unittest.TestCase):
     def test_parse_tsv(self):
         radio = generic_csv.TSVRadio(None)

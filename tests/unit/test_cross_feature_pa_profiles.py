@@ -198,15 +198,26 @@ class ProfileMenuSurvivesAssistantLaunchTest(CrossFeatureTestCase):
         # fixed ceiling on how large it may grow), but its current
         # memory_bounds is always a real, concrete, enumerable range
         # (see chirp.profiles.extraction.enumerate_source_memories()).
-        # generic_csv.CSVRadio(None) is not fully empty either --
+        # generic_csv.CSVRadio(None) is also not literally empty --
         # _blank(setDefault=True) pre-populates memory 0 with a
-        # default 146.010 MHz entry -- so extraction from a freshly
-        # created blank document succeeds with exactly that one
-        # channel, not a CapabilityUnknownError and not zero channels.
-        result = profilecontroller.create_profile_from_editorset(
-            self.frame.current_editorset, name='From Blank Doc')
-        self.assertEqual(1, result.summary.channels_extracted)
-        self.assertEqual(146010000, result.profile.channels[0].rx_freq_hz)
+        # starter 146.010 MHz entry so a manually-edited new document
+        # isn't a totally blank grid with nothing to click on -- but
+        # that starter entry is not real data either. Windows
+        # validation: creating a profile from a genuinely
+        # never-programmed document created and saved an empty
+        # profile with no warning. create_profile_from_editorset() now
+        # recognizes this exact untouched placeholder (see
+        # chirp.drivers.generic_csv.CSVRadio.
+        # get_untouched_placeholder_numbers(), a full-field comparison
+        # against a freshly built reference, not a bare frequency
+        # check) and excludes it, so a never-programmed document
+        # correctly has zero populated channels and raises
+        # NoPopulatedMemoriesError -- not a silently-created one-
+        # channel profile built from a row nobody actually programmed.
+        from chirp.profiles import errors as profile_errors
+        with self.assertRaises(profile_errors.NoPopulatedMemoriesError):
+            profilecontroller.create_profile_from_editorset(
+                self.frame.current_editorset, name='From Blank Doc')
 
 
 class ExtractFromAssistantPopulatedGridTest(CrossFeatureTestCase):
@@ -678,6 +689,54 @@ class RealPathProfileWorkflowTest(CrossFeatureTestCase):
         self.assertIn('No populated memories', str(shown_error))
         # The old, no-longer-applicable message is gone.
         self.assertNotIn('fixed memory count', str(shown_error))
+
+    def test_never_programmed_blank_grid_via_real_menu_creates_no_profile(
+            self):
+        """Direct reproduction of Windows validation Defect 3: create a
+        completely empty memory grid (through the exact document
+        creation Programming Assistant uses), never program anything
+        into it -- not even erase_memory(), since a genuinely
+        never-touched document is the real-world case -- then invoke
+        the real Create Profile from Current Image menu handler.
+        """
+        from chirp.profiles import errors as profile_errors
+        eset = self._blank_csv_editorset()
+        # Nothing programmed, nothing erased -- exactly what a user
+        # sees immediately after Programming Assistant (or Radio >
+        # New) creates the document.
+        self.assertIsNotNone(eset)
+
+        with mock.patch.object(wxmain.wx, 'TextEntryDialog') as name_dlg, \
+                mock.patch.object(wxmain.wx, 'MessageBox') as msgbox, \
+                mock.patch.object(wxmain.wx, 'MessageDialog') as save_prompt, \
+                mock.patch.object(
+                    wxmain.profileeditor, 'ProfileEditorDialog'
+                    ) as editor_dlg, \
+                mock.patch.object(wxmain.wx, 'FileDialog') as file_dlg, \
+                mock.patch(
+                    'chirp.wxui.common.error_proof.show_error'
+                    ) as show_error:
+            name_dlg.return_value.ShowModal.return_value = wx.ID_OK
+            name_dlg.return_value.GetValue.return_value = 'Never Programmed'
+
+            self.frame._menu_profile_create(None)
+
+        # No empty in-memory Profile was ever registered as active.
+        self.assertIsNone(self.frame._current_profile)
+        self.assertIsNone(self.frame._current_profile_path)
+        # No editor, no save prompt, no file dialog, no success
+        # message -- Profile creation stopped before any of them.
+        editor_dlg.assert_not_called()
+        save_prompt.assert_not_called()
+        file_dlg.assert_not_called()
+        self.assertFalse(any('Profile Created' in str(c)
+                             for c in msgbox.call_args_list))
+        self.assertFalse(any('Profile Saved' in str(c)
+                             for c in msgbox.call_args_list))
+        # The actionable message was shown exactly once.
+        show_error.assert_called_once()
+        self.assertIsInstance(show_error.call_args[0][0],
+                              profile_errors.NoPopulatedMemoriesError)
 
     def test_apply_through_real_menu_handler_writes_intended_memories(self):
         eset = self._blank_csv_editorset()
