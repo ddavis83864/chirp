@@ -513,8 +513,9 @@ class RepeaterResultsNotReplacedBySimplexTest(unittest.TestCase):
 
 
 class AccurateFeedbackCategorizationTest(unittest.TestCase):
-    """Phase 5: the six required distinguishable feedback categories,
-    each with its own message content a user can actually act on."""
+    """Phase 5: the required set of distinguishable feedback
+    categories, each with its own message content a user can
+    actually act on."""
 
     def test_no_source_configured_for_unsupported_service(self):
         req = models.ProgrammingRequest(

@@ -19,7 +19,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from tests.unit import base  # noqa: F401 -- installs builtins._
+from tests.unit import base  # noqa: F401 -- installs the gettext _
 
 from chirp import directory
 from chirp.profiles import schema as profile_schema
@@ -63,8 +63,7 @@ class CrossFeatureTestCase(unittest.TestCase):
 
         app = wx.App()
         app._lc = wx.Locale(wx.LANGUAGE_ENGLISH)
-        import builtins
-        builtins._ = wx.GetTranslation
+        base.builtins._ = wx.GetTranslation
         cls._app = app
 
     def setUp(self):
