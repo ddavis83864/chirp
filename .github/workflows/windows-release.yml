@@ -232,9 +232,63 @@ jobs:
       - name: Install Chocolatey packages (gettext, Inno Setup)
         shell: pwsh
         run: |
-          choco install gettext -y --no-progress
-          choco install innosetup -y --no-progress
-          refreshenv
+          $ErrorActionPreference = 'Stop'
+
+          # `refreshenv` doesn't work from a non-interactive GitHub Actions
+          # process (it relies on re-reading HKCU/HKLM environment
+          # registry keys into the *current* shell, which choco's own
+          # RefreshEnv.cmd can't do here) -- append each tool's install
+          # directory straight to $GITHUB_PATH instead, which is the
+          # supported way to make PATH changes visible to later steps.
+          #
+          # Inno Setup ships preinstalled on windows-2022 runners, so
+          # `choco install innosetup` legitimately reports "already
+          # installed" (a nonzero exit in this choco version) rather than
+          # installing anything -- treat that as success rather than
+          # failing the build over a tool that's already present.
+          function Install-ChocoIfMissing {
+              param([string]$PackageName, [string]$ProbeCommand)
+              if (Get-Command $ProbeCommand -ErrorAction SilentlyContinue) {
+                  Write-Host "$ProbeCommand already on PATH; skipping choco install $PackageName."
+                  return
+              }
+              choco install $PackageName -y --no-progress
+              if ($LASTEXITCODE -ne 0) {
+                  # choco returns nonzero for "already installed" too;
+                  # only treat this as fatal if the probe command still
+                  # isn't found afterward.
+                  if (-not (Get-Command $ProbeCommand -ErrorAction SilentlyContinue)) {
+                      throw "choco install $PackageName failed (exit $LASTEXITCODE) and $ProbeCommand is still not available."
+                  }
+                  Write-Warning "choco install $PackageName returned exit $LASTEXITCODE, but $ProbeCommand is available -- treating as already installed."
+              }
+          }
+
+          Install-ChocoIfMissing -PackageName gettext -ProbeCommand msgfmt
+          Install-ChocoIfMissing -PackageName innosetup -ProbeCommand ISCC
+
+          foreach ($candidate in @(
+                  'C:\Program Files\gettext-iconv\bin',
+                  'C:\Program Files (x86)\gettext-iconv\bin',
+                  'C:\Program Files (x86)\Inno Setup 6',
+                  'C:\Program Files\Inno Setup 6'
+              )) {
+              if (Test-Path $candidate) {
+                  Write-Host "Adding $candidate to GITHUB_PATH"
+                  Add-Content -Path $env:GITHUB_PATH -Value $candidate
+              }
+          }
+
+      - name: Verify gettext and Inno Setup are resolvable on PATH
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $msgfmt = Get-Command msgfmt -ErrorAction SilentlyContinue
+          $iscc = Get-Command ISCC -ErrorAction SilentlyContinue
+          if (-not $msgfmt) { throw "msgfmt not found on PATH after the previous step's GITHUB_PATH additions." }
+          if (-not $iscc) { throw "ISCC not found on PATH after the previous step's GITHUB_PATH additions." }
+          Write-Host "msgfmt: $($msgfmt.Source)"
+          Write-Host "ISCC:   $($iscc.Source)"
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
