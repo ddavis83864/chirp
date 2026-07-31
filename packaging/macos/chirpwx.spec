@@ -7,6 +7,7 @@
 # compiles chirp/locale/*.po -> *.mo first (PyInstaller only picks up files
 # that already exist on disk) and exports the CHIRP_APP_VERSION /
 # CHIRP_BUNDLE_ID environment variables this spec reads.
+import glob
 import os
 
 from PyInstaller.utils.hooks import collect_submodules
@@ -47,9 +48,18 @@ datas = [
 ] + [
     (os.path.join(REPO_ROOT, 'chirp', 'stock_configs', '*.csv'),
      'chirp/stock_configs'),
-    (os.path.join(REPO_ROOT, 'chirp', 'locale', '*', 'LC_MESSAGES', '*.mo'),
-     'chirp/locale'),
 ]
+
+# PyInstaller's datas glob support copies every file matched by one tuple's
+# source pattern into that tuple's single destination directory, discarding
+# any subdirectory structure in the match -- fine for chirp/share and
+# stock_configs above (flat directories), but locale needs one destination
+# per language (chirp/locale/<lang>/LC_MESSAGES/), so each .mo file gets its
+# own (src, dest) tuple instead of sharing one.
+for mo_path in glob.glob(os.path.join(
+        REPO_ROOT, 'chirp', 'locale', '*', 'LC_MESSAGES', '*.mo')):
+    lang = os.path.basename(os.path.dirname(os.path.dirname(mo_path)))
+    datas.append((mo_path, os.path.join('chirp', 'locale', lang, 'LC_MESSAGES')))
 
 block_cipher = None
 

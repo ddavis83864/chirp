@@ -110,6 +110,28 @@ for check in \
     fi
 done
 
+STOCK_CONFIG_COUNT=$(find "$APP_PATH/Contents/Resources/chirp/stock_configs" -name "*.csv" 2>/dev/null | wc -l | tr -d ' ')
+echo "stock_configs *.csv count: $STOCK_CONFIG_COUNT"
+if [ "$STOCK_CONFIG_COUNT" -ge 10 ]; then
+    pass "stock_configs has $STOCK_CONFIG_COUNT csv files (expected ~20)"
+else
+    fail "stock_configs only has $STOCK_CONFIG_COUNT csv files, expected ~20 -- resources may not have bundled correctly"
+fi
+
+# Regression check: a prior version of chirpwx.spec's datas list collapsed
+# every language's compiled CHIRP.mo into one shared destination directory,
+# so only the last-processed language survived instead of all of them.
+# Assert both the per-language directory layout and a realistic minimum
+# count so that class of bug fails loudly instead of shipping silently.
+MO_COUNT=$(find "$APP_PATH/Contents/Resources/chirp/locale" -name "*.mo" 2>/dev/null | wc -l | tr -d ' ')
+MO_LANG_DIRS=$(find "$APP_PATH/Contents/Resources/chirp/locale" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
+echo "locale .mo file count: $MO_COUNT, language directories: $MO_LANG_DIRS"
+if [ "$MO_COUNT" -ge 10 ] && [ "$MO_LANG_DIRS" -ge 10 ]; then
+    pass "locale has $MO_COUNT .mo files across $MO_LANG_DIRS language directories (expected ~18)"
+else
+    fail "locale only has $MO_COUNT .mo files across $MO_LANG_DIRS language directories, expected ~18 each -- translations did not bundle correctly (see chirpwx.spec locale datas handling)"
+fi
+
 echo "== Architecture =="
 if [ -f "$EXECUTABLE" ]; then
     FILE_OUT="$(file "$EXECUTABLE")"
