@@ -1,0 +1,506 @@
+name: Windows Release
+
+# Builds, packages, and validates the Windows x86-64 CHIRP Community
+# Edition distribution (portable ZIP + Inno Setup installer). Mirrors the
+# packaging-infrastructure-vs-application-source split already
+# established by macos-build.yml / macos-release.yml -- see
+# packaging/windows/README.md for the full explanation.
+#
+# This workflow can publish a GitHub release (publish-release job), but
+# that job only runs for a windows-community-v* tag push AND requires
+# enable_release_upload=true to actually be set on the underlying
+# workflow_dispatch inputs (via reusable-workflow inputs) -- an ordinary
+# workflow_dispatch validation run, and every run so far, never reaches
+# it. See "Required Windows Packaging Architecture" in the originating
+# task for why this is implemented but intentionally not exercised yet.
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: 'Full 40-character commit SHA of the application source to package'
+        required: true
+        default: '9c38424f5e716c00e4444533a093ca1ba51258af'
+      release_version:
+        description: 'Version string (must be X.Y.Z) for exe metadata, artifact filenames, and provenance'
+        required: true
+        default: '1.12.0'
+      linux_source_commit:
+        description: 'Full 40-character commit SHA the appimage-v<version> release used (for provenance cross-reference)'
+        required: true
+        default: '9c38424f5e716c00e4444533a093ca1ba51258af'
+      macos_source_commit:
+        description: 'Full 40-character commit SHA the macos-community-v<version> release used (for provenance cross-reference)'
+        required: true
+        default: '9c38424f5e716c00e4444533a093ca1ba51258af'
+      run_installer_lifecycle_test:
+        description: 'Silently install, launch, and uninstall the setup.exe in CI (in addition to the portable-ZIP smoke test)'
+        required: true
+        type: boolean
+        default: true
+      enable_release_upload:
+        description: 'Publish a Windows GitHub release (only takes effect on a windows-community-v* tag push -- ignored otherwise)'
+        required: true
+        type: boolean
+        default: false
+      release_tag:
+        description: 'Release tag for the (currently unused) publish step: windows-community-v<version>'
+        required: true
+        default: 'windows-community-v1.12.0'
+      prerelease:
+        description: 'Mark the GitHub release as a prerelease (only relevant if a release is ever published)'
+        required: true
+        type: boolean
+        default: true
+  push:
+    tags:
+      - 'windows-community-v*'
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Pre-flight release guards
+    runs-on: ubuntu-latest
+    outputs:
+      source_ref: ${{ steps.resolve.outputs.source_ref }}
+      release_version: ${{ steps.resolve.outputs.release_version }}
+      linux_source_commit: ${{ steps.resolve.outputs.linux_source_commit }}
+      macos_source_commit: ${{ steps.resolve.outputs.macos_source_commit }}
+      is_release_tag: ${{ steps.resolve.outputs.is_release_tag }}
+      release_tag: ${{ steps.resolve.outputs.release_tag }}
+    steps:
+      - name: Checkout (tags included)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify repository identity
+        env:
+          EXPECTED_REPO: ddavis83864/chirp
+        run: |
+          set -euo pipefail
+          if [ "${{ github.repository }}" != "$EXPECTED_REPO" ]; then
+            echo "::error::this workflow is only authorized to run in $EXPECTED_REPO (got '${{ github.repository }}')." >&2
+            exit 1
+          fi
+          echo "Repository identity OK: ${{ github.repository }}"
+
+      - name: Refuse privileged release logic from an untrusted pull request
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+        run: |
+          echo "::error::this workflow must never run on pull_request/pull_request_target triggers (it has no such trigger by design, but fail loudly if that ever changes)." >&2
+          exit 1
+
+      - name: Resolve and validate inputs
+        id: resolve
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          IN_SOURCE_REF: ${{ inputs.source_ref }}
+          IN_RELEASE_VERSION: ${{ inputs.release_version }}
+          IN_LINUX_SHA: ${{ inputs.linux_source_commit }}
+          IN_MACOS_SHA: ${{ inputs.macos_source_commit }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" = "push" ]; then
+            # Tag-triggered: derive version from the tag itself rather
+            # than trusting a workflow_dispatch input that doesn't exist
+            # on this trigger. Known, verified baseline is hardcoded here
+            # as the default source; a tag push cannot override source_ref
+            # (there is no input to override it with), which is
+            # deliberate -- it prevents a tag push alone from building an
+            # arbitrary, unreviewed source commit.
+            case "$REF_NAME" in
+              windows-community-v*) ;;
+              *)
+                echo "::error::unexpected tag '$REF_NAME' triggered this workflow; only windows-community-v* is handled." >&2
+                exit 1
+                ;;
+            esac
+            VERSION="${REF_NAME#windows-community-v}"
+            SOURCE_REF="9c38424f5e716c00e4444533a093ca1ba51258af"
+            LINUX_SHA="9c38424f5e716c00e4444533a093ca1ba51258af"
+            MACOS_SHA="9c38424f5e716c00e4444533a093ca1ba51258af"
+            IS_RELEASE_TAG=true
+            RELEASE_TAG="$REF_NAME"
+          else
+            VERSION="$IN_RELEASE_VERSION"
+            SOURCE_REF="$IN_SOURCE_REF"
+            LINUX_SHA="$IN_LINUX_SHA"
+            MACOS_SHA="$IN_MACOS_SHA"
+            IS_RELEASE_TAG=false
+            RELEASE_TAG="none-manual-validation-build"
+          fi
+
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::release_version must be X.Y.Z (got '$VERSION')." >&2
+            exit 1
+          fi
+          for sha_name in SOURCE_REF LINUX_SHA MACOS_SHA; do
+            sha_value="${!sha_name}"
+            if ! [[ "$sha_value" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::$sha_name must be a full 40-character commit SHA (got '$sha_value')." >&2
+              exit 1
+            fi
+            if ! git cat-file -e "${sha_value}^{commit}" 2>/dev/null; then
+              echo "::error::$sha_name $sha_value was not found in this repository's history." >&2
+              exit 1
+            fi
+          done
+
+          # The canonical v1.12.0 baseline is a known, checked value --
+          # refuse to silently build "v1.12.0" from something else.
+          if [ "$VERSION" = "1.12.0" ]; then
+            CANONICAL="9c38424f5e716c00e4444533a093ca1ba51258af"
+            if [ "$SOURCE_REF" != "$CANONICAL" ]; then
+              echo "::error::release_version=1.12.0 was requested, but source_ref ($SOURCE_REF) does not match the verified v1.12.0 baseline ($CANONICAL). Refusing to label a different source tree as v1.12.0." >&2
+              exit 1
+            fi
+          fi
+
+          if [ "$IS_RELEASE_TAG" = "true" ]; then
+            if gh release view "$RELEASE_TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+              echo "::error::a GitHub release for tag $RELEASE_TAG already exists. Refusing to build over it without explicit human review." >&2
+              exit 1
+            fi
+          fi
+
+          echo "source_ref=$SOURCE_REF" >> "$GITHUB_OUTPUT"
+          echo "release_version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "linux_source_commit=$LINUX_SHA" >> "$GITHUB_OUTPUT"
+          echo "macos_source_commit=$MACOS_SHA" >> "$GITHUB_OUTPUT"
+          echo "is_release_tag=$IS_RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "Validated: version=$VERSION source_ref=$SOURCE_REF is_release_tag=$IS_RELEASE_TAG"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  build-and-package:
+    name: Build, test, and package (windows-2022)
+    needs: guard
+    runs-on: windows-2022
+    env:
+      RELEASE_VERSION: ${{ needs.guard.outputs.release_version }}
+      SOURCE_REF: ${{ needs.guard.outputs.source_ref }}
+    outputs:
+      zip_name: CHIRP-windows-v${{ needs.guard.outputs.release_version }}-x86_64-portable.zip
+      setup_name: CHIRP-windows-v${{ needs.guard.outputs.release_version }}-x86_64-setup.exe
+    steps:
+      - name: Checkout packaging infrastructure
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Pin application source to source_ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          BRANCH_SHA="$(git rev-parse HEAD)"
+          echo "Packaging infrastructure at: $BRANCH_SHA (${{ github.ref_name }})"
+
+          RESOLVED="${{ needs.guard.outputs.source_ref }}"
+          if ! git cat-file -e "${RESOLVED}^{commit}" 2>/dev/null; then
+            echo "::error::source_ref $RESOLVED was not found in the fetched history." >&2
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$RESOLVED" "$BRANCH_SHA"; then
+            echo "::error::source_ref $RESOLVED is not an ancestor of packaging branch ${{ github.ref_name }} ($BRANCH_SHA); refusing to build from a divergent application source." >&2
+            exit 1
+          fi
+
+          echo "Overlaying application source paths from $RESOLVED (packaging/, docs/, and workflow files stay at the branch tip)..."
+          git checkout "$RESOLVED" -- chirp setup.py setup.cfg requirements.txt MANIFEST.in COPYING
+          echo "Application source pinned to $RESOLVED."
+          git status --short || true
+
+      - name: Verify application source resolves to the expected version family
+        shell: bash
+        run: |
+          set -euo pipefail
+          # This project's CHIRP_VERSION constant is intentionally not the
+          # version-of-record (see packaging/windows/README.md) -- what we
+          # can and do verify is that the pinned commit is the one this
+          # workflow was told to treat as v1.12.0's source, already
+          # checked in the guard job. This step exists so a future reader
+          # sees explicitly that we did not skip this consideration.
+          echo "Application source SHA: ${{ needs.guard.outputs.source_ref }}"
+          echo "Requested release version: ${{ needs.guard.outputs.release_version }}"
+          git log -1 --format='%H %s' "${{ needs.guard.outputs.source_ref }}"
+
+      - name: Install Chocolatey packages (gettext, Inno Setup)
+        shell: pwsh
+        run: |
+          choco install gettext -y --no-progress
+          choco install innosetup -y --no-progress
+          refreshenv
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build (PyInstaller one-directory bundle)
+        shell: pwsh
+        run: |
+          .\packaging\windows\build-windows.ps1 -Mode Build -Version "${{ needs.guard.outputs.release_version }}"
+
+      - name: Run existing relevant unit tests against this source baseline
+        shell: pwsh
+        run: |
+          & "packaging\windows\.build-venv\Scripts\python.exe" -m pip install pytest
+          & "packaging\windows\.build-venv\Scripts\python.exe" -m pytest tests\unit -x -q
+
+      - name: Run packaging-specific tests
+        shell: pwsh
+        run: |
+          .\packaging\windows\build-windows.ps1 -Mode Test
+
+      - name: Package (portable ZIP + installer + provenance + checksums + licenses)
+        shell: pwsh
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: |
+          .\packaging\windows\build-windows.ps1 -Mode Package `
+            -Version "${{ needs.guard.outputs.release_version }}" `
+            -SourceCommit "${{ needs.guard.outputs.source_ref }}" `
+            -LinuxSourceCommit "${{ needs.guard.outputs.linux_source_commit }}" `
+            -MacosSourceCommit "${{ needs.guard.outputs.macos_source_commit }}"
+
+      - name: Portable-bundle launch smoke test (incl. driver-registry check)
+        shell: pwsh
+        run: |
+          .\packaging\windows\smoke-test.ps1 `
+            -ExeDir "dist\CHIRP" `
+            -ConfigDir "$env:TEMP\chirp-smoke-portable"
+
+      - name: Silent install / launch / uninstall lifecycle test
+        if: ${{ inputs.run_installer_lifecycle_test != false }}
+        shell: pwsh
+        run: |
+          $setupExe = "dist\CHIRP-windows-v${{ needs.guard.outputs.release_version }}-x86_64-setup.exe"
+          $installDir = "$env:LOCALAPPDATA\Programs\CHIRP"
+
+          Write-Host "==> Silently installing $setupExe"
+          $proc = Start-Process -FilePath $setupExe -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -PassThru -Wait
+          if ($proc.ExitCode -ne 0) {
+            throw "Silent install failed with exit code $($proc.ExitCode)"
+          }
+
+          Write-Host "==> Verifying installed files"
+          if (-not (Test-Path "$installDir\CHIRP.exe")) {
+            throw "CHIRP.exe not found at $installDir after silent install"
+          }
+          $uninstallKey = Get-ChildItem 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall' -ErrorAction SilentlyContinue |
+            Where-Object { (Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue).DisplayName -eq 'CHIRP (Community Edition, unsigned)' }
+          if (-not $uninstallKey) {
+            throw "No matching uninstaller registry entry found under HKCU Uninstall -- installer did not register in Installed Apps."
+          }
+          Write-Host "Uninstaller registration OK: $($uninstallKey.PSPath)"
+
+          $startMenuShortcut = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\CHIRP\CHIRP.lnk"
+          if (-not (Test-Path $startMenuShortcut)) {
+            throw "Start Menu shortcut not found at $startMenuShortcut"
+          }
+          Write-Host "Start Menu shortcut OK: $startMenuShortcut"
+
+          Write-Host "==> Smoke-testing the installed CHIRP.exe"
+          .\packaging\windows\smoke-test.ps1 -ExeDir $installDir -ConfigDir "$env:TEMP\chirp-smoke-installed"
+
+          Write-Host "==> Writing a marker file to confirm user data survives uninstall"
+          $userConfigDir = Join-Path $env:USERPROFILE '.chirp'
+          New-Item -ItemType Directory -Force -Path $userConfigDir | Out-Null
+          $marker = Join-Path $userConfigDir 'packaging-ci-marker.txt'
+          Set-Content -Path $marker -Value 'placed by windows-release.yml installer lifecycle test'
+
+          $uninstallString = (Get-ItemProperty $uninstallKey.PSPath).UninstallString
+          Write-Host "==> Silently uninstalling via: $uninstallString"
+          # Inno Setup's UninstallString is "<path> " -- split off any
+          # trailing quirks and append silent flags.
+          $uninstallExe = ($uninstallString -replace '^"([^"]+)".*$', '$1')
+          $proc = Start-Process -FilePath $uninstallExe -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -PassThru -Wait
+          if ($proc.ExitCode -ne 0) {
+            throw "Silent uninstall failed with exit code $($proc.ExitCode)"
+          }
+
+          Write-Host "==> Verifying application files were removed"
+          if (Test-Path "$installDir\CHIRP.exe") {
+            throw "CHIRP.exe still present at $installDir after uninstall"
+          }
+          Write-Host "Application files removed OK."
+
+          Write-Host "==> Verifying user data was preserved"
+          if (-not (Test-Path $marker)) {
+            throw "User config marker file $marker was removed by uninstall -- uninstaller must not touch user data."
+          }
+          Write-Host "User data preserved OK: $marker still present."
+          Remove-Item -Force $marker
+
+      - name: Windows Defender scan (if available)
+        shell: pwsh
+        run: |
+          $defender = Get-Command Start-MpScan -ErrorAction SilentlyContinue
+          if (-not $defender) {
+            Write-Warning "Windows Defender PowerShell module not available on this runner -- scan NOT performed. Do not treat this run as Defender-clean."
+            "defender_scan=unavailable" | Out-File -FilePath defender-scan-result.txt
+          }
+          else {
+            try {
+              Start-MpScan -ScanPath (Resolve-Path "dist").Path -ScanType CustomScan
+              $threats = Get-MpThreatDetection -ErrorAction SilentlyContinue
+              if ($threats) {
+                Write-Error "Windows Defender reported threat detections: $($threats | Format-List | Out-String)"
+                "defender_scan=THREATS_DETECTED" | Out-File -FilePath defender-scan-result.txt
+                exit 1
+              }
+              Write-Host "Windows Defender scan completed with no detections."
+              "defender_scan=clean" | Out-File -FilePath defender-scan-result.txt
+            }
+            catch {
+              Write-Warning "Windows Defender scan could not complete: $_. Treating as unavailable, not as a pass."
+              "defender_scan=error:$_" | Out-File -FilePath defender-scan-result.txt
+            }
+          }
+
+      - name: Upload build-provenance.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: CHIRP-windows-v${{ needs.guard.outputs.release_version }}-provenance
+          path: |
+            build-provenance.json
+            SHA256SUMS
+            THIRD_PARTY_LICENSES.txt
+            defender-scan-result.txt
+          if-no-files-found: error
+
+      - name: Upload portable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: CHIRP-windows-v${{ needs.guard.outputs.release_version }}-x86_64-portable
+          path: dist/CHIRP-windows-v${{ needs.guard.outputs.release_version }}-x86_64-portable.zip
+          if-no-files-found: error
+
+      - name: Upload setup executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: CHIRP-windows-v${{ needs.guard.outputs.release_version }}-x86_64-setup
+          path: dist/CHIRP-windows-v${{ needs.guard.outputs.release_version }}-x86_64-setup.exe
+          if-no-files-found: error
+
+  publish-release:
+    name: Publish Windows Community Edition release
+    needs: [guard, build-and-package]
+    # Deliberately never true for a normal workflow_dispatch validation
+    # run (enable_release_upload defaults to false, and this whole job
+    # additionally requires an actual windows-community-v* tag push) --
+    # implemented for structural completeness per this task's
+    # requirements, intentionally not exercised during this task. Do not
+    # remove the is_release_tag condition to "test" this job; publish
+    # only from a real, reviewed tag push.
+    if: ${{ needs.guard.outputs.is_release_tag == 'true' && inputs.enable_release_upload == true }}
+    environment: windows-community-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Re-verify checksums and provenance independently
+        run: |
+          set -euo pipefail
+          PROV_DIR="artifacts/CHIRP-windows-v${{ needs.guard.outputs.release_version }}-provenance"
+          ZIP_DIR="artifacts/CHIRP-windows-v${{ needs.guard.outputs.release_version }}-x86_64-portable"
+          SETUP_DIR="artifacts/CHIRP-windows-v${{ needs.guard.outputs.release_version }}-x86_64-setup"
+
+          for d in "$PROV_DIR" "$ZIP_DIR" "$SETUP_DIR"; do
+            [ -d "$d" ] || { echo "::error::expected artifact directory $d not found." >&2; exit 1; }
+          done
+
+          MANIFEST_VERSION="$(python3 -c "import json; print(json.load(open('$PROV_DIR/build-provenance.json'))['application_version'])")"
+          MANIFEST_SOURCE_SHA="$(python3 -c "import json; print(json.load(open('$PROV_DIR/build-provenance.json'))['source_commit'])")"
+          MANIFEST_SIGNED="$(python3 -c "import json; print(json.load(open('$PROV_DIR/build-provenance.json'))['code_signing']['signed'])")"
+
+          if [ "$MANIFEST_VERSION" != "v${{ needs.guard.outputs.release_version }}" ]; then
+            echo "::error::provenance version '$MANIFEST_VERSION' does not match requested release_version." >&2
+            exit 1
+          fi
+          if [ "$MANIFEST_SOURCE_SHA" != "${{ needs.guard.outputs.source_ref }}" ]; then
+            echo "::error::provenance source_commit '$MANIFEST_SOURCE_SHA' does not match requested source_ref." >&2
+            exit 1
+          fi
+          if [ "$MANIFEST_SIGNED" != "False" ]; then
+            echo "::error::provenance reports signed=$MANIFEST_SIGNED -- a Community Edition artifact must be unsigned. Refusing to publish." >&2
+            exit 1
+          fi
+
+          RELEASE_DIR="$PWD/release-assets"
+          mkdir -p "$RELEASE_DIR"
+          cp "$ZIP_DIR"/*.zip "$RELEASE_DIR/"
+          cp "$SETUP_DIR"/*.exe "$RELEASE_DIR/"
+          cp "$PROV_DIR"/build-provenance.json "$RELEASE_DIR/"
+          cp "$PROV_DIR"/SHA256SUMS "$RELEASE_DIR/"
+          cp "$PROV_DIR"/THIRD_PARTY_LICENSES.txt "$RELEASE_DIR/"
+
+          cd "$RELEASE_DIR"
+          while read -r expected filename; do
+            [ -f "$filename" ] || continue
+            actual="$(sha256sum "$filename" | awk '{print $1}')"
+            if [ "$actual" != "$expected" ]; then
+              echo "::error::checksum mismatch for $filename: recorded=$expected actual=$actual" >&2
+              exit 1
+            fi
+            echo "$filename checksum verified: $actual"
+          done < SHA256SUMS
+
+          echo "RELEASE_DIR=$RELEASE_DIR" >> "$GITHUB_ENV"
+
+      - name: Create Windows Community Edition release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "${{ needs.guard.outputs.release_tag }}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "::error::release ${{ needs.guard.outputs.release_tag }} was created by something else since the guard job ran. Refusing to overwrite it." >&2
+            exit 1
+          fi
+
+          gh release create "${{ needs.guard.outputs.release_tag }}" \
+            --repo "${{ github.repository }}" \
+            --title "CHIRP ${{ needs.guard.outputs.release_version }} for Windows — Community Edition" \
+            --target "${{ needs.guard.outputs.source_ref }}" \
+            $( [ "${{ inputs.prerelease }}" = "true" ] && echo "--prerelease" ) \
+            --notes "$(cat <<EOF
+          **This Community Edition build is unsigned.** Windows SmartScreen may show an "unknown publisher" warning on first launch -- see README-Windows.txt in either artifact for verification and first-launch guidance.
+
+          It is built automatically, from source, on a GitHub-hosted Windows runner, from the exact CHIRP source commit identified below -- the same application source used for the Linux and macOS v1.12.0 releases.
+
+          ## Downloads
+
+          - Portable (no install): \`CHIRP-windows-v${{ needs.guard.outputs.release_version }}-x86_64-portable.zip\`
+          - Installer (per-user, no admin rights required): \`CHIRP-windows-v${{ needs.guard.outputs.release_version }}-x86_64-setup.exe\`
+
+          ## Verify your download
+
+          SHA-256 checksums are in \`SHA256SUMS\`, attached below.
+
+          ## Source and provenance
+
+          Source commit: ${{ needs.guard.outputs.source_ref }}
+          Linux release source: appimage-v1.12.0 (commit ${{ needs.guard.outputs.linux_source_commit }})
+          macOS release source: macos-community-v1.12.0 (commit ${{ needs.guard.outputs.macos_source_commit }})
+          Full build provenance: \`build-provenance.json\`, attached below.
+          EOF
+          )" \
+            "$RELEASE_DIR"/*.zip \
+            "$RELEASE_DIR"/*.exe \
+            "$RELEASE_DIR"/build-provenance.json \
+            "$RELEASE_DIR"/SHA256SUMS \
+            "$RELEASE_DIR"/THIRD_PARTY_LICENSES.txt
