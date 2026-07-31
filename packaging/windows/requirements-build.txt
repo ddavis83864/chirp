@@ -1,0 +1,20 @@
+# Build-time dependencies for packaging CHIRP.exe on Windows.
+#
+# wxPython==4.2.0 matches the pin in the repo's top-level requirements.txt
+# for platform_system != "Linux" -- this is the same wxPython build the
+# application is meant to run against, not a packaging-only choice.
+# PyPI publishes win_amd64 wheels for this version for CPython 3.10-3.12;
+# this build pins 3.11 (see build-windows.ps1) to match run-chirp.ps1's
+# existing Windows guidance.
+wxPython==4.2.0
+pyserial
+requests
+yattag
+suds
+lark
+pywin32
+pyinstaller>=6.10,<7
+# Ships PyInstaller hooks (including one for wx) beyond what PyInstaller's
+# own bundled hooks cover -- defense in depth alongside the explicit
+# collect_submodules('wx') in chirp.spec. Same pin as the macOS build.
+pyinstaller-hooks-contrib>=2024.0,<2026
