@@ -95,27 +95,38 @@ jobs:
       CHIRP_BUNDLE_ID: com.ddavis83864.chirp
       ARTIFACT_BASENAME: CHIRP-${{ github.event.inputs.release_version }}-macOS-${{ matrix.arch }}
     steps:
-      - name: Checkout application source
+      - name: Checkout packaging infrastructure
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.source_ref }}
           fetch-depth: 0
 
-      - name: Verify checked-out revision
+      - name: Pin application source to source_ref
         run: |
           set -euo pipefail
-          ACTUAL_SHA="$(git rev-parse HEAD)"
-          echo "Checked out: $ACTUAL_SHA"
+          BRANCH_SHA="$(git rev-parse HEAD)"
+          echo "Packaging infrastructure at: $BRANCH_SHA (${{ github.ref_name }})"
+
           EXPECTED="${{ github.event.inputs.source_ref }}"
           if [[ "$EXPECTED" =~ ^[0-9a-f]{40}$ ]]; then
-            if [ "$ACTUAL_SHA" != "$EXPECTED" ]; then
-              echo "error: checked-out HEAD ($ACTUAL_SHA) does not match requested source_ref ($EXPECTED)" >&2
-              exit 1
-            fi
-            echo "Confirmed: HEAD matches the pinned source_ref exactly."
+            RESOLVED="$EXPECTED"
           else
-            echo "warning: source_ref '$EXPECTED' is not a full 40-character commit SHA; resolved to $ACTUAL_SHA. Prefer pinning an exact SHA for reproducible releases." >&2
+            RESOLVED="$(git rev-parse "$EXPECTED")"
+            echo "::warning::source_ref '$EXPECTED' is not a full 40-character commit SHA; resolved to $RESOLVED. Prefer pinning an exact SHA for reproducible releases."
           fi
+
+          if ! git cat-file -e "${RESOLVED}^{commit}" 2>/dev/null; then
+            echo "error: source_ref $RESOLVED was not found in the fetched history of ${{ github.ref_name }}." >&2
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$RESOLVED" "$BRANCH_SHA"; then
+            echo "error: source_ref $RESOLVED is not an ancestor of packaging branch ${{ github.ref_name }} ($BRANCH_SHA); refusing to build from a divergent application source." >&2
+            exit 1
+          fi
+
+          echo "Overlaying application source paths from $RESOLVED (packaging/, docs/, and workflow files stay at the branch tip)..."
+          git checkout "$RESOLVED" -- chirp setup.py setup.cfg requirements.txt MANIFEST.in COPYING
+          echo "Application source pinned to $RESOLVED."
+          git status --short || true
 
       - name: Set up Python 3.10
         uses: actions/setup-python@v5
