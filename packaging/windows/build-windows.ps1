@@ -142,6 +142,14 @@ function Invoke-Build {
     Invoke-Checked $VenvPy -m pip install --upgrade pip
     Invoke-Checked $VenvPy -m pip install -r (Join-Path $ScriptDir 'requirements-build.txt')
 
+    Write-Step "Installing wxPython (wheel-only, so pip never tries to compile it)"
+    # See requirements-build.txt's comment: wxPython==4.2.0 has no cp311
+    # Windows wheel, only a source tarball that fails to build without
+    # extra unpinned dependencies. --only-binary=:all: makes pip fail
+    # loudly instead of silently attempting (and failing) a source build
+    # if no wheel is available for whatever interpreter this runs under.
+    Invoke-Checked $VenvPy -m pip install --only-binary=:all: "wxPython>=4.2.1"
+
     Write-Step "Recording resolved tool versions"
     & $VenvPy --version
     & $VenvPy -m PyInstaller --version

@@ -1,12 +1,17 @@
 # Build-time dependencies for packaging CHIRP.exe on Windows.
 #
-# wxPython==4.2.0 matches the pin in the repo's top-level requirements.txt
-# for platform_system != "Linux" -- this is the same wxPython build the
-# application is meant to run against, not a packaging-only choice.
-# PyPI publishes win_amd64 wheels for this version for CPython 3.10-3.12;
-# this build pins 3.11 (see build-windows.ps1) to match run-chirp.ps1's
-# existing Windows guidance.
-wxPython==4.2.0
+# wxPython is deliberately NOT listed here: the repo's top-level
+# requirements.txt pins wxPython==4.2.0 for platform_system != "Linux",
+# but PyPI only ships that exact version as a Windows wheel for cp310 --
+# cp311 (this build's interpreter, matching run-chirp.ps1's existing
+# guidance and wxPython's own cp311 wheel availability starting at
+# 4.2.1) would fall back to compiling a 71 MB source tarball, which
+# itself fails without extra unpinned build-only dependencies (e.g.
+# attrdict) that aren't worth chasing for a CI build. build-windows.ps1
+# installs wxPython separately, wheel-only (--only-binary=:all:) and
+# unpinned-but-floored at >=4.2.1, exactly like run-chirp.ps1 already
+# does for a Windows source checkout -- see that script's comments for
+# the full explanation. Do not add a wxPython line here.
 pyserial
 requests
 yattag
