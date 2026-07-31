@@ -211,15 +211,24 @@ jobs:
           fi
 
           echo "Overlaying application source paths from $RESOLVED (packaging/, docs/, and workflow files stay at the branch tip)..."
-          # tests/ is overlaid too, not left at the branch tip: this repo's
-          # test suite grew new tests for features added after v1.12.0
-          # (e.g. tests/unit/test_assistant_*.py, for chirp/assistant/,
-          # which doesn't exist at the pinned commit) -- running today's
-          # tests against yesterday's application source would fail with
-          # unrelated ImportErrors, not a real packaging defect. Pinning
-          # tests/ to the same commit as chirp/ means "run the existing
-          # test suite against the v1.12.0 baseline" actually means what
-          # it says.
+          # `git checkout <rev> -- <path>` only restores/overwrites files
+          # that exist in <rev>'s tree at that path -- it does NOT delete
+          # files present in the current working tree but absent from
+          # <rev> (e.g. chirp/assistant/, chirp/wxui/programming_assistant.py,
+          # and ~15 tests/unit/test_assistant_*.py files, all added after
+          # v1.12.0). Left as a plain checkout, those leak straight through
+          # into a build that's supposed to be the exact v1.12.0 baseline.
+          # rm -rf + checkout instead gives an exact directory match, not
+          # an overlay-with-leftovers. (Discovered the hard way: an
+          # earlier version of this step without the rm -rf left
+          # tests/unit/test_wxui_programming_assistant.py in place, which
+          # then failed to even import against the overlaid old chirp/.)
+          #
+          # tests/ is included in this reset (not left at the branch tip)
+          # so "run the existing test suite against the v1.12.0 baseline"
+          # means what it says: old application code tested by the tests
+          # that existed for it, not today's tests against yesterday's code.
+          rm -rf chirp tests
           git checkout "$RESOLVED" -- chirp setup.py setup.cfg requirements.txt MANIFEST.in COPYING tests
           echo "Application source pinned to $RESOLVED."
           git status --short || true
