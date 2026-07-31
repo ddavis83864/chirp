@@ -1,0 +1,37 @@
+# UTF-8
+#
+# PyInstaller Windows version-resource template for CHIRP.exe.
+#
+# This is a template, not a ready-to-use file: build-windows.ps1 replaces
+# __CHIRP_VERSION_TUPLE__ and __CHIRP_VERSION_STRING__ with the resolved
+# release version before invoking PyInstaller (mirrors how
+# appimage/build.sh templates appimage/AppImageBuilder.yml.template with
+# sed). Do not pass this file to PyInstaller directly.
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(__CHIRP_VERSION_TUPLE__),
+    prodvers=(__CHIRP_VERSION_TUPLE__),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+    ),
+  kids=[
+    StringFileInfo(
+      [
+      StringTable(
+        u'040904B0',
+        [StringStruct(u'CompanyName', u'ddavis83864/chirp (community fork)'),
+        StringStruct(u'FileDescription', u'CHIRP -- radio programming software (unsigned community build)'),
+        StringStruct(u'FileVersion', u'__CHIRP_VERSION_STRING__'),
+        StringStruct(u'InternalName', u'chirp'),
+        StringStruct(u'LegalCopyright', u'GNU General Public License v3 or later'),
+        StringStruct(u'OriginalFilename', u'CHIRP.exe'),
+        StringStruct(u'ProductName', u'CHIRP (Community Edition, unsigned)'),
+        StringStruct(u'ProductVersion', u'__CHIRP_VERSION_STRING__')])
+      ]),
+    VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
+  ]
+)
