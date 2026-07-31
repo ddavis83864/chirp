@@ -14,21 +14,27 @@ the AppImage or macOS packaging steps (see
 still current as of the commit noted for each screenshot; only the literal
 version string differs from a packaged release like `1.12.0`.
 
-**About "platform" below:** all current screenshots were captured on Linux,
-using the same wx/GTK3 rendering the AppImage ships (light system-gray
-window chrome, generic Linux widget styling). None have been captured on
-native Windows or macOS rendering — see "Known limitations" on each entry
-and the manual capture checklist at the bottom of this file.
+**About "platform" below:** all current screenshots were captured on
+Linux. Most were captured under wx/GTK3 matching what the AppImage ships
+(light system-gray window chrome, generic Linux widget styling); the five
+screenshots recaptured in commit `9d1e8b81` were instead captured on a
+newer development desktop running wxPython 4.2.1 / wxWidgets 3.2.4 /
+Python 3.12.3 (vs. the AppImage's wx 4.0.7 / wxWidgets 3.0.5 on Ubuntu
+22.04) — the window chrome in those five is GNOME/Adwaita-style rather
+than the AppImage's GTK3 look, though the application UI and features
+shown are identical. None have been captured on native Windows or macOS
+rendering — see "Known limitations" on each entry and the manual capture
+checklist at the bottom of this file.
 
-**Fictitious data note:** several screenshots reuse the placeholder
-callsign `K7ARS` as demo data across multiple captures (a syntactically
-valid-format but not-specifically-verified-as-unassigned US amateur
-callsign pattern, not a real operator's data tied to this project). This is
-flagged per-screenshot below rather than silently accepted, per this
-project's screenshot-privacy review process. It is not real personal
-information, but a distinct, clearly-fictitious placeholder (e.g. `TEST1`,
-as `customize-menus.png` already uses) would be preferable if any of these
-screenshots are recaptured.
+**Fictitious data note (resolved):** an earlier audit flagged five
+screenshots (`column-context-menu.png`, `custom-column.png`,
+`columns-and-wordwrap.png`, `find-duplicate-memories.png`,
+`repeaterbook-miles.png`) for reusing the placeholder callsign `K7ARS` as
+demo data. All five have since been recaptured using generic
+`TEST1`/`TEST2`-style demo data (matching `customize-menus.png`'s existing
+convention) instead — see commit `9d1e8b81` ("docs: recapture 5
+screenshots to remove K7ARS placeholder data"). No screenshot in this
+inventory contains `K7ARS` anymore.
 
 ---
 
@@ -55,19 +61,19 @@ screenshots are recaptured.
 - **Feature/workflow:** Column hiding/reordering — right-click context menu
   on a memory list column header.
 - **Application version:** `py3dev` (source checkout)
-- **Platform:** Linux (wx/GTK3)
-- **Capture date / source commit:** 2026-07-26, commit `b8a2bb71`
-  ("Document this fork's feature additions in the README, with
-  screenshots")
-- **Purpose:** shows the Hide / Choose Columns / Add Custom Column context
-  menu.
+- **Platform:** Linux (wx/GTK3, GNOME/Adwaita chrome — see platform note
+  above)
+- **Capture date / source commit:** 2026-07-31, commit `9d1e8b81`
+  ("docs: recapture 5 screenshots to remove K7ARS placeholder data")
+- **Purpose:** shows the Set Column Value / Hide / Choose Columns / Add
+  Custom Column context menu.
 - **Used in:** `README.md` (Column hiding, reordering, and custom columns
   section)
-- **Fictitious sample data:** contains the placeholder callsign `K7ARS` in
-  background grid rows (see note above).
-- **Known limitations:** placeholder callsign reuse (see note above); not
-  functionally required for this screenshot's purpose (the context menu is
-  what's illustrated).
+- **Fictitious sample data:** generic `TEST1`/`TEST2`/`GMRS1`/`FRS1`/etc.
+  labels; no real callsigns or personal data.
+- **Known limitations:** captured under a newer wx/wxWidgets combination
+  than the AppImage ships (see platform note above); window chrome differs
+  cosmetically from the AppImage's own look.
 - **Replacement criteria:** recapture if the context menu's items change,
   or opportunistically if this file is regenerated for another reason.
 
@@ -76,15 +82,18 @@ screenshots are recaptured.
 - **Feature/workflow:** Column hiding/reordering — a custom "Priority"
   column added and filled in, with a trimmed column set.
 - **Application version:** `py3dev` (source checkout)
-- **Platform:** Linux (wx/GTK3)
-- **Capture date / source commit:** 2026-07-26, commit `b8a2bb71`
-- **Purpose:** shows a populated custom column alongside a reduced column
-  set.
+- **Platform:** Linux (wx/GTK3, GNOME/Adwaita chrome — see platform note
+  above)
+- **Capture date / source commit:** 2026-07-31, commit `9d1e8b81`
+- **Purpose:** shows a populated custom "Priority" column (values 1-3)
+  alongside a reduced column set (Frequency, Name, Tone Mode, Tone,
+  Duplex, Offset/TX Freq, Comment, Priority).
 - **Used in:** `README.md` (Column hiding, reordering, and custom columns
   section)
-- **Fictitious sample data:** contains the placeholder callsign `K7ARS`
-  (see note above).
-- **Known limitations:** placeholder callsign reuse (see note above).
+- **Fictitious sample data:** generic `TEST1`/`TEST2`/etc. labels; no real
+  callsigns or personal data.
+- **Known limitations:** captured under a newer wx/wxWidgets combination
+  than the AppImage ships (see platform note above).
 - **Replacement criteria:** recapture if custom-column behavior or the
   default column set changes.
 
@@ -92,18 +101,20 @@ screenshots are recaptured.
 
 - **Feature/workflow:** Word-wrapped Comment column.
 - **Application version:** `py3dev` (source checkout)
-- **Platform:** Linux (wx/GTK3)
-- **Capture date / source commit:** 2026-07-26, commit `b8a2bb71`
-- **Purpose:** shows the Comment column wrapping across multiple lines.
+- **Platform:** Linux (wx/GTK3, GNOME/Adwaita chrome — see platform note
+  above)
+- **Capture date / source commit:** 2026-07-31, commit `9d1e8b81`
+- **Purpose:** shows the Comment column word-wrapping a long comment
+  across multiple lines, growing that row individually.
 - **Used in:** `README.md` (Word-wrapped Comment column section)
-- **Fictitious sample data:** contains the placeholder callsign `K7ARS`
-  (see note above).
-- **Known limitations:** placeholder callsign reuse (see note above); this
-  capture's window chrome is a darker background than the other
-  screenshots (a minor, cosmetic capture-environment inconsistency, not a
-  UI change) — not blocking, but worth normalizing if recaptured.
-- **Replacement criteria:** recapture if word-wrap behavior changes, or to
-  normalize the window-chrome inconsistency noted above.
+- **Fictitious sample data:** generic `TEST1` label and an invented
+  (fictional) long-form repeater comment; no real callsigns, locations, or
+  personal data.
+- **Known limitations:** captured under a newer wx/wxWidgets combination
+  than the AppImage ships (see platform note above). The previous darker
+  window-chrome inconsistency this screenshot had is resolved by this
+  recapture.
+- **Replacement criteria:** recapture if word-wrap behavior changes.
 
 ### `insert-rows-prompt.png`
 
@@ -127,14 +138,20 @@ screenshots are recaptured.
 - **Feature/workflow:** Find Duplicate Memories — results dialog listing
   matched duplicate groups.
 - **Application version:** `py3dev` (source checkout)
-- **Platform:** Linux (wx/GTK3)
-- **Capture date / source commit:** 2026-07-26, commit `b8a2bb71`
-- **Purpose:** shows duplicate-group detection results, including which
-  memory is kept by default.
+- **Platform:** Linux (wx/GTK3, GNOME/Adwaita chrome — see platform note
+  above)
+- **Capture date / source commit:** 2026-07-31, commit `9d1e8b81`
+- **Purpose:** shows duplicate-group detection results (a `TEST1`/`TEST2`
+  pair at the same frequency/tone), including which memory is kept
+  (unchecked) by default.
 - **Used in:** `README.md` (Find Duplicate Memories section)
-- **Fictitious sample data:** contains the placeholder callsigns `K7ARS` /
-  `K7ARS-B` (see note above), plus generic `GMRS1` / `FRS1` labels.
-- **Known limitations:** placeholder callsign reuse (see note above).
+- **Fictitious sample data:** generic `TEST1`/`TEST2` labels; no real
+  callsigns or personal data.
+- **Known limitations:** shows one duplicate group rather than the two the
+  prior version showed; still fully demonstrates the feature (detection +
+  default-keep-lowest-numbered behavior). Captured under a newer
+  wx/wxWidgets combination than the AppImage ships (see platform note
+  above).
 - **Replacement criteria:** recapture if the duplicate-detection dialog's
   layout or default-keep logic changes.
 
@@ -159,14 +176,17 @@ screenshots are recaptured.
 - **Feature/workflow:** RepeaterBook distance in miles — RepeaterBook query
   dialog showing the "Distance (mi)" field.
 - **Application version:** `py3dev` (source checkout)
-- **Platform:** Linux (wx/GTK3)
-- **Capture date / source commit:** 2026-07-26, commit `b8a2bb71`
+- **Platform:** Linux (wx/GTK3, GNOME/Adwaita chrome — see platform note
+  above)
+- **Capture date / source commit:** 2026-07-31, commit `9d1e8b81`
 - **Purpose:** shows the miles-based distance field in the query dialog,
-  over a memory grid with existing query results.
+  over a memory grid with existing demo data.
 - **Used in:** `README.md` (RepeaterBook distance in miles section)
-- **Fictitious sample data:** contains the placeholder callsigns `K7ARS` /
-  `K7ARS-B` (see note above).
-- **Known limitations:** placeholder callsign reuse (see note above).
+- **Fictitious sample data:** generic `TEST1`/`TEST2`/etc. labels; no real
+  callsigns or personal data. The dialog itself is shown unsubmitted (no
+  live network query was made).
+- **Known limitations:** captured under a newer wx/wxWidgets combination
+  than the AppImage ships (see platform note above).
 - **Replacement criteria:** recapture if the query dialog's fields or
   layout change.
 
@@ -247,9 +267,10 @@ screenshots are recaptured.
 ## Manual screenshot capture checklist (Windows, macOS)
 
 This repository's automation environment for this documentation update is
-Linux-only, with no GUI/display server and no Windows or macOS host
-available — so no new Windows- or macOS-native screenshots could be
-captured for this update, and none of the screenshots above claim to be.
+Linux-only — a Linux desktop with a display was available and was used to
+recapture the five Linux screenshots noted above, but no Windows or macOS
+host was available, so no Windows- or macOS-native screenshots could be
+captured, and none of the screenshots above claim to be.
 CHIRP's UI is nearly identical across platforms (it's the same wx toolkit
 and application code), so the existing Linux screenshots remain
 representative of the *features*, but not of native Windows/macOS window
