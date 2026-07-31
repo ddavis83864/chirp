@@ -50,8 +50,8 @@ source_ref" step, which mirrors `.github/workflows/macos-build.yml`
 line-for-line in intent):
 
 ```bash
-rm -rf chirp tests
-git checkout "$RESOLVED" -- chirp setup.py setup.cfg requirements.txt MANIFEST.in COPYING tests
+rm -rf chirp tests/unit
+git checkout "$RESOLVED" -- chirp setup.py setup.cfg requirements.txt MANIFEST.in COPYING tests/unit
 ```
 
 The `rm -rf` first matters: a plain `git checkout <rev> -- <path>` only
@@ -60,6 +60,13 @@ present in the current tree but added since (e.g.
 `chirp/assistant/`, which doesn't exist at the v1.12.0 baseline). Without
 the `rm -rf`, those leak straight through into a build that's supposed to
 be the exact baseline.
+
+Only `tests/unit` is reset, not all of `tests/` -- `tests/packaging`
+(this Windows packaging pipeline's own tests) is packaging
+infrastructure, not application source, and must stay at the branch tip
+or `build-windows.ps1 -Mode Test` can't find it. (`tests/images`,
+`tests/__init__.py`, and `tests/conftest.py` are identical at both
+commits anyway, so leaving them at the branch tip changes nothing.)
 
 So `CHIRP.exe` for v1.12.0 always contains exactly the same `chirp/`
 source as the Linux AppImage and macOS Community Edition builds, even
@@ -90,7 +97,7 @@ installed into your global Python.
 ```powershell
 # From the repo root, on Windows, with the application source you want
 # to package already checked out (for a real v1.12.0 build, that means
-# `Remove-Item -Recurse -Force chirp,tests; git checkout 9c38424f5e716c00e4444533a093ca1ba51258af -- chirp setup.py setup.cfg requirements.txt MANIFEST.in COPYING tests`
+# `Remove-Item -Recurse -Force chirp,tests\unit; git checkout 9c38424f5e716c00e4444533a093ca1ba51258af -- chirp setup.py setup.cfg requirements.txt MANIFEST.in COPYING tests\unit`
 # first, exactly like CI's overlay step -- the Remove-Item matters, see
 # "Why the packaging branch isn't based on that old commit" above):
 

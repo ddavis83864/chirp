@@ -224,12 +224,20 @@ jobs:
           # tests/unit/test_wxui_programming_assistant.py in place, which
           # then failed to even import against the overlaid old chirp/.)
           #
-          # tests/ is included in this reset (not left at the branch tip)
-          # so "run the existing test suite against the v1.12.0 baseline"
-          # means what it says: old application code tested by the tests
-          # that existed for it, not today's tests against yesterday's code.
-          rm -rf chirp tests
-          git checkout "$RESOLVED" -- chirp setup.py setup.cfg requirements.txt MANIFEST.in COPYING tests
+          # tests/unit specifically is included in this reset (not left at
+          # the branch tip) so "run the existing test suite against the
+          # v1.12.0 baseline" means what it says: old application code
+          # tested by the tests that existed for it, not today's tests
+          # against yesterday's code. tests/packaging (this repo's Windows
+          # packaging tests -- packaging infrastructure, not application
+          # source) and tests/images/tests/__init__.py/tests/conftest.py
+          # (identical at both commits anyway) are deliberately NOT reset,
+          # or build-windows.ps1's own -Mode Test step would fail with
+          # "tests/packaging/test_windows_packaging.py not found" (it did,
+          # the first time this used a blanket `rm -rf tests` -- see run
+          # 30655282623).
+          rm -rf chirp tests/unit
+          git checkout "$RESOLVED" -- chirp setup.py setup.cfg requirements.txt MANIFEST.in COPYING tests/unit
           echo "Application source pinned to $RESOLVED."
           git status --short || true
 
