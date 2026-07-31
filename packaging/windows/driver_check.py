@@ -22,14 +22,17 @@ import sys
 def main():
     try:
         from chirp import directory
-        # Importing chirp.drivers triggers each driver module's
-        # @directory.register decorator to run, populating the registry --
-        # mirrors what chirp.wxui does on startup before showing the
-        # Download/Upload radio dialogs.
-        import chirp.drivers  # noqa: F401
+        # Calls the exact same function chirp.wxui.chirpmain() and
+        # chirp.cli.main call on startup (see chirp/directory.py's
+        # import_drivers()), not a bare `import chirp.drivers` -- that
+        # function has a frozen-Windows-specific branch that reads
+        # chirp.drivers.__all__ directly instead of glob()-ing for *.py
+        # files (which doesn't work once modules are compiled into a
+        # PyInstaller PYZ archive). Calling it here validates the actual
+        # code path the real app uses, not an approximation of it.
+        directory.import_drivers()
     except Exception as exc:  # noqa: BLE001 - report any import failure
-        print(f"error: failed to import chirp.drivers: {exc!r}",
-              file=sys.stderr)
+        print(f"error: import_drivers() failed: {exc!r}", file=sys.stderr)
         return 1
 
     try:
