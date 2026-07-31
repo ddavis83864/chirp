@@ -50,20 +50,46 @@ permissions:
   contents: write
 
 jobs:
+  compute-matrix:
+    name: Compute architecture matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.compute.outputs.matrix }}
+    steps:
+      - name: Compute
+        id: compute
+        env:
+          ARCHITECTURES: ${{ github.event.inputs.architectures }}
+        run: |
+          set -euo pipefail
+          case "$ARCHITECTURES" in
+            all)
+              MATRIX='[{"arch":"x86_64","runner":"macos-13"},{"arch":"arm64","runner":"macos-14"},{"arch":"universal2","runner":"macos-14"}]'
+              ;;
+            x86_64)
+              MATRIX='[{"arch":"x86_64","runner":"macos-13"}]'
+              ;;
+            arm64)
+              MATRIX='[{"arch":"arm64","runner":"macos-14"}]'
+              ;;
+            universal2)
+              MATRIX='[{"arch":"universal2","runner":"macos-14"}]'
+              ;;
+            *)
+              echo "error: unknown architectures input '$ARCHITECTURES'" >&2
+              exit 1
+              ;;
+          esac
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
   build:
     name: Build (${{ matrix.arch }})
+    needs: compute-matrix
     runs-on: ${{ matrix.runner }}
-    if: ${{ github.event.inputs.architectures == 'all' || github.event.inputs.architectures == matrix.arch }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - arch: x86_64
-            runner: macos-13
-          - arch: arm64
-            runner: macos-14
-          - arch: universal2
-            runner: macos-14
+        include: ${{ fromJson(needs.compute-matrix.outputs.matrix) }}
     env:
       CHIRP_APP_VERSION: ${{ github.event.inputs.release_version }}
       CHIRP_BUNDLE_ID: com.ddavis83864.chirp
