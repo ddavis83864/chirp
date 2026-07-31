@@ -50,7 +50,7 @@ source_ref" step, which mirrors `.github/workflows/macos-build.yml`
 line-for-line in intent):
 
 ```bash
-git checkout "$RESOLVED" -- chirp setup.py setup.cfg requirements.txt MANIFEST.in COPYING
+git checkout "$RESOLVED" -- chirp setup.py setup.cfg requirements.txt MANIFEST.in COPYING tests
 ```
 
 So `CHIRP.exe` for v1.12.0 always contains exactly the same `chirp/`
@@ -82,7 +82,7 @@ installed into your global Python.
 ```powershell
 # From the repo root, on Windows, with the application source you want
 # to package already checked out (for a real v1.12.0 build, that means
-# `git checkout 9c38424f5e716c00e4444533a093ca1ba51258af -- chirp setup.py setup.cfg requirements.txt MANIFEST.in COPYING`
+# `git checkout 9c38424f5e716c00e4444533a093ca1ba51258af -- chirp setup.py setup.cfg requirements.txt MANIFEST.in COPYING tests`
 # first, exactly like CI's overlay step):
 
 .\packaging\windows\build-windows.ps1 -Mode Build

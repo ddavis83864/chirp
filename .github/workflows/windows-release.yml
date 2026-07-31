@@ -211,7 +211,16 @@ jobs:
           fi
 
           echo "Overlaying application source paths from $RESOLVED (packaging/, docs/, and workflow files stay at the branch tip)..."
-          git checkout "$RESOLVED" -- chirp setup.py setup.cfg requirements.txt MANIFEST.in COPYING
+          # tests/ is overlaid too, not left at the branch tip: this repo's
+          # test suite grew new tests for features added after v1.12.0
+          # (e.g. tests/unit/test_assistant_*.py, for chirp/assistant/,
+          # which doesn't exist at the pinned commit) -- running today's
+          # tests against yesterday's application source would fail with
+          # unrelated ImportErrors, not a real packaging defect. Pinning
+          # tests/ to the same commit as chirp/ means "run the existing
+          # test suite against the v1.12.0 baseline" actually means what
+          # it says.
+          git checkout "$RESOLVED" -- chirp setup.py setup.cfg requirements.txt MANIFEST.in COPYING tests
           echo "Application source pinned to $RESOLVED."
           git status --short || true
 
@@ -303,7 +312,7 @@ jobs:
       - name: Run existing relevant unit tests against this source baseline
         shell: pwsh
         run: |
-          & "packaging\windows\.build-venv\Scripts\python.exe" -m pip install pytest
+          & "packaging\windows\.build-venv\Scripts\python.exe" -m pip install -r test-requirements.txt
           & "packaging\windows\.build-venv\Scripts\python.exe" -m pytest tests\unit -x -q
 
       - name: Run packaging-specific tests
