@@ -102,6 +102,7 @@ jobs:
           IN_RELEASE_VERSION: ${{ inputs.release_version }}
           IN_LINUX_SHA: ${{ inputs.linux_source_commit }}
           IN_MACOS_SHA: ${{ inputs.macos_source_commit }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
@@ -175,8 +176,6 @@ jobs:
           echo "is_release_tag=$IS_RELEASE_TAG" >> "$GITHUB_OUTPUT"
           echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
           echo "Validated: version=$VERSION source_ref=$SOURCE_REF is_release_tag=$IS_RELEASE_TAG"
-        env:
-          GH_TOKEN: ${{ github.token }}
 
   build-and-package:
     name: Build, test, and package (windows-2022)
