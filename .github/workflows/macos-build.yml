@@ -166,9 +166,27 @@ jobs:
             kill "$PID" 2>/dev/null || true
             wait "$PID" 2>/dev/null || true
           else
-            echo "::warning::CHIRP process exited within 5s of launch. This can be expected on a CI runner without an interactive GUI login session -- treat as inconclusive, not a failure. Log follows:"
+            echo "CHIRP process exited within 5s of launch. Log follows:"
             cat "$LOG" || true
+            # A process can legitimately exit quickly on a CI runner with no
+            # interactive GUI login session -- that alone is inconclusive,
+            # not a failure. But a Python traceback (missing module, import
+            # error, etc.) is unambiguous regardless of GUI availability, so
+            # fail the build on those rather than only warning.
+            if grep -qE 'Traceback \(most recent call last\)|ModuleNotFoundError|ImportError|\[PYI-[0-9]+:ERROR\]' "$LOG"; then
+              echo "::error::CHIRP crashed with a Python exception on launch (see log above), not merely exiting due to lack of a GUI session."
+              exit 1
+            fi
+            echo "::warning::No Python traceback found in the log; early exit is treated as inconclusive on a headless runner, not a failure."
           fi
+
+      - name: Upload smoke test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_BASENAME }}-smoke-test-log
+          path: packaging/macos/out/*-launch-smoke-test.log
+          if-no-files-found: ignore
 
       - name: Sign app
         if: ${{ github.event.inputs.enable_signing == 'true' }}

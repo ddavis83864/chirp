@@ -30,6 +30,14 @@ hiddenimports = (
     + collect_submodules('chirp.memcolors')
     + collect_submodules('chirp.profiles')
     + collect_submodules('chirp.assistant')
+    # wx.richtext (and other wx submodules) reach for compiled extension
+    # submodules like wx._xml at import time in a way PyInstaller's static
+    # analysis doesn't always follow -- collect the whole wx package
+    # explicitly rather than rely on hook coverage for this combination of
+    # wxPython/PyInstaller versions (confirmed missing via a real CI build:
+    # "ModuleNotFoundError: No module named 'wx._xml'" from chirp/wxui's
+    # `import wx.richtext`).
+    + collect_submodules('wx')
     + ['yattag', 'suds', 'lark', 'pyserial']
 )
 

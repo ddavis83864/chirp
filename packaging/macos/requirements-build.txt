@@ -14,3 +14,7 @@ yattag
 suds
 lark
 pyinstaller>=6.10,<7
+# Ships PyInstaller hooks (including one for wx) beyond what PyInstaller's
+# own bundled hooks cover -- defense in depth alongside the explicit
+# collect_submodules('wx') in chirpwx.spec.
+pyinstaller-hooks-contrib>=2024.0,<2026
