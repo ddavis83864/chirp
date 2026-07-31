@@ -1,18 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    com.apple.security.cs.disable-library-validation and
+    com.apple.security.cs.allow-dyld-environment-variables were present in
+    earlier drafts of this file without a demonstrated need. sign.sh signs
+    every nested .dylib/.so/framework with the same Developer ID identity
+    as the main executable, so library validation should hold without
+    disabling it, and nothing in this codebase reads DYLD_* environment
+    variables at runtime. Removed per the rule: do not carry a broad
+    entitlement without evidence the signed bundle actually needs it.
+
+    Neither entitlement has been re-added because Apple Developer ID
+    credentials are not available in this environment to run a real signed
+    (Mode B) validation build. If a future Mode B run fails with a library
+    validation or dyld related error, add the specific entitlement back
+    here with the exact failure it fixes documented above it, not
+    preemptively.
+-->
 <plist version="1.0">
 <dict>
-    <!-- Required for CPython's ctypes/JIT-adjacent memory handling under the
-         hardened runtime; PyInstaller-frozen Python apps fail to start
-         without it. -->
+    <!-- ctypes callback trampolines (libffi) need writable+executable
+         pages at runtime; serial.tools.list_ports_osx (pyserial, used by
+         chirp/drivers for serial port enumeration) calls directly into
+         CoreFoundation/IOKit via ctypes, which is the documented real
+         trigger for this under the hardened runtime. Without it, the
+         frozen interpreter fails to start. -->
     <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
-    <true/>
-    <!-- The bundle carries wxPython's compiled extension modules and other
-         third-party dylibs signed by their own publishers (or unsigned);
-         library validation would block loading them. -->
-    <key>com.apple.security.cs.disable-library-validation</key>
-    <true/>
-    <key>com.apple.security.cs.allow-dyld-environment-variables</key>
     <true/>
 </dict>
 </plist>
