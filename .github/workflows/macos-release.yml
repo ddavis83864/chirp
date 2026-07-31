@@ -1,0 +1,288 @@
+name: macOS Release
+
+# The only workflow in this repository authorized to publish a macOS
+# release. It never touches the Linux AppImage release (different tag
+# namespace, different workflow, different job) and it never publishes
+# anything unless enable_signing, enable_notarization, and
+# enable_release_upload are ALL explicitly true, every build/sign/notarize
+# job succeeded, and the protected `macos-production-release` environment
+# approves the run.
+#
+# Modes (see docs/macos-packaging.md for the full runbook):
+#   Mode A: enable_signing=false, enable_notarization=false, enable_release_upload=false
+#           -> unsigned validation build only, no release
+#   Mode B: enable_signing=true,  enable_notarization=true,  enable_release_upload=false
+#           -> signed + notarized release-candidate artifacts, no release
+#   Mode C: enable_signing=true,  enable_notarization=true,  enable_release_upload=true
+#           -> everything Mode B does, plus a real macOS-only GitHub release
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: 'Full 40-character commit SHA of the application source to release (not a tag/branch name)'
+        required: true
+        default: '9c38424f5e716c00e4444533a093ca1ba51258af'
+      release_version:
+        description: 'Version string (must be X.Y.Z) for bundle metadata, artifact filenames, and the release tag'
+        required: true
+        default: '1.12.0'
+      architectures:
+        description: 'Comma-separated native architectures to release: arm64,x86_64 (universal2 is not a supported release artifact)'
+        required: true
+        default: 'arm64,x86_64'
+      enable_signing:
+        description: 'Sign with the Developer ID certificate (required for release upload)'
+        required: true
+        type: boolean
+        default: false
+      enable_notarization:
+        description: 'Submit for Apple notarization (required for release upload)'
+        required: true
+        type: boolean
+        default: false
+      enable_release_upload:
+        description: 'Publish a macOS GitHub release (requires signing AND notarization both true)'
+        required: true
+        type: boolean
+        default: false
+      release_tag:
+        description: 'Release tag (must match macos-v<version> and must not collide with the appimage-* namespace)'
+        required: true
+        default: 'macos-v1.12.0'
+      release_name:
+        description: 'Release title'
+        required: true
+        default: 'CHIRP 1.12.0 for macOS'
+      prerelease:
+        description: 'Mark the GitHub release as a prerelease'
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Pre-flight release guards
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (tags included)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate inputs
+        env:
+          SOURCE_REF: ${{ inputs.source_ref }}
+          RELEASE_VERSION: ${{ inputs.release_version }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          ENABLE_SIGNING: ${{ inputs.enable_signing }}
+          ENABLE_NOTARIZATION: ${{ inputs.enable_notarization }}
+          ENABLE_RELEASE_UPLOAD: ${{ inputs.enable_release_upload }}
+        run: |
+          set -euo pipefail
+
+          if ! [[ "$SOURCE_REF" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::source_ref must be a full 40-character commit SHA for a release (got '$SOURCE_REF')." >&2
+            exit 1
+          fi
+          if ! git cat-file -e "${SOURCE_REF}^{commit}" 2>/dev/null; then
+            echo "::error::source_ref $SOURCE_REF was not found in this repository's history." >&2
+            exit 1
+          fi
+
+          if ! [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::release_version must be X.Y.Z (got '$RELEASE_VERSION')." >&2
+            exit 1
+          fi
+
+          EXPECTED_TAG="macos-v${RELEASE_VERSION}"
+          if [ "$RELEASE_TAG" != "$EXPECTED_TAG" ]; then
+            echo "::warning::release_tag '$RELEASE_TAG' does not match the recommended macos-v${RELEASE_VERSION} pattern derived from release_version."
+          fi
+          if [[ "$RELEASE_TAG" == appimage-v* ]] || [ "$RELEASE_TAG" = "appimage-v1.12.0" ]; then
+            echo "::error::release_tag must never be in the appimage-* namespace (that belongs exclusively to the Linux release)." >&2
+            exit 1
+          fi
+          if [[ "$RELEASE_TAG" != macos-v* ]]; then
+            echo "::error::release_tag must start with 'macos-v' (got '$RELEASE_TAG')." >&2
+            exit 1
+          fi
+
+          if [ "$ENABLE_RELEASE_UPLOAD" = "true" ]; then
+            if [ "$ENABLE_SIGNING" != "true" ] || [ "$ENABLE_NOTARIZATION" != "true" ]; then
+              echo "::error::enable_release_upload=true requires enable_signing=true AND enable_notarization=true. Refusing to publish an unsigned or unnotarized release." >&2
+              exit 1
+            fi
+          fi
+
+          echo "Inputs validated."
+
+      - name: Refuse if the release tag already exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          if git rev-parse "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "::error::tag $RELEASE_TAG already exists locally/remotely. Refusing to overwrite an existing tag -- choose a new release_tag (e.g. macos-v${{ inputs.release_version }}.1) or delete the stale tag/release deliberately first, outside this workflow." >&2
+            exit 1
+          fi
+          if gh release view "$RELEASE_TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "::error::a GitHub release for tag $RELEASE_TAG already exists. Refusing to overwrite it." >&2
+            exit 1
+          fi
+          echo "Confirmed: $RELEASE_TAG does not already exist as a tag or release."
+
+      - name: Working tree is clean
+        run: |
+          set -euo pipefail
+          git status --porcelain
+          [ -z "$(git status --porcelain)" ] || { echo "::error::working tree is not clean" >&2; exit 1; }
+
+  build-sign-notarize:
+    name: Build, sign, and notarize
+    needs: guard
+    uses: ./.github/workflows/macos-build.yml
+    with:
+      source_ref: ${{ inputs.source_ref }}
+      release_version: ${{ inputs.release_version }}
+      architectures: ${{ inputs.architectures }}
+      build_dmg: true
+      enable_signing: ${{ inputs.enable_signing }}
+      enable_notarization: ${{ inputs.enable_notarization }}
+    secrets: inherit
+
+  publish-release:
+    name: Publish macOS release
+    needs: [guard, build-sign-notarize]
+    if: ${{ inputs.enable_release_upload == true && inputs.enable_signing == true && inputs.enable_notarization == true }}
+    environment: macos-production-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: 'CHIRP-${{ inputs.release_version }}-macOS-*'
+
+      - name: Re-verify checksums, signing, and notarization status independently
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          RELEASE_DIR="$PWD/release-assets"
+          mkdir -p "$RELEASE_DIR"
+
+          IFS=',' read -ra ARCHES <<< "${{ inputs.architectures }}"
+          for raw in "${ARCHES[@]}"; do
+            arch="$(echo "$raw" | xargs)"
+            [ -z "$arch" ] && continue
+            case "$arch" in
+              universal2)
+                echo "::error::universal2 is not a supported release artifact; refusing to include it in a release." >&2
+                exit 1
+                ;;
+            esac
+
+            SRC_DIR="artifacts/CHIRP-${{ inputs.release_version }}-macOS-${arch}"
+            MANIFEST="$SRC_DIR/CHIRP-${{ inputs.release_version }}-macOS-${arch}-manifest.json"
+            CHECKSUMS="$SRC_DIR/CHIRP-${{ inputs.release_version }}-macOS-${arch}.sha256.txt"
+
+            if [ ! -d "$SRC_DIR" ]; then
+              echo "::error::expected build output directory $SRC_DIR not found -- did the $arch build job run?" >&2
+              exit 1
+            fi
+            if [ ! -f "$MANIFEST" ]; then
+              echo "::error::provenance manifest missing for $arch ($MANIFEST)" >&2
+              exit 1
+            fi
+
+            SIGNED="$(python3 -c "import json; print(json.load(open('$MANIFEST'))['signed'])")"
+            NOTARIZED="$(python3 -c "import json; print(json.load(open('$MANIFEST'))['notarized'])")"
+            MANIFEST_VERSION="$(python3 -c "import json; print(json.load(open('$MANIFEST'))['application_version'])")"
+            MANIFEST_SOURCE_SHA="$(python3 -c "import json; print(json.load(open('$MANIFEST'))['application_source_sha'])")"
+
+            if [ "$SIGNED" != "True" ]; then
+              echo "::error::$arch build manifest reports signed=$SIGNED -- refusing to publish an unsigned artifact." >&2
+              exit 1
+            fi
+            if [ "$NOTARIZED" != "True" ]; then
+              echo "::error::$arch build manifest reports notarized=$NOTARIZED -- refusing to publish an unnotarized artifact." >&2
+              exit 1
+            fi
+            if [ "$MANIFEST_VERSION" != "${{ inputs.release_version }}" ]; then
+              echo "::error::$arch build manifest version '$MANIFEST_VERSION' does not match requested release_version '${{ inputs.release_version }}'." >&2
+              exit 1
+            fi
+            if [ "$MANIFEST_SOURCE_SHA" != "${{ inputs.source_ref }}" ]; then
+              echo "::error::$arch build manifest source SHA '$MANIFEST_SOURCE_SHA' does not match requested source_ref '${{ inputs.source_ref }}'." >&2
+              exit 1
+            fi
+
+            echo "$arch: signed=$SIGNED notarized=$NOTARIZED version=$MANIFEST_VERSION source=$MANIFEST_SOURCE_SHA -- OK"
+
+            for f in "$SRC_DIR"/*.zip "$SRC_DIR"/*.dmg; do
+              [ -e "$f" ] || continue
+              BASENAME="$(basename "$f")"
+              RECORDED="$(grep -F "$BASENAME" "$CHECKSUMS" | awk '{print $1}')"
+              ACTUAL="$(shasum -a 256 "$f" | awk '{print $1}')"
+              if [ -z "$RECORDED" ]; then
+                echo "::error::no recorded checksum found for $BASENAME in $CHECKSUMS" >&2
+                exit 1
+              fi
+              if [ "$RECORDED" != "$ACTUAL" ]; then
+                echo "::error::checksum mismatch for $BASENAME: recorded=$RECORDED actual=$ACTUAL" >&2
+                exit 1
+              fi
+              echo "  $BASENAME checksum verified: $ACTUAL"
+              cp "$f" "$RELEASE_DIR/"
+            done
+          done
+
+          echo "RELEASE_DIR=$RELEASE_DIR" >> "$GITHUB_ENV"
+
+      - name: Build combined macOS checksum manifest
+        run: |
+          set -euo pipefail
+          cd "$RELEASE_DIR"
+          shasum -a 256 *.zip *.dmg > "CHIRP-${{ inputs.release_version }}-macOS-SHA256SUMS.txt"
+          cat "CHIRP-${{ inputs.release_version }}-macOS-SHA256SUMS.txt"
+
+      - name: Create macOS release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # gh release create fails if the tag/release already exists, and
+          # never force-overwrites -- the guard job already checked this
+          # too, but re-checking here removes any TOCTOU gap between the
+          # two jobs.
+          if gh release view "${{ inputs.release_tag }}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "::error::release ${{ inputs.release_tag }} was created by something else since the guard job ran. Refusing to overwrite it." >&2
+            exit 1
+          fi
+
+          gh release create "${{ inputs.release_tag }}" \
+            --repo "${{ github.repository }}" \
+            --title "${{ inputs.release_name }}" \
+            --target "${{ inputs.source_ref }}" \
+            $( [ "${{ inputs.prerelease }}" = "true" ] && echo "--prerelease" ) \
+            --notes "$(cat <<EOF
+          CHIRP ${{ inputs.release_version }} for macOS -- signed with a Developer ID Application certificate and notarized by Apple.
+
+          Source: appimage-v1.12.0 (commit ${{ inputs.source_ref }})
+          Built and signed by workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          This release is independent of the Linux AppImage release (appimage-v1.12.0) -- it uses its own tag namespace and was never attached to that release.
+          EOF
+          )" \
+            "$RELEASE_DIR"/*.zip "$RELEASE_DIR"/*.dmg "$RELEASE_DIR"/*SHA256SUMS.txt
+
+          echo "Published: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ inputs.release_tag }}"

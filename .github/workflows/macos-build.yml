@@ -1,5 +1,14 @@
 name: macOS Build
 
+# Builds, (optionally) signs, and (optionally) notarizes CHIRP.app for
+# macOS. This workflow never publishes a GitHub release -- that is
+# .github/workflows/macos-release.yml's job exclusively, which calls this
+# workflow via workflow_call for the build/sign/notarize/validate work and
+# then adds environment-gated release publication on top. Keeping release
+# publication out of this file means there is exactly one path that can
+# ever create a macOS release, and it is the one with the protected
+# environment and the signing+notarization prerequisite checks.
+
 on:
   workflow_dispatch:
     inputs:
@@ -12,42 +21,61 @@ on:
         required: true
         default: '1.12.0'
       architectures:
-        description: 'Which architecture(s) to build'
+        description: 'Comma-separated architectures to build: arm64, x86_64, universal2, or all'
         required: true
         default: 'all'
-        type: choice
-        options:
-          - all
-          - x86_64
-          - arm64
-          - universal2
+        type: string
       build_dmg:
         description: 'Also build a DMG installer'
         required: true
         type: boolean
         default: true
       enable_signing:
-        description: 'Sign the app with the Developer ID certificate (requires secrets)'
+        description: 'Sign the app and DMG with the Developer ID certificate (requires secrets)'
         required: true
         type: boolean
         default: false
       enable_notarization:
-        description: 'Submit the signed app for Apple notarization (requires signing + secrets)'
+        description: 'Submit the signed app and DMG for Apple notarization (requires signing + secrets)'
         required: true
         type: boolean
         default: false
-      enable_release_upload:
-        description: 'Attach artifacts to a GitHub release (never the existing appimage-v1.12.0 release)'
+  workflow_call:
+    inputs:
+      source_ref:
+        required: true
+        type: string
+      release_version:
+        required: true
+        type: string
+      architectures:
+        required: true
+        type: string
+      build_dmg:
         required: true
         type: boolean
-        default: false
-      release_tag:
-        description: 'Release tag to upload to when enable_release_upload is true (must not be appimage-v1.12.0)'
+      enable_signing:
         required: true
-        default: 'v1.12.0-macos.1'
+        type: boolean
+      enable_notarization:
+        required: true
+        type: boolean
+    secrets:
+      MACOS_CERTIFICATE_P12:
+        required: false
+      MACOS_CERTIFICATE_PASSWORD:
+        required: false
+      MACOS_SIGNING_IDENTITY:
+        required: false
+      APPLE_ID:
+        required: false
+      APPLE_TEAM_ID:
+        required: false
+      APPLE_APP_SPECIFIC_PASSWORD:
+        required: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   compute-matrix:
@@ -59,41 +87,92 @@ jobs:
       - name: Compute
         id: compute
         env:
-          ARCHITECTURES: ${{ github.event.inputs.architectures }}
+          ARCHITECTURES: ${{ inputs.architectures }}
         run: |
           set -euo pipefail
-          case "$ARCHITECTURES" in
-            all)
-              MATRIX='[{"arch":"x86_64","runner":"macos-15-large"},{"arch":"arm64","runner":"macos-15"},{"arch":"universal2","runner":"macos-15"}]'
-              ;;
-            x86_64)
-              MATRIX='[{"arch":"x86_64","runner":"macos-15-large"}]'
-              ;;
-            arm64)
-              MATRIX='[{"arch":"arm64","runner":"macos-15"}]'
-              ;;
-            universal2)
-              MATRIX='[{"arch":"universal2","runner":"macos-15"}]'
-              ;;
-            *)
-              echo "error: unknown architectures input '$ARCHITECTURES'" >&2
-              exit 1
-              ;;
-          esac
-          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          declare -A SEEN
+          ITEMS="[]"
+          IFS=',' read -ra ARCHES <<< "$ARCHITECTURES"
+          for raw in "${ARCHES[@]}"; do
+            arch="$(echo "$raw" | xargs)"
+            [ -z "$arch" ] && continue
+            case "$arch" in
+              all) EXPAND=(x86_64 arm64 universal2) ;;
+              x86_64|arm64|universal2) EXPAND=("$arch") ;;
+              *) echo "error: unknown architecture '$arch' in '$ARCHITECTURES'" >&2; exit 1 ;;
+            esac
+            for a in "${EXPAND[@]}"; do
+              if [ -z "${SEEN[$a]:-}" ]; then
+                SEEN[$a]=1
+                case "$a" in
+                  x86_64) RUNNER="macos-15-large" ;;
+                  arm64|universal2) RUNNER="macos-15" ;;
+                esac
+                ITEMS="$(echo "$ITEMS" | jq --arg arch "$a" --arg runner "$RUNNER" '. + [{"arch":$arch,"runner":$runner}]')"
+              fi
+            done
+          done
+          echo "Resolved matrix: $ITEMS"
+          echo "matrix=$(echo "$ITEMS" | jq -c .)" >> "$GITHUB_OUTPUT"
+
+  check-secrets:
+    name: Check signing prerequisites
+    runs-on: ubuntu-latest
+    outputs:
+      signing_secrets_present: ${{ steps.check.outputs.signing_secrets_present }}
+      notarization_secrets_present: ${{ steps.check.outputs.notarization_secrets_present }}
+    steps:
+      - name: Check (yes/no only -- never expose secret values)
+        id: check
+        env:
+          HAS_P12: ${{ secrets.MACOS_CERTIFICATE_P12 != '' }}
+          HAS_P12_PW: ${{ secrets.MACOS_CERTIFICATE_PASSWORD != '' }}
+          HAS_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY != '' }}
+          HAS_APPLE_ID: ${{ secrets.APPLE_ID != '' }}
+          HAS_TEAM_ID: ${{ secrets.APPLE_TEAM_ID != '' }}
+          HAS_APP_PW: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD != '' }}
+        run: |
+          set -euo pipefail
+          if [ "$HAS_P12" = "true" ] && [ "$HAS_P12_PW" = "true" ] && [ "$HAS_IDENTITY" = "true" ]; then
+            echo "signing_secrets_present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signing_secrets_present=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$HAS_APPLE_ID" = "true" ] && [ "$HAS_TEAM_ID" = "true" ] && [ "$HAS_APP_PW" = "true" ]; then
+            echo "notarization_secrets_present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "notarization_secrets_present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fail fast if signing/notarization requested without secrets
+        env:
+          ENABLE_SIGNING: ${{ inputs.enable_signing }}
+          ENABLE_NOTARIZATION: ${{ inputs.enable_notarization }}
+        run: |
+          set -euo pipefail
+          if [ "$ENABLE_SIGNING" = "true" ] && [ "${{ steps.check.outputs.signing_secrets_present }}" != "true" ]; then
+            echo "::error::enable_signing=true but one or more of MACOS_CERTIFICATE_P12 / MACOS_CERTIFICATE_PASSWORD / MACOS_SIGNING_IDENTITY is not configured."
+            exit 1
+          fi
+          if [ "$ENABLE_NOTARIZATION" = "true" ] && [ "${{ steps.check.outputs.notarization_secrets_present }}" != "true" ]; then
+            echo "::error::enable_notarization=true but one or more of APPLE_ID / APPLE_TEAM_ID / APPLE_APP_SPECIFIC_PASSWORD is not configured."
+            exit 1
+          fi
 
   build:
     name: Build (${{ matrix.arch }})
-    needs: compute-matrix
+    needs: [compute-matrix, check-secrets]
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.compute-matrix.outputs.matrix) }}
     env:
-      CHIRP_APP_VERSION: ${{ github.event.inputs.release_version }}
+      CHIRP_APP_VERSION: ${{ inputs.release_version }}
       CHIRP_BUNDLE_ID: com.ddavis83864.chirp
-      ARTIFACT_BASENAME: CHIRP-${{ github.event.inputs.release_version }}-macOS-${{ matrix.arch }}
+      ARTIFACT_BASENAME: CHIRP-${{ inputs.release_version }}-macOS-${{ matrix.arch }}
+    outputs:
+      run_id: ${{ github.run_id }}
     steps:
       - name: Checkout packaging infrastructure
         uses: actions/checkout@v4
@@ -106,7 +185,7 @@ jobs:
           BRANCH_SHA="$(git rev-parse HEAD)"
           echo "Packaging infrastructure at: $BRANCH_SHA (${{ github.ref_name }})"
 
-          EXPECTED="${{ github.event.inputs.source_ref }}"
+          EXPECTED="${{ inputs.source_ref }}"
           if [[ "$EXPECTED" =~ ^[0-9a-f]{40}$ ]]; then
             RESOLVED="$EXPECTED"
           else
@@ -125,6 +204,8 @@ jobs:
 
           echo "Overlaying application source paths from $RESOLVED (packaging/, docs/, and workflow files stay at the branch tip)..."
           git checkout "$RESOLVED" -- chirp setup.py setup.cfg requirements.txt MANIFEST.in COPYING
+          echo "APPLICATION_SOURCE_SHA=$RESOLVED" >> "$GITHUB_ENV"
+          echo "PACKAGING_BRANCH_SHA=$BRANCH_SHA" >> "$GITHUB_ENV"
           echo "Application source pinned to $RESOLVED."
           git status --short || true
 
@@ -144,21 +225,21 @@ jobs:
       - name: Build CHIRP.app
         run: ./packaging/macos/build_app.sh "${{ matrix.arch }}"
 
-      - name: Validate bundle
+      - name: Validate bundle (pre-signing)
         run: |
           ./packaging/macos/validate_bundle.sh \
             packaging/macos/dist/CHIRP.app \
-            --version "${{ github.event.inputs.release_version }}" \
+            --version "${{ inputs.release_version }}" \
             --bundle-id "$CHIRP_BUNDLE_ID" \
             --arch "${{ matrix.arch }}"
 
-      - name: Best-effort launch smoke test
+      - name: Best-effort launch smoke test (pre-signing)
         run: |
           set -uo pipefail
           mkdir -p packaging/macos/out
-          LOG="packaging/macos/out/${ARTIFACT_BASENAME}-launch-smoke-test.log"
+          LOG="packaging/macos/out/${ARTIFACT_BASENAME}-launch-smoke-test-presign.log"
           packaging/macos/dist/CHIRP.app/Contents/MacOS/chirp \
-            --config-dir "$RUNNER_TEMP/chirp-ci-config" > "$LOG" 2>&1 &
+            --config-dir "$RUNNER_TEMP/chirp-ci-config-presign" > "$LOG" 2>&1 &
           PID=$!
           sleep 5
           if kill -0 "$PID" 2>/dev/null; then
@@ -168,74 +249,97 @@ jobs:
           else
             echo "CHIRP process exited within 5s of launch. Log follows:"
             cat "$LOG" || true
-            # A process can legitimately exit quickly on a CI runner with no
-            # interactive GUI login session -- that alone is inconclusive,
-            # not a failure. But a Python traceback (missing module, import
-            # error, etc.) is unambiguous regardless of GUI availability, so
-            # fail the build on those rather than only warning.
             if grep -qE 'Traceback \(most recent call last\)|ModuleNotFoundError|ImportError|\[PYI-[0-9]+:ERROR\]' "$LOG"; then
-              echo "::error::CHIRP crashed with a Python exception on launch (see log above), not merely exiting due to lack of a GUI session."
+              echo "::error::CHIRP crashed with a Python exception on launch (see log above)."
               exit 1
             fi
             echo "::warning::No Python traceback found in the log; early exit is treated as inconclusive on a headless runner, not a failure."
           fi
 
-      - name: Upload smoke test log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.ARTIFACT_BASENAME }}-smoke-test-log
-          path: packaging/macos/out/*-launch-smoke-test.log
-          if-no-files-found: ignore
-
       - name: Sign app
-        if: ${{ github.event.inputs.enable_signing == 'true' }}
+        if: ${{ inputs.enable_signing == true }}
         env:
           MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
           MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
           MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
-        run: ./packaging/macos/sign.sh packaging/macos/dist/CHIRP.app
-
-      - name: Re-verify signature
-        if: ${{ github.event.inputs.enable_signing == 'true' }}
-        run: |
-          codesign --verify --deep --strict --verbose=4 packaging/macos/dist/CHIRP.app
-          spctl --assess --type execute --verbose=4 packaging/macos/dist/CHIRP.app || true
-
-      - name: Create zip
         run: |
           mkdir -p packaging/macos/out
-          ditto -c -k --sequesterRsrc --keepParent \
+          ./packaging/macos/sign.sh \
             packaging/macos/dist/CHIRP.app \
-            "packaging/macos/out/${ARTIFACT_BASENAME}.app.zip"
+            packaging/macos/out/${{ env.ARTIFACT_BASENAME }}-signing-info.json
 
-      - name: Notarize zip and staple app
-        if: ${{ github.event.inputs.enable_notarization == 'true' }}
+      - name: Validate bundle (post-signing)
+        if: ${{ inputs.enable_signing == true }}
+        run: |
+          ./packaging/macos/validate_bundle.sh \
+            packaging/macos/dist/CHIRP.app \
+            --version "${{ inputs.release_version }}" \
+            --bundle-id "$CHIRP_BUNDLE_ID" \
+            --arch "${{ matrix.arch }}"
+
+      - name: Best-effort launch smoke test (post-signing)
+        if: ${{ inputs.enable_signing == true }}
+        run: |
+          set -uo pipefail
+          mkdir -p packaging/macos/out
+          LOG="packaging/macos/out/${ARTIFACT_BASENAME}-launch-smoke-test-postsign.log"
+          packaging/macos/dist/CHIRP.app/Contents/MacOS/chirp \
+            --config-dir "$RUNNER_TEMP/chirp-ci-config-postsign" > "$LOG" 2>&1 &
+          PID=$!
+          sleep 5
+          if kill -0 "$PID" 2>/dev/null; then
+            echo "Signed process still running 5s after launch (did not immediately crash)."
+            kill "$PID" 2>/dev/null || true
+            wait "$PID" 2>/dev/null || true
+          else
+            echo "Signed CHIRP process exited within 5s of launch. Log follows:"
+            cat "$LOG" || true
+            echo "::error::Signed build crashed or exited immediately -- this is a hardened-runtime/entitlements/signature problem, not a headless-runner limitation, since the unsigned build already passed this same check."
+            exit 1
+          fi
+
+      - name: Notarize app and staple ticket
+        if: ${{ inputs.enable_signing == true && inputs.enable_notarization == true }}
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
         run: |
+          set -euo pipefail
+          mkdir -p packaging/macos/out
+          SUBMIT_ZIP="$RUNNER_TEMP/${ARTIFACT_BASENAME}-app-submission.zip"
+          ditto -c -k --keepParent packaging/macos/dist/CHIRP.app "$SUBMIT_ZIP"
           ./packaging/macos/notarize.sh \
-            "packaging/macos/out/${ARTIFACT_BASENAME}.app.zip" \
-            packaging/macos/dist/CHIRP.app
-          # The .app is now stapled; rebuild the zip so the shipped archive
-          # carries the stapled ticket too.
+            "$SUBMIT_ZIP" \
+            packaging/macos/dist/CHIRP.app \
+            app \
+            packaging/macos/out
+
+      - name: Create zip
+        run: |
+          mkdir -p packaging/macos/out
           rm -f "packaging/macos/out/${ARTIFACT_BASENAME}.app.zip"
           ditto -c -k --sequesterRsrc --keepParent \
             packaging/macos/dist/CHIRP.app \
             "packaging/macos/out/${ARTIFACT_BASENAME}.app.zip"
 
       - name: Create DMG
-        if: ${{ github.event.inputs.build_dmg == 'true' }}
+        if: ${{ inputs.build_dmg == true }}
         run: |
           ./packaging/macos/build_dmg.sh \
             packaging/macos/dist/CHIRP.app \
             "packaging/macos/out/${ARTIFACT_BASENAME}.dmg" \
-            "CHIRP ${{ github.event.inputs.release_version }}"
+            "CHIRP ${{ inputs.release_version }}"
 
-      - name: Notarize DMG
-        if: ${{ github.event.inputs.build_dmg == 'true' && github.event.inputs.enable_notarization == 'true' }}
+      - name: Sign DMG
+        if: ${{ inputs.build_dmg == true && inputs.enable_signing == true }}
+        env:
+          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+        run: |
+          ./packaging/macos/sign_dmg.sh "packaging/macos/out/${ARTIFACT_BASENAME}.dmg"
+
+      - name: Notarize DMG and staple ticket
+        if: ${{ inputs.build_dmg == true && inputs.enable_signing == true && inputs.enable_notarization == true }}
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -243,13 +347,75 @@ jobs:
         run: |
           ./packaging/macos/notarize.sh \
             "packaging/macos/out/${ARTIFACT_BASENAME}.dmg" \
-            "packaging/macos/out/${ARTIFACT_BASENAME}.dmg"
+            "packaging/macos/out/${ARTIFACT_BASENAME}.dmg" \
+            dmg \
+            packaging/macos/out
+
+      - name: Post-signing architecture and resource revalidation
+        if: ${{ inputs.enable_signing == true }}
+        run: |
+          set -euo pipefail
+          echo "== Re-inspecting signed executable =="
+          file packaging/macos/dist/CHIRP.app/Contents/MacOS/chirp
+          lipo -info packaging/macos/dist/CHIRP.app/Contents/MacOS/chirp || true
+          otool -hv packaging/macos/dist/CHIRP.app/Contents/MacOS/chirp
+          echo "== Confirming wx._xml survived signing =="
+          XML_MATCHES=$(find packaging/macos/dist/CHIRP.app -iname "_xml*" -path "*/wx/*")
+          if [ -z "$XML_MATCHES" ]; then
+            echo "::error::wx._xml not found after signing" >&2
+            exit 1
+          fi
+          echo "$XML_MATCHES"
+          echo "== Confirming translations/stock configs still present after signing =="
+          MO_COUNT=$(find packaging/macos/dist/CHIRP.app -iname "*.mo" | wc -l | tr -d ' ')
+          CSV_COUNT=$(find packaging/macos/dist/CHIRP.app -ipath "*stock_configs*.csv" | wc -l | tr -d ' ')
+          echo "mo files: $MO_COUNT, stock config csvs: $CSV_COUNT"
+          [ "$MO_COUNT" -ge 10 ] || { echo "::error::translations missing after signing"; exit 1; }
+          [ "$CSV_COUNT" -ge 10 ] || { echo "::error::stock configs missing after signing"; exit 1; }
 
       - name: Compute checksums
         run: |
           cd packaging/macos/out
           shasum -a 256 *.zip *.dmg 2>/dev/null > "${ARTIFACT_BASENAME}.sha256.txt" || true
           cat "${ARTIFACT_BASENAME}.sha256.txt"
+
+      - name: Generate provenance manifest
+        run: |
+          set -euo pipefail
+          python3 - "packaging/macos/out/${ARTIFACT_BASENAME}-manifest.json" <<'PYEOF'
+          import json
+          import os
+          import sys
+
+          out_path = sys.argv[1]
+          signing_info_path = f"packaging/macos/out/{os.environ['ARTIFACT_BASENAME']}-signing-info.json"
+          signing_info = {}
+          if os.path.exists(signing_info_path):
+              with open(signing_info_path) as f:
+                  signing_info = json.load(f)
+
+          manifest = {
+              "application_version": os.environ["CHIRP_APP_VERSION"],
+              "application_source_sha": os.environ.get("APPLICATION_SOURCE_SHA", ""),
+              "packaging_branch_sha": os.environ.get("PACKAGING_BRANCH_SHA", ""),
+              "architecture": os.environ["MATRIX_ARCH"],
+              "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+              "workflow_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "minimum_macos_version": "11.0",
+              "signed": os.environ["ENABLE_SIGNING"] == "true",
+              "notarized": os.environ["ENABLE_NOTARIZATION"] == "true",
+              "signing_authority": signing_info.get("authority", ""),
+              "apple_team_id": signing_info.get("team_id", ""),
+              "hardened_runtime": signing_info.get("hardened_runtime", False),
+          }
+          with open(out_path, "w") as f:
+              json.dump(manifest, f, indent=2)
+          print(json.dumps(manifest, indent=2))
+          PYEOF
+        env:
+          MATRIX_ARCH: ${{ matrix.arch }}
+          ENABLE_SIGNING: ${{ inputs.enable_signing }}
+          ENABLE_NOTARIZATION: ${{ inputs.enable_notarization }}
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v4
@@ -259,22 +425,8 @@ jobs:
             packaging/macos/out/*.zip
             packaging/macos/out/*.dmg
             packaging/macos/out/*.sha256.txt
-
-      - name: Attach to release
-        if: ${{ github.event.inputs.enable_release_upload == 'true' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          TAG="${{ github.event.inputs.release_tag }}"
-          if [ "$TAG" = "appimage-v1.12.0" ] || [[ "$TAG" == appimage-v* ]]; then
-            echo "error: refusing to upload to an appimage-* release tag." >&2
-            exit 1
-          fi
-          gh release create "$TAG" \
-              --repo "${{ github.repository }}" \
-              --title "$TAG" \
-              --notes "macOS packaging of CHIRP ${{ github.event.inputs.release_version }} (source ${{ github.event.inputs.source_ref }})." \
-              --target "${{ github.event.inputs.source_ref }}" \
-              || echo "release $TAG already exists, uploading assets to it"
-          gh release upload "$TAG" packaging/macos/out/*.zip packaging/macos/out/*.dmg packaging/macos/out/*.sha256.txt --clobber
+            packaging/macos/out/*-manifest.json
+            packaging/macos/out/*-signing-info.json
+            packaging/macos/out/*-launch-smoke-test-*.log
+            packaging/macos/out/notarization-log-*.json
+          if-no-files-found: warn
