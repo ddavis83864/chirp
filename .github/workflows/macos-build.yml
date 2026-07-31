@@ -1,13 +1,22 @@
 name: macOS Build
 
-# Builds, (optionally) signs, and (optionally) notarizes CHIRP.app for
-# macOS. This workflow never publishes a GitHub release -- that is
-# .github/workflows/macos-release.yml's job exclusively, which calls this
-# workflow via workflow_call for the build/sign/notarize/validate work and
-# then adds environment-gated release publication on top. Keeping release
-# publication out of this file means there is exactly one path that can
-# ever create a macOS release, and it is the one with the protected
-# environment and the signing+notarization prerequisite checks.
+# Builds, and -- depending on release_channel -- optionally signs and
+# notarizes CHIRP.app for macOS. This workflow never publishes a GitHub
+# release -- that is .github/workflows/macos-release.yml's job exclusively,
+# which calls this workflow via workflow_call for the build/sign/notarize
+# work and then adds environment-gated release publication on top.
+#
+# release_channel is a first-class, explicit choice, not inferred from
+# whether secrets exist:
+#   community -- unsigned, not notarized. No Apple credentials needed or
+#                touched. This is a fully supported release path, not a
+#                fallback.
+#   signed    -- Developer ID signed, hardened runtime, notarized, stapled.
+#                Requires enable_signing=true, enable_notarization=true,
+#                and the six Apple secrets.
+# community + enable_signing/enable_notarization=true, or signed +
+# either of them false, are both rejected in check-secrets before any
+# macOS runner is used.
 
 on:
   workflow_dispatch:
@@ -25,18 +34,26 @@ on:
         required: true
         default: 'all'
         type: string
+      release_channel:
+        description: 'community (unsigned, no Apple credentials) or signed (Developer ID + notarized)'
+        required: true
+        type: choice
+        default: 'community'
+        options:
+          - community
+          - signed
       build_dmg:
         description: 'Also build a DMG installer'
         required: true
         type: boolean
         default: true
       enable_signing:
-        description: 'Sign the app and DMG with the Developer ID certificate (requires secrets)'
+        description: 'Sign the app and DMG with the Developer ID certificate (requires release_channel=signed and secrets)'
         required: true
         type: boolean
         default: false
       enable_notarization:
-        description: 'Submit the signed app and DMG for Apple notarization (requires signing + secrets)'
+        description: 'Submit the signed app and DMG for Apple notarization (requires release_channel=signed, signing, and secrets)'
         required: true
         type: boolean
         default: false
@@ -49,6 +66,9 @@ on:
         required: true
         type: string
       architectures:
+        required: true
+        type: string
+      release_channel:
         required: true
         type: string
       build_dmg:
@@ -116,13 +136,52 @@ jobs:
           echo "matrix=$(echo "$ITEMS" | jq -c .)" >> "$GITHUB_OUTPUT"
 
   check-secrets:
-    name: Check signing prerequisites
+    name: Check release-channel guards and signing prerequisites
     runs-on: ubuntu-latest
-    outputs:
-      signing_secrets_present: ${{ steps.check.outputs.signing_secrets_present }}
-      notarization_secrets_present: ${{ steps.check.outputs.notarization_secrets_present }}
     steps:
-      - name: Check (yes/no only -- never expose secret values)
+      - name: Validate release_channel value
+        env:
+          RELEASE_CHANNEL: ${{ inputs.release_channel }}
+        run: |
+          set -euo pipefail
+          case "$RELEASE_CHANNEL" in
+            community|signed) ;;
+            *) echo "::error::release_channel must be 'community' or 'signed' (got '$RELEASE_CHANNEL')." >&2; exit 1 ;;
+          esac
+
+      - name: Enforce channel/signing/notarization consistency
+        env:
+          RELEASE_CHANNEL: ${{ inputs.release_channel }}
+          ENABLE_SIGNING: ${{ inputs.enable_signing }}
+          ENABLE_NOTARIZATION: ${{ inputs.enable_notarization }}
+        run: |
+          set -euo pipefail
+          if [ "$RELEASE_CHANNEL" = "community" ]; then
+            if [ "$ENABLE_SIGNING" = "true" ]; then
+              echo "::error::release_channel=community requires enable_signing=false. The Community Edition is unsigned by design -- select release_channel=signed if you want to sign." >&2
+              exit 1
+            fi
+            if [ "$ENABLE_NOTARIZATION" = "true" ]; then
+              echo "::error::release_channel=community requires enable_notarization=false. The Community Edition is not notarized by design -- select release_channel=signed if you want notarization." >&2
+              exit 1
+            fi
+          elif [ "$RELEASE_CHANNEL" = "signed" ]; then
+            if [ "$ENABLE_SIGNING" != "true" ]; then
+              echo "::error::release_channel=signed requires enable_signing=true." >&2
+              exit 1
+            fi
+            if [ "$ENABLE_NOTARIZATION" != "true" ]; then
+              echo "::error::release_channel=signed requires enable_notarization=true." >&2
+              exit 1
+            fi
+          fi
+          if [ "$ENABLE_NOTARIZATION" = "true" ] && [ "$ENABLE_SIGNING" != "true" ]; then
+            echo "::error::enable_notarization=true requires enable_signing=true; notarization submits a signed artifact." >&2
+            exit 1
+          fi
+          echo "Channel/signing/notarization combination is consistent."
+
+      - name: Check secret presence (yes/no only -- never expose secret values)
         id: check
         env:
           HAS_P12: ${{ secrets.MACOS_CERTIFICATE_P12 != '' }}
@@ -158,6 +217,7 @@ jobs:
             echo "::error::enable_notarization=true but one or more of APPLE_ID / APPLE_TEAM_ID / APPLE_APP_SPECIFIC_PASSWORD is not configured."
             exit 1
           fi
+          echo "Community Edition builds (release_channel=community) never reach this far needing Apple secrets -- enable_signing/enable_notarization are forced false by the guard above, so this check is a no-op for that channel by construction."
 
   build:
     name: Build (${{ matrix.arch }})
@@ -170,7 +230,7 @@ jobs:
     env:
       CHIRP_APP_VERSION: ${{ inputs.release_version }}
       CHIRP_BUNDLE_ID: com.ddavis83864.chirp
-      ARTIFACT_BASENAME: CHIRP-${{ inputs.release_version }}-macOS-${{ matrix.arch }}
+      ARTIFACT_BASENAME: CHIRP-${{ inputs.release_version }}-macOS-${{ matrix.arch }}${{ inputs.release_channel == 'community' && '-unsigned' || '' }}
     outputs:
       run_id: ${{ github.run_id }}
     steps:
@@ -231,7 +291,8 @@ jobs:
             packaging/macos/dist/CHIRP.app \
             --version "${{ inputs.release_version }}" \
             --bundle-id "$CHIRP_BUNDLE_ID" \
-            --arch "${{ matrix.arch }}"
+            --arch "${{ matrix.arch }}" \
+            --min-macos "11.0"
 
       - name: Best-effort launch smoke test (pre-signing)
         run: |
@@ -256,6 +317,19 @@ jobs:
             echo "::warning::No Python traceback found in the log; early exit is treated as inconclusive on a headless runner, not a failure."
           fi
 
+      - name: Verify Community Edition bundle is not Developer-ID signed
+        if: ${{ inputs.release_channel == 'community' }}
+        run: |
+          set -euo pipefail
+          echo "== codesign -dv on unsigned Community Edition build =="
+          SIG_INFO="$(codesign -dv --verbose=4 packaging/macos/dist/CHIRP.app 2>&1)" || true
+          echo "$SIG_INFO"
+          if echo "$SIG_INFO" | grep -q '^Authority='; then
+            echo "::error::Community Edition build unexpectedly carries a real signing authority. release_channel=community must never ship a Developer-ID-signed artifact under the unsigned artifact name. Aborting." >&2
+            exit 1
+          fi
+          echo "Confirmed: no Authority= line present -- unsigned or ad-hoc only (PyInstaller applies its own ad-hoc signature so Apple Silicon binaries can execute at all; this is not a Developer ID signature and is expected)."
+
       - name: Sign app
         if: ${{ inputs.enable_signing == true }}
         env:
@@ -275,7 +349,8 @@ jobs:
             packaging/macos/dist/CHIRP.app \
             --version "${{ inputs.release_version }}" \
             --bundle-id "$CHIRP_BUNDLE_ID" \
-            --arch "${{ matrix.arch }}"
+            --arch "${{ matrix.arch }}" \
+            --min-macos "11.0"
 
       - name: Best-effort launch smoke test (post-signing)
         if: ${{ inputs.enable_signing == true }}
@@ -326,10 +401,14 @@ jobs:
       - name: Create DMG
         if: ${{ inputs.build_dmg == true }}
         run: |
+          VOLNAME="CHIRP ${{ inputs.release_version }}"
+          if [ "${{ inputs.release_channel }}" = "community" ]; then
+            VOLNAME="CHIRP ${{ inputs.release_version }} (Unsigned Community Edition)"
+          fi
           ./packaging/macos/build_dmg.sh \
             packaging/macos/dist/CHIRP.app \
             "packaging/macos/out/${ARTIFACT_BASENAME}.dmg" \
-            "CHIRP ${{ inputs.release_version }}"
+            "$VOLNAME"
 
       - name: Sign DMG
         if: ${{ inputs.build_dmg == true && inputs.enable_signing == true }}
@@ -373,6 +452,32 @@ jobs:
           [ "$MO_COUNT" -ge 10 ] || { echo "::error::translations missing after signing"; exit 1; }
           [ "$CSV_COUNT" -ge 10 ] || { echo "::error::stock configs missing after signing"; exit 1; }
 
+      - name: Post-build architecture and resource revalidation (Community Edition)
+        if: ${{ inputs.release_channel == 'community' }}
+        run: |
+          set -euo pipefail
+          echo "== Re-inspecting unsigned executable =="
+          file packaging/macos/dist/CHIRP.app/Contents/MacOS/chirp
+          lipo -info packaging/macos/dist/CHIRP.app/Contents/MacOS/chirp || true
+          echo "== Confirming wx._xml present =="
+          XML_MATCHES=$(find packaging/macos/dist/CHIRP.app -iname "_xml*" -path "*/wx/*")
+          [ -n "$XML_MATCHES" ] || { echo "::error::wx._xml not found"; exit 1; }
+          echo "$XML_MATCHES"
+          echo "== Confirming translations/stock configs present =="
+          MO_COUNT=$(find packaging/macos/dist/CHIRP.app -iname "*.mo" | wc -l | tr -d ' ')
+          CSV_COUNT=$(find packaging/macos/dist/CHIRP.app -ipath "*stock_configs*.csv" | wc -l | tr -d ' ')
+          echo "mo files: $MO_COUNT, stock config csvs: $CSV_COUNT"
+          [ "$MO_COUNT" -ge 10 ] || { echo "::error::translations missing"; exit 1; }
+          [ "$CSV_COUNT" -ge 10 ] || { echo "::error::stock configs missing"; exit 1; }
+          echo "== Confirming no cross-architecture contamination =="
+          BAD=$(find packaging/macos/dist/CHIRP.app -type f \( -name "*.so" -o -name "*.dylib" \) -exec file {} \; | grep -v "${{ matrix.arch }}" | grep -i "mach-o" || true)
+          if [ -n "$BAD" ]; then
+            echo "::error::found native binaries not matching ${{ matrix.arch }}:"
+            echo "$BAD"
+            exit 1
+          fi
+          echo "All native binaries confirmed ${{ matrix.arch }}-only."
+
       - name: Compute checksums
         run: |
           cd packaging/macos/out
@@ -382,28 +487,60 @@ jobs:
       - name: Generate provenance manifest
         run: |
           set -euo pipefail
-          python3 - "packaging/macos/out/${ARTIFACT_BASENAME}-manifest.json" <<'PYEOF'
+          BUILD_TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          python3 - "packaging/macos/out/${ARTIFACT_BASENAME}-manifest.json" "$BUILD_TIMESTAMP" <<'PYEOF'
           import json
           import os
           import sys
 
-          out_path = sys.argv[1]
-          signing_info_path = f"packaging/macos/out/{os.environ['ARTIFACT_BASENAME']}-signing-info.json"
+          out_path, build_timestamp = sys.argv[1:3]
+          out_dir = os.path.dirname(out_path)
+          basename = os.environ["ARTIFACT_BASENAME"]
+
+          signing_info_path = os.path.join(out_dir, f"{basename}-signing-info.json")
           signing_info = {}
           if os.path.exists(signing_info_path):
               with open(signing_info_path) as f:
                   signing_info = json.load(f)
 
+          signed = os.environ["ENABLE_SIGNING"] == "true"
+          notarized = os.environ["ENABLE_NOTARIZATION"] == "true"
+
+          artifacts = []
+          for ext in (".app.zip", ".dmg"):
+              path = os.path.join(out_dir, basename + ext)
+              if os.path.exists(path):
+                  checksum = ""
+                  sha_file = os.path.join(out_dir, basename + ".sha256.txt")
+                  if os.path.exists(sha_file):
+                      with open(sha_file) as f:
+                          for line in f:
+                              if line.strip().endswith(os.path.basename(path)):
+                                  checksum = line.split()[0]
+                                  break
+                  artifacts.append({
+                      "filename": os.path.basename(path),
+                      "size": os.path.getsize(path),
+                      "sha256": checksum,
+                  })
+
           manifest = {
-              "application_version": os.environ["CHIRP_APP_VERSION"],
-              "application_source_sha": os.environ.get("APPLICATION_SOURCE_SHA", ""),
-              "packaging_branch_sha": os.environ.get("PACKAGING_BRANCH_SHA", ""),
-              "architecture": os.environ["MATRIX_ARCH"],
+              "release_channel": os.environ["RELEASE_CHANNEL"],
+              "signed": signed,
+              "notarized": notarized,
+              "stapled": notarized,
+              "gatekeeper_assessed": notarized,
+              "developer_id_signed": signed,
+              "source_sha": os.environ.get("APPLICATION_SOURCE_SHA", ""),
+              "packaging_sha": os.environ.get("PACKAGING_BRANCH_SHA", ""),
               "workflow_run_id": os.environ["GITHUB_RUN_ID"],
               "workflow_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "architecture": os.environ["MATRIX_ARCH"],
+              "application_version": os.environ["CHIRP_APP_VERSION"],
+              "bundle_identifier": os.environ["CHIRP_BUNDLE_ID"],
               "minimum_macos_version": "11.0",
-              "signed": os.environ["ENABLE_SIGNING"] == "true",
-              "notarized": os.environ["ENABLE_NOTARIZATION"] == "true",
+              "artifacts": artifacts,
+              "build_timestamp": build_timestamp,
               "signing_authority": signing_info.get("authority", ""),
               "apple_team_id": signing_info.get("team_id", ""),
               "hardened_runtime": signing_info.get("hardened_runtime", False),
@@ -414,6 +551,7 @@ jobs:
           PYEOF
         env:
           MATRIX_ARCH: ${{ matrix.arch }}
+          RELEASE_CHANNEL: ${{ inputs.release_channel }}
           ENABLE_SIGNING: ${{ inputs.enable_signing }}
           ENABLE_NOTARIZATION: ${{ inputs.enable_notarization }}
 

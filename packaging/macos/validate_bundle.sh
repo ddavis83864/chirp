@@ -3,7 +3,7 @@
 #
 # Usage: ./packaging/macos/validate_bundle.sh <path-to-CHIRP.app> \
 #            --version 1.12.0 --bundle-id com.ddavis83864.chirp \
-#            [--arch x86_64|arm64|universal2]
+#            [--arch x86_64|arm64|universal2] [--min-macos 11.0]
 #
 # Exits non-zero on any check failure. Codesign/spctl checks are reported
 # but never fail this script -- unsigned builds are expected and valid;
@@ -25,11 +25,13 @@ shift
 EXPECT_VERSION=""
 EXPECT_BUNDLE_ID=""
 EXPECT_ARCH=""
+EXPECT_MIN_MACOS=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --version) EXPECT_VERSION="$2"; shift 2 ;;
         --bundle-id) EXPECT_BUNDLE_ID="$2"; shift 2 ;;
         --arch) EXPECT_ARCH="$2"; shift 2 ;;
+        --min-macos) EXPECT_MIN_MACOS="$2"; shift 2 ;;
         *) echo "error: unknown argument '$1'" >&2; exit 1 ;;
     esac
 done
@@ -63,10 +65,12 @@ if [ -f "$INFO_PLIST" ]; then
     ACTUAL_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$INFO_PLIST" 2>/dev/null || true)"
     ACTUAL_BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$INFO_PLIST" 2>/dev/null || true)"
     ACTUAL_EXEC="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$INFO_PLIST" 2>/dev/null || true)"
+    ACTUAL_MIN_MACOS="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$INFO_PLIST" 2>/dev/null || true)"
 
     echo "CFBundleShortVersionString: $ACTUAL_VERSION"
     echo "CFBundleIdentifier: $ACTUAL_BUNDLE_ID"
     echo "CFBundleExecutable: $ACTUAL_EXEC"
+    echo "LSMinimumSystemVersion: $ACTUAL_MIN_MACOS"
 
     if [ -n "$EXPECT_VERSION" ]; then
         [ "$ACTUAL_VERSION" = "$EXPECT_VERSION" ] \
@@ -77,6 +81,11 @@ if [ -f "$INFO_PLIST" ]; then
         [ "$ACTUAL_BUNDLE_ID" = "$EXPECT_BUNDLE_ID" ] \
             && pass "bundle id matches expected $EXPECT_BUNDLE_ID" \
             || fail "bundle id '$ACTUAL_BUNDLE_ID' != expected '$EXPECT_BUNDLE_ID'"
+    fi
+    if [ -n "$EXPECT_MIN_MACOS" ]; then
+        [ "$ACTUAL_MIN_MACOS" = "$EXPECT_MIN_MACOS" ] \
+            && pass "minimum macOS version matches expected $EXPECT_MIN_MACOS" \
+            || fail "minimum macOS version '$ACTUAL_MIN_MACOS' != expected '$EXPECT_MIN_MACOS'"
     fi
 fi
 

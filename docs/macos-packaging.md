@@ -4,6 +4,34 @@ This describes how `CHIRP.app` is built, signed, notarized, and released for
 macOS from this fork, and how it relates to the existing `appimage-v1.12.0`
 Linux release.
 
+There are two independent release channels, selected explicitly via the
+`release_channel` workflow input -- never inferred from whether Apple
+credentials happen to exist:
+
+| | **Community Edition** | **Signed Edition** |
+|---|---|---|
+| `release_channel` value | `community` | `signed` |
+| Cost | Free | Requires a paid Apple Developer Program membership |
+| Apple Developer ID signing | No | Yes |
+| Apple notarization | No | Yes |
+| Gatekeeper first-launch experience | Warning; user must explicitly authorize (Control-click -> Open, or System Settings -> Privacy & Security) | Opens normally, no warning |
+| Tag namespace | `macos-community-v<version>` | `macos-v<version>` |
+| Artifact names | `..._-unsigned.app.zip` / `..._-unsigned.dmg` | `....app.zip` / `....dmg` |
+| GitHub Environment | `macos-community-release` (no Apple secrets) | `macos-production-release` (has Apple secrets) |
+| Required secrets | none | `MACOS_CERTIFICATE_P12`, `MACOS_CERTIFICATE_PASSWORD`, `MACOS_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_SPECIFIC_PASSWORD` |
+| Install guide | [docs/macos-community-installation.md](macos-community-installation.md) | (no warning to document -- opens normally) |
+
+Unsigned status is a **user-experience limitation**, not a packaging
+failure: a Community Edition artifact goes through exactly the same
+architecture, bundle, resource, and dynamic-library validation as a Signed
+Edition artifact (see Community Validation Gates below) -- the only thing
+missing is Apple's verification of the publisher's identity, which costs
+money and requires an Apple Developer Program membership neither this fork
+nor its packaging infrastructure currently has. The Signed Edition path
+can be enabled later, for the exact same source and packaging pipeline,
+simply by adding the six secrets and selecting `release_channel=signed` --
+no redesign needed.
+
 ## Source revision this packaging targets
 
 There is no `v1.12.0` tag in this repository; the tagged Linux release is
@@ -74,67 +102,110 @@ Inputs:
 - `release_version` -- version string for metadata/filenames (default `1.12.0`)
 - `architectures` -- comma-separated list: `arm64`, `x86_64`, `universal2`,
   or `all` (expands to all three); e.g. `arm64,x86_64`
+- `release_channel` -- `community` (default) or `signed`. `check-secrets`
+  rejects any inconsistent combination before any macOS runner is used:
+  `community` requires `enable_signing=false` and `enable_notarization=false`;
+  `signed` requires both `true`.
 - `build_dmg` -- also build the DMG (default `true`)
 - `enable_signing` / `enable_notarization` -- both default `false`; the
-  workflow fails fast in a dedicated `check-secrets` job if either is
-  requested without its required secrets configured, before spending any
-  macOS runner time
+  workflow fails fast in `check-secrets` if either is requested without its
+  required secrets configured
+
+For `release_channel=community`, artifact filenames get a `-unsigned`
+suffix (e.g. `CHIRP-1.12.0-macOS-arm64-unsigned.app.zip`) so an unsigned
+artifact can never be confused with a signed one, and an additional step
+(`Verify Community Edition bundle is not Developer-ID signed`) inspects
+`codesign -dv` output and fails the build if a real `Authority=` line is
+unexpectedly present -- a Community Edition artifact must be ad-hoc-signed
+at most (PyInstaller applies its own ad-hoc signature so Apple Silicon
+binaries can execute at all; this is not a Developer ID signature).
 
 ### `.github/workflows/macos-release.yml`
 
 The **only** workflow authorized to publish a macOS GitHub release. Runs on
-`workflow_dispatch` only. Calls `macos-build.yml` internally, then adds a
-`publish-release` job gated on all of:
+`workflow_dispatch` only. Calls `macos-build.yml` internally, then adds
+**two separate** publish jobs -- `publish-community-release` and
+`publish-signed-release` -- each gated on its own channel, its own
+environment, and its own independent re-verification, so a Community
+Edition run can structurally never touch the signed release's environment
+or secrets:
 
-1. `enable_signing=true` **and** `enable_notarization=true` **and**
-   `enable_release_upload=true` (all three, not just the upload flag);
-2. the protected `macos-production-release` GitHub Environment approving
-   the run (see below);
-3. the `guard` job's pre-flight checks passing (valid inputs, `release_tag`
-   doesn't already exist as a tag or release, `release_tag` is in the
-   `macos-v*` namespace and can never collide with `appimage-*`, working
-   tree clean);
-4. every architecture's build+sign+notarize job succeeding;
-5. an **independent** re-verification in `publish-release` itself: downloads
-   every architecture's artifacts fresh, recomputes SHA-256 and compares
-   against the recorded checksums, and parses each architecture's
-   provenance manifest to confirm `signed: true` and `notarized: true` --
-   not just trusting that the upstream job claimed success.
+- `publish-community-release` runs only if `release_channel=community`
+  **and** `enable_release_upload=true` **and** `enable_signing=false`
+  **and** `enable_notarization=false`, targets the `macos-community-release`
+  environment (no Apple secrets), and re-verifies each architecture's
+  provenance manifest reports `release_channel: "community"`,
+  `signed: false`, `notarized: false` before publishing.
+- `publish-signed-release` runs only if `release_channel=signed` **and**
+  `enable_release_upload=true` **and** `enable_signing=true` **and**
+  `enable_notarization=true`, targets the `macos-production-release`
+  environment, and re-verifies each architecture's provenance manifest
+  reports `release_channel: "signed"`, `signed: true`, `notarized: true`
+  before publishing.
+
+Both publish jobs share the same `guard` job's pre-flight checks (valid
+inputs, tag/channel namespace consistency, `release_tag` doesn't already
+exist as a tag or release, working tree clean) and both independently
+recompute SHA-256 for every downloaded artifact and compare against the
+recorded checksums rather than trusting the upstream job's claimed success.
 
 Inputs: `source_ref` (must be a full 40-character SHA for a release, unlike
 the build workflow which accepts a tag name with a warning), `release_version`,
 `architectures` (default `arm64,x86_64` -- `universal2` is refused at
-publish time), `enable_signing`, `enable_notarization`, `enable_release_upload`,
-`release_tag` (default `macos-v1.12.0`), `release_name`, `prerelease`
-(default `true`).
+publish time), `release_channel` (`community` or `signed`), `enable_signing`,
+`enable_notarization`, `enable_release_upload`, `release_tag` (default
+`macos-community-v1.12.0`), `release_name`, `prerelease` (default `true`).
 
-Safe defaults: `enable_signing=false`, `enable_notarization=false`,
-`enable_release_upload=false`, `prerelease=true`.
+Safe defaults: `release_channel=community`, `enable_signing=false`,
+`enable_notarization=false`, `enable_release_upload=false`, `prerelease=true`.
 
 ## Modes
 
-| Mode | signing | notarization | release upload | Result |
-|---|---|---|---|---|
-| A | false | false | false | Unsigned validation build. `.zip`/`.dmg` as workflow artifacts only. |
-| B | true | true | false | Signed, notarized, stapled release-candidate artifacts as workflow artifacts. No release. |
-| C | true | true | true | Everything Mode B does, plus a real macOS-only GitHub release, gated by the protected environment. |
+| Mode | channel | signing | notarization | release upload | Result |
+|---|---|---|---|---|---|
+| A | community | false | false | false | Unsigned validation build. `.zip`/`.dmg` as workflow artifacts only. No Apple credentials needed. |
+| B | community | false | false | true | Unsigned arm64+x86_64 Community Edition GitHub release, prominently labeled unsigned. No Apple credentials needed. |
+| C | signed | true | true | false | Signed, notarized, stapled release-candidate artifacts as workflow artifacts. No release. |
+| D | signed | true | true | true | Everything Mode C does, plus a real signed macOS GitHub release, gated by the protected `macos-production-release` environment. |
 
-Mode C is structurally impossible unless Mode B's signing and notarization
-both genuinely succeeded in the *same* triggered run -- `publish-release`
+Any other combination is rejected by `check-secrets` (in `macos-build.yml`)
+and/or `guard` (in `macos-release.yml`) before a macOS runner is used --
+e.g. `community` with signing enabled, `signed` with notarization disabled,
+or `enable_notarization=true` with `enable_signing=false`.
+
+Mode D is structurally impossible unless Mode C's signing and notarization
+both genuinely succeeded in the *same* triggered run -- `publish-signed-release`
 depends on `build-sign-notarize` and independently re-verifies its output
-rather than trusting a flag.
+rather than trusting a flag. Mode B is available immediately, with no
+Apple credentials of any kind, because the Community Edition channel never
+requires them.
 
-## Protected environment: `macos-production-release`
+## Protected environments
 
-`macos-release.yml`'s `publish-release` job targets a GitHub Environment
-named `macos-production-release`. This repository's automation can create
-the empty environment shell via the API, but **cannot** configure
-protection rules (that requires a human with repo admin access in the
-GitHub UI). The repo owner should configure, under
-**Settings -> Environments -> macos-production-release**:
+Two GitHub Environments gate release publication, one per channel, so
+Community Edition runs never have access to signed-release secrets even if
+those secrets exist in the repository:
+
+### `macos-community-release`
+
+Targeted by `publish-community-release`. Should have **no** Apple secrets
+configured on it -- the Community Edition channel doesn't need any. The
+repo owner should still configure, under **Settings -> Environments ->
+macos-community-release**:
+
+- **Required reviewers**, so an unsigned public release still needs a
+  human sign-off even though no Apple credentials are involved.
+- **Deployment branch/ref policy**, restricting which branches may deploy.
+
+### `macos-production-release`
+
+Targeted by `publish-signed-release`. Holds (or should hold) the six Apple
+secrets, scoped to this environment specifically rather than repository-wide.
+The repo owner should configure, under **Settings -> Environments ->
+macos-production-release**:
 
 - **Required reviewers**: at least one person who must approve before
-  `publish-release` runs, even if all automated gates pass.
+  `publish-signed-release` runs, even if all automated gates pass.
 - **Deployment branch/ref policy**: restrict which branches/refs may
   deploy to this environment (e.g. only `feature/macos-production-release-process`
   or, once merged, `master`).
@@ -142,15 +213,15 @@ GitHub UI). The repo owner should configure, under
   triggered the run cannot also be the approver.
 - **Wait timer**, if you want a mandatory cooling-off period before
   publication proceeds even after approval.
-- **Environment secrets**: consider moving `MACOS_CERTIFICATE_P12`,
-  `MACOS_CERTIFICATE_PASSWORD`, `MACOS_SIGNING_IDENTITY`, `APPLE_ID`,
-  `APPLE_TEAM_ID`, and `APPLE_APP_SPECIFIC_PASSWORD` into
-  environment-scoped secrets on `macos-production-release` instead of (or
-  in addition to) repository-level secrets, so they're only readable when a
-  run is actually deploying to that environment.
+- **Environment secrets**: `MACOS_CERTIFICATE_P12`, `MACOS_CERTIFICATE_PASSWORD`,
+  `MACOS_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_TEAM_ID`, and
+  `APPLE_APP_SPECIFIC_PASSWORD`, scoped to this environment so they're only
+  readable when a run is actually deploying to it.
 
-None of these protection settings exist yet -- only the bare environment
-was created. Do not treat Mode C as safe to run until they're configured.
+Both environments exist as bare shells only (created via the API) -- **no
+protection rules are configured on either yet**. Do not treat Mode B or
+Mode D as safe to run in production until the relevant environment's
+protection rules are set up by someone with repo admin access.
 
 ## Local build prerequisites
 
@@ -203,13 +274,32 @@ variables override the corresponding defaults in `build_app.sh`/`chirpwx.spec`.
 
 ## Artifact naming
 
+Signed Edition:
+
 ```text
 CHIRP-1.12.0-macOS-arm64.app.zip
 CHIRP-1.12.0-macOS-arm64.dmg
 CHIRP-1.12.0-macOS-x86_64.app.zip
 CHIRP-1.12.0-macOS-x86_64.dmg
-CHIRP-1.12.0-macOS-SHA256SUMS.txt   (release only -- combined checksums for all published macOS artifacts, generated by macos-release.yml; never contains Linux checksums, and the Linux AppImage's own checksum process never contains macOS entries)
+CHIRP-1.12.0-macOS-SHA256SUMS.txt
 ```
+
+Community Edition -- every binary artifact filename carries an `unsigned`
+marker so it can never be confused with a signed one:
+
+```text
+CHIRP-1.12.0-macOS-arm64-unsigned.app.zip
+CHIRP-1.12.0-macOS-arm64-unsigned.dmg
+CHIRP-1.12.0-macOS-x86_64-unsigned.app.zip
+CHIRP-1.12.0-macOS-x86_64-unsigned.dmg
+CHIRP-1.12.0-macOS-Community-SHA256SUMS.txt
+CHIRP-1.12.0-macOS-Community-PROVENANCE.json
+```
+
+`publish-community-release` asserts every artifact filename matches
+`*-unsigned.app.zip`/`*-unsigned.dmg` before publishing and fails the run
+otherwise. Neither channel's checksum manifest ever contains the other
+channel's or Linux's entries.
 
 ## Signing sequence (inside-out)
 
@@ -256,11 +346,52 @@ evidence: `com.apple.security.cs.disable-library-validation` (unnecessary
 since every nested binary is re-signed under the same Developer ID
 identity, so library validation should hold) and
 `com.apple.security.cs.allow-dyld-environment-variables` (nothing in this
-codebase reads `DYLD_*` at runtime). If a real Mode B (signed) run ever
+codebase reads `DYLD_*` at runtime). If a real Mode C (signed) run ever
 fails with a library-validation or dyld-related error, add the specific
 entitlement back with that exact failure documented above it in the file --
-not preemptively. No Mode B run has been possible yet; Apple Developer ID
+not preemptively. No Mode C run has been possible yet; Apple Developer ID
 credentials are not configured in this repository.
+
+## Provenance manifest
+
+Each architecture build produces `<basename>-manifest.json` with:
+`release_channel`, `signed`, `notarized`, `stapled`, `gatekeeper_assessed`,
+`developer_id_signed`, `source_sha`, `packaging_sha`, `workflow_run_id`,
+`workflow_run_attempt`, `architecture`, `application_version`,
+`bundle_identifier`, `minimum_macos_version`, `build_timestamp`,
+`signing_authority`, `apple_team_id`, `hardened_runtime`, and an
+`artifacts` list of `{filename, size, sha256}` objects (one per shipped
+`.app.zip`/`.dmg` -- adapted from a flat `artifact_filename`/`artifact_size`/
+`sha256` to a list since one manifest covers both files for that
+architecture). For Community Edition builds, `signed`, `notarized`,
+`stapled`, `gatekeeper_assessed`, and `developer_id_signed` are always
+`false` -- never `null`, never omitted. `publish-community-release` builds
+a combined `CHIRP-<version>-macOS-Community-PROVENANCE.json` (the per-
+architecture manifests as a JSON array) and attaches it to the release.
+
+## Community validation gates
+
+Before a Community Edition artifact can be published, every one of these
+must pass (implemented across `validate_bundle.sh`, the workflow's
+Community-specific verification steps, and `publish-community-release`'s
+independent re-check) -- none of them require Developer ID, notarization,
+stapling, or a successful `spctl` trust assessment, and a `spctl` rejection
+on an unsigned artifact is expected, not a defect:
+
+correct source SHA and version; correct bundle identifier; correct minimum
+macOS version (`LSMinimumSystemVersion`); native `arm64`/`x86_64`
+executable matching the build's own architecture with no cross-architecture
+contamination; all `.so`/`.dylib` files inspected; bundled Python runtime
+and wxPython native modules present; `wx._xml` present and correct
+architecture; expected translation and stock-configuration counts; no
+leaked build-machine paths in `otool -L` output; ZIP extracts cleanly with
+executable permissions intact; DMG mounts and contains `CHIRP.app` plus an
+`/Applications` symlink; the app launches on the build runner and survives
+the smoke-test interval with no traceback, missing-library error, or
+wxPython initialization failure; checksums match after upload/download;
+the provenance manifest is complete and self-consistent; release notes
+identify the artifacts as unsigned; the tag is in the `macos-community-v*`
+namespace.
 
 ## Notarization and stapling strategy
 
@@ -308,21 +439,19 @@ checks only presence (`secrets.X != ''`), never the value, and fails the
 run early and clearly if signing/notarization is requested without its
 prerequisites.
 
-## Unsigned installation behavior (Mode A artifacts)
+## Unsigned installation behavior (Community Edition / Mode A/B artifacts)
 
 Gatekeeper will refuse to open an unsigned build with a plain double-click
 ("CHIRP.app is damaged and can't be opened" or "cannot be opened because
-the developer cannot be verified"). To run it anyway: right-click ->
-Open -> Open, or:
+the developer cannot be verified"). This is expected, standard behavior
+for unsigned Developer-ID-less software, not a packaging bug. See
+[docs/macos-community-installation.md](macos-community-installation.md)
+for the full, user-facing walkthrough (Control-click -> Open, or System
+Settings -> Privacy & Security -> Open Anyway) -- do not instruct users to
+disable Gatekeeper system-wide (`sudo spctl --master-disable`) or disable
+System Integrity Protection.
 
-```bash
-xattr -dr com.apple.quarantine /Applications/CHIRP.app
-```
-
-This is expected, standard behavior for unsigned Developer-ID-less
-software, not a packaging bug.
-
-## Signed and notarized installation behavior (Mode B/C artifacts)
+## Signed and notarized installation behavior (Signed Edition / Mode C/D artifacts)
 
 A properly signed, notarized, and stapled build should open normally via
 double-click with no Gatekeeper warning, including fully offline (the
@@ -370,12 +499,14 @@ after publication):
 1. `gh release delete <tag> --repo ddavis83864/chirp` removes the release
    and its assets (does not delete the underlying git tag by default; pass
    `--cleanup-tag` if the tag should go too).
-2. This never touches `appimage-v1.12.0` or any Linux artifact -- the two
-   release processes are fully independent by tag namespace and workflow.
-3. To prevent further releases while investigating, remove or rotate the
-   `macos-production-release` environment's required-reviewer list down to
-   nobody, or temporarily delete the environment-scoped secrets -- either
-   makes `publish-release` fail closed.
+2. This never touches `appimage-v1.12.0`, any Linux artifact, or the other
+   macOS channel's release -- all three release processes are fully
+   independent by tag namespace, environment, and workflow job.
+3. To prevent further releases while investigating, remove the relevant
+   environment's (`macos-community-release` or `macos-production-release`)
+   required-reviewer list down to nobody -- this makes the corresponding
+   publish job fail closed. For the signed channel, temporarily deleting
+   the environment-scoped Apple secrets has the same effect.
 4. Do not force-push, rewrite the tag, or re-publish under the same tag
    name; use a new `release_tag` for the corrected release.
 
@@ -390,8 +521,8 @@ after publication):
 3. Update `MACOS_SIGNING_IDENTITY` if the certificate's common name or team
    ID changed (check with `security find-identity -v -p codesigning` after
    importing the new cert into a local keychain).
-4. Run a Mode B (signed + notarized, no release) validation build first to
-   confirm the new identity works before ever running Mode C.
+4. Run a Mode C (signed + notarized, no release) validation build first to
+   confirm the new identity works before ever running Mode D.
 5. The old certificate's secret values can be deleted once the rotation is
    confirmed working; there is nothing else in this repository that
    references a certificate by value (only by secret name).
@@ -401,7 +532,41 @@ after publication):
 1. Revoke the old app-specific password at appleid.apple.com -> Sign-In and
    Security -> App-Specific Passwords.
 2. Generate a new one, update `APPLE_APP_SPECIFIC_PASSWORD`.
-3. Run a Mode B validation build to confirm notarization still succeeds.
+3. Run a Mode C validation build to confirm notarization still succeeds.
+
+## Release-operator checklists
+
+### Community Edition
+
+1. Confirm `source_ref` is the correct full 40-character commit SHA.
+2. Confirm `release_version` matches what you intend to ship.
+3. Select `release_channel=community`.
+4. Confirm `enable_signing=false`.
+5. Confirm `enable_notarization=false`.
+6. Initially run with `enable_release_upload=false` (Mode A) to validate.
+7. Confirm both `arm64` and `x86_64` build jobs pass.
+8. Inspect the workflow's validation output for both architectures.
+9. Download the artifacts and verify checksums yourself.
+10. Review each architecture's provenance manifest.
+11. Review the auto-generated release notes template for accuracy.
+12. Re-run with `enable_release_upload=true` (Mode B) once satisfied --
+    this requires `macos-community-release` environment approval.
+13. Verify the release assets after publication (download and re-check
+    checksums against the published `SHA256SUMS.txt`).
+
+### Signed Edition
+
+1. Confirm `source_ref`, `release_version`.
+2. Select `release_channel=signed`.
+3. Confirm `enable_signing=true`, `enable_notarization=true`.
+4. Confirm the six Apple secrets are configured (only presence is checked
+   automatically; correctness is only proven by the run itself succeeding).
+5. Run with `enable_release_upload=false` (Mode C) first and review the
+   signing/notarization/stapling/Gatekeeper evidence in the job logs and
+   provenance manifest.
+6. Only then re-run with `enable_release_upload=true` (Mode D) -- requires
+   `macos-production-release` environment approval.
+7. Verify the release assets after publication.
 
 ## Physical testing limitations
 
@@ -417,7 +582,7 @@ means:
   serial-port enumeration with no radio attached is exercised by CI.
 - Gatekeeper's actual first-launch user experience on a real, physically
   operated Mac has not been observed, for either unsigned or signed builds.
-- No Mode B (signed/notarized) run has ever been executed -- Apple
+- No Mode C/D (signed/notarized) run has ever been executed -- Apple
   Developer ID credentials are not present in this repository. Everything
   describing signing/notarization behavior above is the intended design,
   verified through static review of the scripts and workflow logic, not
