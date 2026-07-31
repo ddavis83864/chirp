@@ -1,7 +1,13 @@
 # CHIRP Project
 
 <p align="center">
-  <img src="docs/CHIRP_Repo.png" alt="CHIRP">
+  <img src="docs/CHIRP_Repo.png" alt="CHIRP — Program. Connect. Chirp. Open source radio programming for radio operators, by radio operators.">
+</p>
+
+<p align="center">
+  <a href="#linux"><img alt="Linux: AppImage download available" src="https://img.shields.io/badge/Linux-AppImage-FCC624?logo=linux&logoColor=black"></a>
+  <a href="#windows"><img alt="Windows: supported, run from source" src="https://img.shields.io/badge/Windows-Supported%20from%20source-0078D6?logo=windows&logoColor=white"></a>
+  <a href="#macos"><img alt="macOS: unsigned Community Edition download available for Apple Silicon and Intel" src="https://img.shields.io/badge/macOS-Unsigned%20Community%20Edition-000000?logo=apple&logoColor=white"></a>
 </p>
 
 This is the official git repository for the
@@ -10,40 +16,199 @@ __[CHIRP](https://www.chirpmyradio.com)__ project.
 When submitting PRs, please see [this file](.github/pull_request_template.md)
 for rules and guidelines.
 
-## Getting started
+CHIRP's memory editor — this fork adds column customization, word-wrap,
+duplicate detection, and configurable color coding on top of upstream CHIRP
+(see [Features added in this fork](#features-added-in-this-fork) below):
 
-### 1. Clone the repo
+![CHIRP memory list color-coded by category, showing a repeater, simplex, calling frequency, satellite, APRS/data, digital voice, beacon, receive-only, aviation, GMRS, FRS, MURS, marine, weather, unknown, and disabled memory alongside the color legend](docs/screenshots/memory-color-coding.png)
+
+## Download CHIRP
+
+| Platform | Download | Architecture | Package | Notes |
+|---|---|---|---|---|
+| **Linux** | [AppImage releases](https://github.com/ddavis83864/chirp/releases?q=appimage-v&expanded=true) (current: `appimage-v1.12.0`) | x86_64 | Single-file `.AppImage` | No installation needed — `chmod +x` and run. [Instructions ↓](#linux) |
+| **Windows** | No public installer yet — [run from source](#windows) | Any Windows 10/11 host with Python 3.11 | N/A (`run-chirp.ps1`) | Not packaged as a downloadable installer from this fork. [Instructions ↓](#windows) |
+| **macOS (Apple Silicon)** | [Community Edition v1.12.0](https://github.com/ddavis83864/chirp/releases/tag/macos-community-v1.12.0) | arm64 | `.dmg` or `.app.zip` | **Unsigned** — one-time Gatekeeper bypass required. [Instructions ↓](#macos) |
+| **macOS (Intel)** | [Community Edition v1.12.0](https://github.com/ddavis83864/chirp/releases/tag/macos-community-v1.12.0) | x86_64 | `.dmg` or `.app.zip` | **Unsigned** — one-time Gatekeeper bypass required. [Instructions ↓](#macos) |
+
+Linux and macOS releases live in separate tag namespaces
+(`appimage-v<version>` and `macos-community-v<version>`), so this table
+links each platform straight to its own releases rather than to a single
+"latest" link that could point you at the wrong platform's build. The
+current macOS Community Edition release is also marked as a GitHub
+pre-release, reflecting that this packaging channel is new — every
+artifact still goes through full structural and architecture validation
+before publishing (see the provenance manifest attached to the release).
+
+## Linux
+
+**Download:** grab the latest `CHIRP-appimage-*-x86_64.AppImage` from the
+[AppImage releases](https://github.com/ddavis83864/chirp/releases?q=appimage-v&expanded=true)
+page — currently `appimage-v1.12.0`
+([CHIRP-appimage-v1.12.0-x86_64.AppImage](https://github.com/ddavis83864/chirp/releases/tag/appimage-v1.12.0)).
+x86_64 only.
+
+```bash
+chmod +x CHIRP-appimage-v1.12.0-x86_64.AppImage
+./CHIRP-appimage-v1.12.0-x86_64.AppImage
+```
+
+**Desktop launcher (optional):** once CHIRP is running, Help > Install Linux
+Launcher... adds it to your application menu and/or Desktop — see
+[Installing a launcher](#appimage-builds) below for exact details.
+
+**Serial port access:** on most distros your user needs to be in the
+`dialout` group (or equivalent) to access `/dev/ttyUSB*`/`/dev/ttyACM*`
+devices:
+
+```bash
+sudo usermod -aG dialout "$USER"
+```
+
+Sign out and back in (or reboot) for the group change to take effect. Don't
+run CHIRP as root to work around a permissions issue instead.
+
+**Troubleshooting:**
+
+- *AppImage won't start / "Permission denied"* — you likely skipped
+  `chmod +x`; re-run the command above.
+- *Radio/serial device not listed* — confirm you're in the `dialout` group
+  (`groups` should list it) and that you've signed out/in since adding
+  yourself.
+- *"Install Linux Launcher..." doesn't appear in the Help menu* — that item
+  only shows when CHIRP detects it's running as an AppImage; it isn't
+  available when running from a source checkout (see
+  [Running from source](#running-from-source)).
+- *Launcher icon won't open on double-click* — some desktop environments
+  (notably GNOME/Nautilus) require a newly created desktop icon to be
+  marked "Allow Launching" first (right-click it).
+
+Prefer to run from a source checkout instead of the AppImage? See
+[Running from source](#running-from-source). Full packaging details,
+config isolation, and build-your-own instructions are under
+[AppImage builds](#appimage-builds) below.
+
+## Windows
+
+This fork does not currently publish a Windows installer, portable ZIP, or
+`.exe` — there is no Windows release workflow or release namespace in this
+repository. CHIRP runs well on Windows **from a source checkout**, using
+the included launcher script.
+
+**Get CHIRP:**
+
+```powershell
+git clone https://github.com/ddavis83864/chirp.git
+cd chirp
+.\run-chirp.ps1
+```
+
+Requires [Python 3.11](https://www.python.org/downloads/) on your `PATH`
+(or reachable via the `py` launcher) — this is the version wxPython 4.2.x
+ships prebuilt Windows wheels for. The first run creates a local `.venv`
+and installs everything needed; later runs just launch CHIRP. See
+[Running from source](#running-from-source) for exactly what it does.
+
+**First launch:** since you're running a PowerShell script from a source
+checkout rather than a downloaded, unsigned binary, Windows SmartScreen
+doesn't come into play here. If you downloaded the repo as a ZIP from
+GitHub instead of using `git clone`, Windows may mark the extracted
+`.ps1` file as coming from the internet and block it from running — if
+so, right-click `run-chirp.ps1` > Properties > check **Unblock** > OK, or
+run `Unblock-File .\run-chirp.ps1` in PowerShell first. (This is standard
+Windows behavior for any script obtained this way, not specific to CHIRP.)
+
+**USB/serial drivers:** most radio programming cables use a USB-to-serial
+chip (FTDI, Prolific, or Silicon Labs CP210x are common). Windows Update
+installs many of these automatically; if your cable isn't recognized, get
+the driver from the cable/radio manufacturer's site or the chipset
+manufacturer directly — avoid third-party driver download sites. Once
+installed, the cable appears as a COM port in Device Manager; select that
+port in CHIRP's Radio > Download from radio / Upload to radio dialog.
+
+**Troubleshooting:**
+
+- *Radio not detected* — check Device Manager for the assigned COM port,
+  and make sure no other program (another CHIRP window, a terminal
+  program, etc.) already has it open.
+- *`run-chirp.ps1` fails to launch* — see the Unblock-File note above, and
+  confirm Python 3.11 is installed and on `PATH`.
+- *wxPython fails to install* — confirm you're on Python 3.11; wxPython
+  4.2.x has no prebuilt wheel for other Python versions on Windows.
+
+"Supported from source" isn't "no support" — if you'd like to help package
+a redistributable Windows build for this fork, contributions are welcome.
+
+## macOS
+
+CHIRP for macOS is distributed from this fork as a free, unsigned
+**Community Edition**. It is *not* signed with an Apple Developer ID and
+has *not* been notarized by Apple. See
+[docs/macos-community-installation.md](docs/macos-community-installation.md)
+for the full explanation and
+[docs/macos-packaging.md](docs/macos-packaging.md) for how it's built.
+
+**Download:**
+[CHIRP 1.12.0 for macOS — Community Edition](https://github.com/ddavis83864/chirp/releases/tag/macos-community-v1.12.0)
+
+**Pick your architecture** — Apple menu (top-left) > **About This Mac**:
+
+- **Apple Silicon** (a line labeled "Chip", e.g. Apple M1/M2/M3/M4):
+  download `CHIRP-1.12.0-macOS-arm64-unsigned.dmg`
+- **Intel** (a line labeled "Processor", e.g. Intel Core i5/i7):
+  download `CHIRP-1.12.0-macOS-x86_64-unsigned.dmg`
+
+A `.app.zip` of each architecture is also attached to the release as an
+alternative to the `.dmg`.
+
+**Install:**
+
+1. Double-click the downloaded `.dmg`.
+2. Drag `CHIRP.app` onto the `Applications` shortcut in the same window.
+3. Eject the mounted disk image.
+
+**First launch (Gatekeeper):** because the build is unsigned, macOS blocks
+it the first time you try to open it — this is standard macOS behavior for
+any application without an Apple Developer ID signature, not specific to
+CHIRP.
+
+- **Control-click method:** Finder > Applications > Control-click **CHIRP**
+  > **Open** > confirm **Open** in the dialog that appears.
+- **Privacy & Security method** (if Control-click doesn't offer an Open
+  option): try opening CHIRP once (it will be blocked) > System Settings >
+  Privacy & Security > **Open Anyway** > authenticate > try opening CHIRP
+  again.
+
+Don't disable Gatekeeper system-wide (`sudo spctl --master-disable`) or
+disable System Integrity Protection to install CHIRP — neither is
+necessary, and both remove security protection for your whole Mac, not
+just this one app. Full step-by-step instructions, checksum verification,
+and an advanced manual-quarantine-removal option are in
+[docs/macos-community-installation.md](docs/macos-community-installation.md).
+
+**USB/serial devices:** macOS includes built-in drivers for many common
+USB-to-serial chips; some adapters (Prolific-based cables in particular)
+may need a driver from the manufacturer. This hasn't been exhaustively
+verified against every programming cable — please open an issue if a
+common cable doesn't work out of the box.
+
+## Running from source
+
+Both launcher scripts assume you've cloned the repo:
 
 ```
 git clone https://github.com/ddavis83864/chirp.git
 cd chirp
 ```
 
-### 2. Launch CHIRP
-
-Pick whichever of these is easiest for you:
-
-- **Linux, no setup required:** skip cloning entirely and just download a
-  prebuilt [AppImage release](../../releases) — see
-  [AppImage builds](#appimage-builds) below.
-- **Linux, from this checkout:** run [`./run-chirp.sh`](run-chirp.sh) from
-  the repo root. On first run it creates a local `.venv` and installs
-  everything needed; subsequent runs just launch CHIRP.
-- **Windows, from this checkout:** run
-  [`.\run-chirp.ps1`](run-chirp.ps1) from a PowerShell prompt in the repo
-  root. Same idea — first run sets up a `.venv`, later runs just launch.
-  (Needs [Python](https://www.python.org/downloads/) 3.11 installed; see
-  the script's comments for why that version specifically.)
-- **macOS:** a free, unsigned "Community Edition" `CHIRP.app` (separate
-  builds for Apple Silicon and Intel) can be produced via GitHub Actions —
-  see [docs/macos-packaging.md](docs/macos-packaging.md). Because it isn't
-  signed with an Apple Developer ID, macOS shows a security warning on
-  first launch that you need to explicitly bypass once; see
-  [docs/macos-community-installation.md](docs/macos-community-installation.md)
-  for exact steps.
-
-Both launcher scripts are documented in more detail under
-[`run-chirp.sh` / `run-chirp.ps1`](#run-chirpsh--run-chirpps1) below.
+- [`run-chirp.sh`](run-chirp.sh) (Linux): creates a local `.venv` (with
+  access to system wxPython) on first run and installs CHIRP into it, then
+  launches `chirpwx.py`.
+- [`run-chirp.ps1`](run-chirp.ps1) (Windows): creates a `.venv` using Python
+  3.11 (the version wxPython 4.2.x ships prebuilt wheels for), installs
+  `requirements.txt` (wxPython separately, wheel-only, so pip never tries to
+  compile it), then launches `chirpwx.py`. Supports `-Cli` to launch `chirpc`
+  instead, and `-Reinstall` to rebuild the venv from scratch.
 
 ## Features added in this fork
 
@@ -191,7 +356,7 @@ determination — frequency allocations vary by country, licensing class, and
 local band plan, and change over time. You remain responsible for
 verifying your own frequencies and operating privileges.
 
-![Memory list color-coded by category, showing a repeater, simplex, calling frequency, satellite, APRS/data, digital voice, beacon, receive-only, aviation, GMRS, FRS, MURS, marine, weather, unknown, and disabled memory alongside the color legend](docs/screenshots/memory-color-coding.png)
+(See the color-coded memory list screenshot at the top of this README.)
 
 ### Programming Assistant (Experimental)
 
@@ -212,20 +377,6 @@ channels are always receive-only. See
 [docs/programming_assistant.md](docs/programming_assistant.md) for full
 details, data sources, privacy behavior, and known limitations.
 
-### `run-chirp.sh` / `run-chirp.ps1`
-
-Convenience launchers for running CHIRP straight from a git checkout, without
-a system-wide install.
-
-- [`run-chirp.sh`](run-chirp.sh) (Linux): creates a local `.venv` (with
-  access to system wxPython) on first run and installs CHIRP into it, then
-  launches `chirpwx.py`.
-- [`run-chirp.ps1`](run-chirp.ps1) (Windows): creates a `.venv` using Python
-  3.11 (the version wxPython 4.2.x ships prebuilt wheels for), installs
-  `requirements.txt` (wxPython separately, wheel-only, so pip never tries to
-  compile it), then launches `chirpwx.py`. Supports `-Cli` to launch `chirpc`
-  instead, and `-Reinstall` to rebuild the venv from scratch.
-
 ## AppImage builds
 
 This fork can produce a self-contained Linux AppImage of CHIRP, so people
@@ -233,10 +384,11 @@ with access to this repo can run it without setting up a Python/wxPython
 build environment themselves.
 
 **Getting a build:** every push of an `appimage-vX.Y.Z` tag (e.g.
-`appimage-v1.7.0`) triggers the
+`appimage-v1.12.0`) triggers the
 [AppImage workflow](.github/workflows/appimage.yml), which builds the
-AppImage and attaches it to a matching [GitHub Release](../../releases) on
-this repo. Download the `CHIRP-*-x86_64.AppImage` asset from there,
+AppImage and attaches it to a matching
+[GitHub Release](https://github.com/ddavis83864/chirp/releases?q=appimage-v&expanded=true)
+on this repo. Download the `CHIRP-*-x86_64.AppImage` asset from there,
 `chmod +x` it, and run it. Releases follow semantic versioning — see
 [CHANGELOG.md](CHANGELOG.md) for what changed in each one and what the
 version numbers mean.
@@ -325,3 +477,19 @@ didn't pull them in on its own.
 package versions (wxPython 4.0.7 / wxWidgets 3.0.5, GTK3). It has not been
 tested on other architectures or against a Wayland compositor without the
 X11 backend CHIRP forces by default on Linux.
+
+## Documentation
+
+- [docs/screenshots.md](docs/screenshots.md) — inventory of every
+  screenshot used in this README and the docs, with the app version,
+  platform, and capture context each one was taken from.
+- [docs/macos-community-installation.md](docs/macos-community-installation.md) —
+  full macOS Community Edition install and Gatekeeper walkthrough.
+- [docs/macos-packaging.md](docs/macos-packaging.md) — how the macOS
+  Community Edition and (future) Signed Edition builds are packaged and
+  released.
+- [docs/programming_assistant.md](docs/programming_assistant.md) — the
+  experimental Programming Assistant feature: data sources, privacy
+  behavior, and known limitations.
+- [CHANGELOG.md](CHANGELOG.md) — what changed in each release and what the
+  version numbers mean.
