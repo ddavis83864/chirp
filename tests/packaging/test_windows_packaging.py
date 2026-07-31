@@ -56,10 +56,10 @@ class VersionAndFilenamePatternTests(unittest.TestCase):
         version = '1.12.0'
         zip_name = f'CHIRP-windows-v{version}-x86_64-portable.zip'
         setup_name = f'CHIRP-windows-v{version}-x86_64-setup.exe'
-        self.assertEqual(zip_name,
-                          'CHIRP-windows-v1.12.0-x86_64-portable.zip')
-        self.assertEqual(setup_name,
-                          'CHIRP-windows-v1.12.0-x86_64-setup.exe')
+        self.assertEqual(
+            zip_name, 'CHIRP-windows-v1.12.0-x86_64-portable.zip')
+        self.assertEqual(
+            setup_name, 'CHIRP-windows-v1.12.0-x86_64-setup.exe')
         # Both must embed the same version string in the same X.Y.Z form.
         self.assertIn(f'v{version}', zip_name)
         self.assertIn(f'v{version}', setup_name)
@@ -102,9 +102,9 @@ class ProvenanceGeneratorTests(unittest.TestCase):
         self.assertEqual(provenance['platform'], 'windows')
         self.assertEqual(provenance['architecture'], 'x86_64')
         self.assertTrue(provenance['source_equivalence_verified'])
-        self.assertEqual(provenance['code_signing'],
-                          {'signed': False,
-                           'status': 'unsigned-community-prerelease'})
+        self.assertEqual(
+            provenance['code_signing'],
+            {'signed': False, 'status': 'unsigned-community-prerelease'})
         # Round-trips through JSON cleanly.
         json.loads(json.dumps(provenance))
 
@@ -126,7 +126,8 @@ class ProvenanceGeneratorTests(unittest.TestCase):
 
     def test_artifact_hash_validation(self):
         args = self._base_args()
-        args.artifacts = ['CHIRP-windows-v1.12.0-x86_64-portable.zip=' + 'a' * 64]
+        args.artifacts = [
+            'CHIRP-windows-v1.12.0-x86_64-portable.zip=' + 'a' * 64]
         provenance = self.mod.build_provenance(args)
         self.assertEqual(len(provenance['artifacts']), 1)
         self.assertEqual(
@@ -162,16 +163,17 @@ class PyInstallerSpecStaticChecks(unittest.TestCase):
         match = re.search(
             r"exe_driver_check = EXE\(.*?console=(\w+)", self.spec_text,
             re.DOTALL)
-        self.assertIsNotNone(match,
-                              'could not find CHIRP-driver-check EXE() block')
+        self.assertIsNotNone(
+            match, 'could not find CHIRP-driver-check EXE() block')
         self.assertEqual(match.group(1), 'True')
 
     def test_uses_windows_icon(self):
         self.assertIn("chirp.ico", self.spec_text)
 
     def test_collects_expected_hidden_import_packages(self):
-        for expected in ("chirp.drivers", "chirp.wxui", "chirp.assistant",
-                          "'wx'"):
+        expected_names = (
+            "chirp.drivers", "chirp.wxui", "chirp.assistant", "'wx'")
+        for expected in expected_names:
             self.assertIn(expected, self.spec_text)
 
 
@@ -194,8 +196,8 @@ class InnoSetupScriptStaticChecks(unittest.TestCase):
         self.assertNotIn('createservice', lowered)
 
     def test_no_run_key_autostart(self):
-        self.assertNotIn(r'HKCU\Software\Microsoft\Windows\CurrentVersion\Run',
-                          self.iss_text)
+        run_key = r'HKCU\Software\Microsoft\Windows\CurrentVersion\Run'
+        self.assertNotIn(run_key, self.iss_text)
 
     def test_desktop_shortcut_is_optional_and_unchecked(self):
         match = re.search(r'Name: "desktopicon";.*', self.iss_text)
@@ -218,9 +220,10 @@ class InnoSetupScriptStaticChecks(unittest.TestCase):
         # mention "[UninstallDelete]" by name to explain why one isn't
         # used, which would otherwise false-positive a plain substring
         # check.
+        stripped_lines = [line.strip() for line in self.iss_text.splitlines()]
         section_headers = [
-            line.strip() for line in self.iss_text.splitlines()
-            if line.strip().startswith('[') and not line.strip().startswith(';')
+            line for line in stripped_lines
+            if line.startswith('[') and not line.startswith(';')
         ]
         self.assertNotIn('[UninstallDelete]', section_headers)
 
@@ -228,8 +231,8 @@ class InnoSetupScriptStaticChecks(unittest.TestCase):
 class WorkflowExistsAndReferencesBaseline(unittest.TestCase):
     def test_workflow_file_present(self):
         workflow = REPO_ROOT / '.github' / 'workflows' / 'windows-release.yml'
-        self.assertTrue(workflow.exists(),
-                         'windows-release.yml is missing')
+        self.assertTrue(
+            workflow.exists(), 'windows-release.yml is missing')
 
     def test_workflow_references_verified_baseline(self):
         workflow = REPO_ROOT / '.github' / 'workflows' / 'windows-release.yml'

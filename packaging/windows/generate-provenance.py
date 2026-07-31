@@ -14,8 +14,11 @@ determine what the "true" values are.
 """
 import argparse
 import json
+import logging
 import sys
 
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+LOG = logging.getLogger(__name__)
 
 SCHEMA_VERSION = 1
 
@@ -126,7 +129,7 @@ def main(argv=None):
     try:
         provenance = build_provenance(args)
     except ValueError as exc:
-        print(f"error: {exc}", file=sys.stderr)
+        LOG.error("error: %s", exc)
         return 1
 
     text = json.dumps(provenance, indent=2, sort_keys=False)
@@ -137,8 +140,8 @@ def main(argv=None):
         f.write(text)
         f.write('\n')
 
-    print(f"Wrote {args.output}")
-    print(text)
+    LOG.info("Wrote %s", args.output)
+    LOG.info("%s", text)
     return 0
 
 

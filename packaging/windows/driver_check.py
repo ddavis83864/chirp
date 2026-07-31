@@ -16,7 +16,13 @@ Exit code 0 and a "DRIVER_COUNT=<n>" line on success; nonzero and a
 message on stderr on failure. Not a documented or supported CHIRP
 command-line tool -- packaging validation only.
 """
+import logging
 import sys
+
+# Bare "%(message)s" (no timestamp/level prefix): smoke-test.ps1 greps
+# captured output for a literal "DRIVER_COUNT=<n>" line.
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+LOG = logging.getLogger(__name__)
 
 
 def main():
@@ -32,21 +38,20 @@ def main():
         # code path the real app uses, not an approximation of it.
         directory.import_drivers()
     except Exception as exc:  # noqa: BLE001 - report any import failure
-        print(f"error: import_drivers() failed: {exc!r}", file=sys.stderr)
+        LOG.error("error: import_drivers() failed: %r", exc)
         return 1
 
     try:
         count = len(directory.DRV_TO_RADIO)
     except AttributeError:
-        print("error: chirp.directory has no DRV_TO_RADIO registry -- "
-              "chirp's driver-registry API may have changed.",
-              file=sys.stderr)
+        LOG.error("error: chirp.directory has no DRV_TO_RADIO registry -- "
+                  "chirp's driver-registry API may have changed.")
         return 1
 
-    print(f"DRIVER_COUNT={count}")
+    LOG.info("DRIVER_COUNT=%d", count)
     if count <= 0:
-        print("error: zero radio drivers registered in the frozen bundle",
-              file=sys.stderr)
+        LOG.error("error: zero radio drivers registered in the frozen "
+                  "bundle")
         return 1
     return 0
 

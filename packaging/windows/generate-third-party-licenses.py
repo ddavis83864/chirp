@@ -14,8 +14,12 @@ Run from an activated build venv:
     python packaging/windows/generate-third-party-licenses.py --output THIRD_PARTY_LICENSES.txt
 """
 import argparse
+import logging
 import sys
 import textwrap
+
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+LOG = logging.getLogger(__name__)
 
 try:
     from importlib import metadata as importlib_metadata
@@ -113,10 +117,10 @@ def render(found, missing):
         'This document lists material third-party runtime components '
         'bundled into the CHIRP Windows Community Edition distribution '
         '(the portable ZIP and the installer both contain the same '
-        'PyInstaller application bundle). CHIRP itself is licensed under '
-        'the GNU General Public License v3 or later -- see LICENSE in '
-        'this distribution. Listing a component here does not change '
-        "CHIRP's own license.")
+        'PyInstaller application bundle). CHIRP itself is licensed '
+        'under the GNU General Public License v3 or later -- see '
+        'LICENSE in this distribution. Listing a component here does '
+        "not change CHIRP's own license.")
     lines.append('')
 
     lines.append('Installed package metadata (from the build environment)')
@@ -174,14 +178,13 @@ def main(argv=None):
     with open(args.output, 'w', encoding='utf-8', newline='\n') as f:
         f.write(text)
 
-    print(text)
+    LOG.info("%s", text)
 
     if missing and not args.allow_missing:
-        print(
-            f"error: {len(missing)} expected package(s) missing from "
-            "build environment metadata; re-run with --allow-missing "
-            "only for local iteration, not in CI.",
-            file=sys.stderr)
+        LOG.error(
+            "error: %d expected package(s) missing from build "
+            "environment metadata; re-run with --allow-missing only "
+            "for local iteration, not in CI.", len(missing))
         return 1
     return 0
 

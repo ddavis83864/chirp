@@ -12,17 +12,21 @@ Usage:
 """
 import argparse
 import json
+import logging
 import os
 import sys
+
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+LOG = logging.getLogger(__name__)
 
 
 def fail(errors, message):
     errors.append(message)
-    print(f"FAIL: {message}", file=sys.stderr)
+    LOG.error("FAIL: %s", message)
 
 
 def ok(message):
-    print(f"OK:   {message}")
+    LOG.info("OK:   %s", message)
 
 
 def check_executable(bundle_dir, errors):
@@ -114,11 +118,11 @@ def check_drivers(bundle_dir, errors):
             else:
                 ok(f"PyInstaller archive present: "
                    f"{os.path.relpath(c, bundle_dir)} ({size:,} bytes)")
-    print(
+    LOG.info(
         "NOTE: full radio-driver-registry enumeration is validated by "
-        "smoke-test.ps1 -DriverRegistryCheck, which imports chirp.drivers "
-        "inside the packaged interpreter and confirms a non-empty "
-        "registry -- this script only checks static bundle layout.")
+        "smoke-test.ps1, which runs CHIRP-driver-check.exe inside the "
+        "packaged interpreter and confirms a non-empty registry -- this "
+        "script only checks static bundle layout.")
 
 
 def check_locales(bundle_dir, errors):
@@ -179,8 +183,7 @@ def main(argv=None):
 
     bundle_dir = args.bundle_dir
     if not os.path.isdir(bundle_dir):
-        print(f"error: bundle dir {bundle_dir} does not exist",
-              file=sys.stderr)
+        LOG.error("error: bundle dir %s does not exist", bundle_dir)
         return 1
 
     errors = []
@@ -198,11 +201,11 @@ def main(argv=None):
             json.dump({'passed': passed, 'errors': errors}, f, indent=2)
 
     if passed:
-        print("\nPackage validation PASSED.")
+        LOG.info("Package validation PASSED.")
         return 0
     else:
-        print(f"\nPackage validation FAILED ({len(errors)} error(s)).",
-              file=sys.stderr)
+        LOG.error(
+            "Package validation FAILED (%d error(s)).", len(errors))
         return 1
 
 
