@@ -389,12 +389,27 @@ jobs:
           if (-not (Test-Path "$installDir\CHIRP.exe")) {
             throw "CHIRP.exe not found at $installDir after silent install"
           }
-          $uninstallKey = Get-ChildItem 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall' -ErrorAction SilentlyContinue |
-            Where-Object { (Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue).DisplayName -eq 'CHIRP (Community Edition, unsigned)' }
-          if (-not $uninstallKey) {
-            throw "No matching uninstaller registry entry found under HKCU Uninstall -- installer did not register in Installed Apps."
+          # Inno Setup's standard per-app uninstaller executable -- using
+          # this directly for the actual uninstall (below) is simpler and
+          # more deterministic than parsing UninstallString out of the
+          # registry. The registry check below is purely to validate
+          # Add/Remove Programs *registration*, kept separate from "how do
+          # we invoke uninstall" so a registry-matching quirk can't block
+          # the uninstall step itself.
+          $uninstallerExe = "$installDir\unins000.exe"
+          if (-not (Test-Path $uninstallerExe)) {
+            throw "Inno Setup uninstaller not found at $uninstallerExe"
           }
-          Write-Host "Uninstaller registration OK: $($uninstallKey.PSPath)"
+
+          $allUninstallEntries = Get-ChildItem 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall' -ErrorAction SilentlyContinue |
+            ForEach-Object { Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue }
+          $uninstallEntry = $allUninstallEntries | Where-Object { $_.DisplayName -like '*CHIRP*' }
+          if (-not $uninstallEntry) {
+            Write-Warning "No Add/Remove Programs entry with a DisplayName matching '*CHIRP*' was found. All HKCU Uninstall DisplayNames seen:"
+            $allUninstallEntries | ForEach-Object { Write-Warning "  $($_.DisplayName)" }
+            throw "Installer did not register in Installed Apps (HKCU Uninstall) -- see DisplayNames logged above."
+          }
+          Write-Host "Uninstaller registration OK: DisplayName='$($uninstallEntry.DisplayName)' at $($uninstallEntry.PSPath)"
 
           $startMenuShortcut = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\CHIRP\CHIRP.lnk"
           if (-not (Test-Path $startMenuShortcut)) {
@@ -411,12 +426,8 @@ jobs:
           $marker = Join-Path $userConfigDir 'packaging-ci-marker.txt'
           Set-Content -Path $marker -Value 'placed by windows-release.yml installer lifecycle test'
 
-          $uninstallString = (Get-ItemProperty $uninstallKey.PSPath).UninstallString
-          Write-Host "==> Silently uninstalling via: $uninstallString"
-          # Inno Setup's UninstallString is "<path> " -- split off any
-          # trailing quirks and append silent flags.
-          $uninstallExe = ($uninstallString -replace '^"([^"]+)".*$', '$1')
-          $proc = Start-Process -FilePath $uninstallExe -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -PassThru -Wait
+          Write-Host "==> Silently uninstalling via: $uninstallerExe"
+          $proc = Start-Process -FilePath $uninstallerExe -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -PassThru -Wait
           if ($proc.ExitCode -ne 0) {
             throw "Silent uninstall failed with exit code $($proc.ExitCode)"
           }
