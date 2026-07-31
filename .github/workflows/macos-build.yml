@@ -64,16 +64,16 @@ jobs:
           set -euo pipefail
           case "$ARCHITECTURES" in
             all)
-              MATRIX='[{"arch":"x86_64","runner":"macos-13"},{"arch":"arm64","runner":"macos-14"},{"arch":"universal2","runner":"macos-14"}]'
+              MATRIX='[{"arch":"x86_64","runner":"macos-15-large"},{"arch":"arm64","runner":"macos-15"},{"arch":"universal2","runner":"macos-15"}]'
               ;;
             x86_64)
-              MATRIX='[{"arch":"x86_64","runner":"macos-13"}]'
+              MATRIX='[{"arch":"x86_64","runner":"macos-15-large"}]'
               ;;
             arm64)
-              MATRIX='[{"arch":"arm64","runner":"macos-14"}]'
+              MATRIX='[{"arch":"arm64","runner":"macos-15"}]'
               ;;
             universal2)
-              MATRIX='[{"arch":"universal2","runner":"macos-14"}]'
+              MATRIX='[{"arch":"universal2","runner":"macos-15"}]'
               ;;
             *)
               echo "error: unknown architectures input '$ARCHITECTURES'" >&2
