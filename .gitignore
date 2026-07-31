@@ -47,3 +47,12 @@ result/
 appimage/out/
 *.AppImage
 *.AppImage.zsync
+
+# macOS packaging build output (packaging/macos/chirpwx.spec is a tracked
+# PyInstaller spec, not build output -- un-ignore it from the blanket
+# chirpwx.spec rule above)
+!/packaging/macos/chirpwx.spec
+/packaging/macos/build/
+/packaging/macos/dist/
+/packaging/macos/out/
+/packaging/macos/.build-venv/
