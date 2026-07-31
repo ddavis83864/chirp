@@ -34,6 +34,13 @@ Pick whichever of these is easiest for you:
   root. Same idea — first run sets up a `.venv`, later runs just launch.
   (Needs [Python](https://www.python.org/downloads/) 3.11 installed; see
   the script's comments for why that version specifically.)
+- **macOS:** a free, unsigned "Community Edition" `CHIRP.app` (separate
+  builds for Apple Silicon and Intel) can be produced via GitHub Actions —
+  see [docs/macos-packaging.md](docs/macos-packaging.md). Because it isn't
+  signed with an Apple Developer ID, macOS shows a security warning on
+  first launch that you need to explicitly bypass once; see
+  [docs/macos-community-installation.md](docs/macos-community-installation.md)
+  for exact steps.
 
 Both launcher scripts are documented in more detail under
 [`run-chirp.sh` / `run-chirp.ps1`](#run-chirpsh--run-chirpps1) below.
