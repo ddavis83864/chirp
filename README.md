@@ -27,7 +27,7 @@ duplicate detection, and configurable color coding on top of upstream CHIRP
 | Platform | Download | Architecture | Package | Notes |
 |---|---|---|---|---|
 | **Linux** | [AppImage releases](https://github.com/ddavis83864/chirp/releases?q=appimage-v&expanded=true) (current: `appimage-v1.12.0`) | x86_64 | Single-file `.AppImage` | No installation needed — `chmod +x` and run. [Instructions ↓](#linux) |
-| **Windows** | No public installer yet — [run from source](#windows) | Any Windows 10/11 host with Python 3.11 | N/A (`run-chirp.ps1`) | Not packaged as a downloadable installer from this fork. [Instructions ↓](#windows) |
+| **Windows** | No public release yet — [run from source](#windows) | Any Windows 10/11 host with Python 3.11 | N/A (`run-chirp.ps1`) | A build pipeline exists (portable ZIP + installer) but hasn't been released; see [packaging/windows/README.md](packaging/windows/README.md). [Instructions ↓](#windows) |
 | **macOS (Apple Silicon)** | [Community Edition v1.12.0](https://github.com/ddavis83864/chirp/releases/tag/macos-community-v1.12.0) | arm64 | `.dmg` or `.app.zip` | **Unsigned** — one-time Gatekeeper bypass required. [Instructions ↓](#macos) |
 | **macOS (Intel)** | [Community Edition v1.12.0](https://github.com/ddavis83864/chirp/releases/tag/macos-community-v1.12.0) | x86_64 | `.dmg` or `.app.zip` | **Unsigned** — one-time Gatekeeper bypass required. [Instructions ↓](#macos) |
 
@@ -90,10 +90,15 @@ config isolation, and build-your-own instructions are under
 
 ## Windows
 
-This fork does not currently publish a Windows installer, portable ZIP, or
-`.exe` — there is no Windows release workflow or release namespace in this
-repository. CHIRP runs well on Windows **from a source checkout**, using
-the included launcher script.
+This fork does not currently **publish** a Windows installer or portable
+ZIP — no `windows-community-v*` release has been tagged yet. A Windows
+packaging pipeline (PyInstaller one-directory bundle, portable ZIP, and
+an Inno Setup installer, built and validated on a `windows-2022` GitHub
+Actions runner) now exists in this repository — see
+[packaging/windows/README.md](packaging/windows/README.md) for how it
+works and its current validation status — but until a release is
+actually tagged and published, CHIRP runs on Windows **from a source
+checkout**, using the included launcher script.
 
 **Get CHIRP:**
 
@@ -136,8 +141,11 @@ port in CHIRP's Radio > Download from radio / Upload to radio dialog.
 - *wxPython fails to install* — confirm you're on Python 3.11; wxPython
   4.2.x has no prebuilt wheel for other Python versions on Windows.
 
-"Supported from source" isn't "no support" — if you'd like to help package
-a redistributable Windows build for this fork, contributions are welcome.
+"Supported from source" isn't "no support" — a Windows packaging pipeline
+now exists (see [packaging/windows/README.md](packaging/windows/README.md)),
+it's just not released yet. Watch the
+[Releases page](https://github.com/ddavis83864/chirp/releases) for a
+`windows-community-v*` tag, or help test/review the pipeline itself.
 
 ## macOS
 
@@ -488,6 +496,14 @@ X11 backend CHIRP forces by default on Linux.
 - [docs/macos-packaging.md](docs/macos-packaging.md) — how the macOS
   Community Edition and (future) Signed Edition builds are packaged and
   released.
+- [docs/windows-community-installation.md](docs/windows-community-installation.md) —
+  Windows Community Edition install guide (for when a release is
+  published).
+- [packaging/windows/README.md](packaging/windows/README.md) — how the
+  Windows Community Edition build (portable ZIP + installer) is packaged,
+  tested, and validated; current status (not yet released).
+- [docs/windows-manual-validation-checklist.md](docs/windows-manual-validation-checklist.md) —
+  manual, real-hardware validation checklist for a future Windows release.
 - [docs/programming_assistant.md](docs/programming_assistant.md) — the
   experimental Programming Assistant feature: data sources, privacy
   behavior, and known limitations.
