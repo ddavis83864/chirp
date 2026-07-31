@@ -223,6 +223,13 @@ would be added only when a maintainer actually sets up signing.
   process** (pinned tool versions, pinned application source, documented
   inputs) -- this has not been verified to produce bit-for-bit identical
   binaries across repeated builds, and no such claim is made.
+- `tests/unit/test_linux_desktop.py` is excluded from the Windows CI test
+  run (`--ignore=`). This is this repo's *first* Windows CI run of any
+  kind (existing CI is Linux-only), and that file's ~16 tests all failed
+  purely on Linux-only assumptions (POSIX chmod bits, `/opt/...`-style
+  paths, XDG directory resolution) in a module whose own
+  `is_supported_platform()` already returns `False` on Windows/macOS --
+  not a packaging defect. Every other existing test is required to pass.
 
 ## Manual hardware validation
 

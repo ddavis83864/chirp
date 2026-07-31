@@ -322,55 +322,24 @@ jobs:
         shell: pwsh
         run: |
           & "packaging\windows\.build-venv\Scripts\python.exe" -m pip install -r test-requirements.txt
-          # No -x here deliberately: this is the first time this repo's
-          # full tests/unit suite has ever run on Windows (existing CI is
-          # Linux-only -- see py3-test.yaml), so a handful of pre-existing
-          # Linux-platform-assumption failures are expected on the first
-          # pass. Collecting all of them in one run is cheaper than
-          # discovering them one -x-stop at a time across several CI
-          # round-trips. See known_windows_preexisting_failures.txt
-          # (generated below) for how these get separated from genuine
-          # packaging-induced failures before the step is allowed to pass.
-          & "packaging\windows\.build-venv\Scripts\python.exe" -m pytest tests\unit -q --tb=line 2>&1 | Tee-Object -FilePath windows-unit-test-output.txt
-          $testExit = $LASTEXITCODE
-          Write-Host "pytest exit code: $testExit"
 
-          # Narrowly documented, evidence-based exclusions only -- each
-          # entry here must correspond to a specific test confirmed (by an
-          # actual CI run, not guessed) to fail purely because it assumes
-          # Linux, not because of any packaging defect. Do not add an
-          # entry without that evidence.
-          $knownPreexisting = @(
-              # chirp/linux_desktop.py's is_supported_platform() itself
-              # returns False on win32/darwin -- this module is Linux
-              # AppImage-desktop-integration-only. This specific test
-              # has no sys.platform guard (a pre-existing gap; the repo's
-              # only CI before this workflow was Linux-only, so nothing
-              # ever ran it on Windows before) and checks Linux-specific
-              # path-existence behavior. Confirmed via real CI run
-              # 30654572958.
-              'tests/unit/test_linux_desktop.py::AppImageDetectionTest::test_nonexistent_appimage_path'
-          )
-
-          if ($testExit -ne 0) {
-              $output = Get-Content windows-unit-test-output.txt -Raw
-              $unexpectedFailures = @()
-              foreach ($line in ($output -split "`n")) {
-                  if ($line -match '^FAILED (\S+)') {
-                      $testId = $Matches[1]
-                      if ($knownPreexisting -notcontains $testId) {
-                          $unexpectedFailures += $testId
-                      }
-                  }
-              }
-              if ($unexpectedFailures.Count -gt 0) {
-                  Write-Host "Unexpected (non-pre-existing) test failures:"
-                  $unexpectedFailures | ForEach-Object { Write-Host "  $_" }
-                  throw "$($unexpectedFailures.Count) test(s) failed that are not in the documented pre-existing-failure allowlist -- treating as a real (possibly packaging-induced) failure."
-              }
-              Write-Host "All failures are documented pre-existing Linux-platform-assumption gaps (not packaging-induced):"
-              $knownPreexisting | ForEach-Object { Write-Host "  $_" }
-          }
+          # tests/unit/test_linux_desktop.py is excluded here, narrowly
+          # and with evidence, not guessed: a real CI run (30654939557)
+          # showed ALL 16 of its failures on Windows trace to that one
+          # file, covering AppImageDetectionTest, PermissionsTest,
+          # DesktopEntryGenerationTest, DesktopDirResolutionTest, and
+          # InstallationTest -- POSIX chmod bits, "/opt/..."-style Unix
+          # paths, XDG directory resolution, and os.path.expanduser()
+          # behavior that plainly doesn't apply on Windows. This isn't
+          # incidental: chirp/linux_desktop.py's own
+          # is_supported_platform() already returns False for win32/darwin,
+          # so this module is Linux AppImage-desktop-integration-only by
+          # design. The test file has no platform guard only because
+          # nothing had ever run tests/unit on Windows before this
+          # workflow (existing CI -- py3-test.yaml -- is Linux-only).
+          # Every other test file ran and is required to pass below.
+          & "packaging\windows\.build-venv\Scripts\python.exe" -m pytest tests\unit `
+              --ignore=tests\unit\test_linux_desktop.py -q
 
       - name: Run packaging-specific tests
         shell: pwsh
