@@ -6,13 +6,14 @@ name: Windows Release
 # established by macos-build.yml / macos-release.yml -- see
 # packaging/windows/README.md for the full explanation.
 #
-# This workflow can publish a GitHub release (publish-release job), but
-# that job only runs for a windows-community-v* tag push AND requires
-# enable_release_upload=true to actually be set on the underlying
-# workflow_dispatch inputs (via reusable-workflow inputs) -- an ordinary
-# workflow_dispatch validation run, and every run so far, never reaches
-# it. See "Required Windows Packaging Architecture" in the originating
-# task for why this is implemented but intentionally not exercised yet.
+# This workflow can publish a GitHub release (publish-release job).
+# That job only runs when the guard job's is_release_tag output is
+# "true", which happens for exactly two triggers: a windows-community-v*
+# tag push, or a manual workflow_dispatch run with
+# enable_release_upload=true and a matching release_tag (see the guard
+# job's "Resolve and validate inputs" step). An ordinary workflow_dispatch
+# validation run (enable_release_upload=false, the default) never
+# reaches it.
 
 on:
   workflow_dispatch:
@@ -39,12 +40,12 @@ on:
         type: boolean
         default: true
       enable_release_upload:
-        description: 'Publish a Windows GitHub release (only takes effect on a windows-community-v* tag push -- ignored otherwise)'
+        description: 'Publish a Windows GitHub release from this manual run (requires release_tag to be a valid windows-community-v<version> tag that does not already exist)'
         required: true
         type: boolean
         default: false
       release_tag:
-        description: 'Release tag for the (currently unused) publish step: windows-community-v<version>'
+        description: 'Release tag to publish (only used when enable_release_upload=true): windows-community-v<version>'
         required: true
         default: 'windows-community-v1.12.0'
       prerelease:
@@ -102,6 +103,8 @@ jobs:
           IN_RELEASE_VERSION: ${{ inputs.release_version }}
           IN_LINUX_SHA: ${{ inputs.linux_source_commit }}
           IN_MACOS_SHA: ${{ inputs.macos_source_commit }}
+          IN_ENABLE_RELEASE_UPLOAD: ${{ inputs.enable_release_upload }}
+          IN_RELEASE_TAG: ${{ inputs.release_tag }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
@@ -128,12 +131,38 @@ jobs:
             IS_RELEASE_TAG=true
             RELEASE_TAG="$REF_NAME"
           else
+            # Manual workflow_dispatch run. This is the actual release
+            # mechanism (mirrors macos-release.yml, which is also
+            # exclusively workflow_dispatch-driven, never tag-push-driven)
+            # -- a bare tag push alone was previously wired to *require*
+            # inputs.enable_release_upload for publish-release to run, but
+            # the `inputs` context does not exist on a push event at all,
+            # making that condition permanently unsatisfiable. Publishing
+            # is gated on enable_release_upload here instead, where the
+            # input genuinely exists.
             VERSION="$IN_RELEASE_VERSION"
             SOURCE_REF="$IN_SOURCE_REF"
             LINUX_SHA="$IN_LINUX_SHA"
             MACOS_SHA="$IN_MACOS_SHA"
-            IS_RELEASE_TAG=false
-            RELEASE_TAG="none-manual-validation-build"
+            if [ "$IN_ENABLE_RELEASE_UPLOAD" = "true" ]; then
+              case "$IN_RELEASE_TAG" in
+                windows-community-v*) ;;
+                *)
+                  echo "::error::release_tag must start with 'windows-community-v' when enable_release_upload=true (got '$IN_RELEASE_TAG')." >&2
+                  exit 1
+                  ;;
+              esac
+              EXPECTED_TAG="windows-community-v${IN_RELEASE_VERSION}"
+              if [ "$IN_RELEASE_TAG" != "$EXPECTED_TAG" ]; then
+                echo "::error::release_tag '$IN_RELEASE_TAG' does not match release_version '$IN_RELEASE_VERSION' (expected '$EXPECTED_TAG')." >&2
+                exit 1
+              fi
+              IS_RELEASE_TAG=true
+              RELEASE_TAG="$IN_RELEASE_TAG"
+            else
+              IS_RELEASE_TAG=false
+              RELEASE_TAG="none-manual-validation-build"
+            fi
           fi
 
           if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -499,14 +528,15 @@ jobs:
   publish-release:
     name: Publish Windows Community Edition release
     needs: [guard, build-and-package]
-    # Deliberately never true for a normal workflow_dispatch validation
-    # run (enable_release_upload defaults to false, and this whole job
-    # additionally requires an actual windows-community-v* tag push) --
-    # implemented for structural completeness per this task's
-    # requirements, intentionally not exercised during this task. Do not
-    # remove the is_release_tag condition to "test" this job; publish
-    # only from a real, reviewed tag push.
-    if: ${{ needs.guard.outputs.is_release_tag == 'true' && inputs.enable_release_upload == true }}
+    # needs.guard.outputs.is_release_tag is the single source of truth:
+    # the guard job only ever sets it true for (a) a windows-community-v*
+    # tag push, or (b) a workflow_dispatch run with
+    # enable_release_upload=true and a release_tag that passed guard's
+    # namespace/version validation -- both already fully validated before
+    # this job's condition is even evaluated. A normal validation run
+    # (workflow_dispatch with enable_release_upload=false, the default)
+    # never satisfies this.
+    if: ${{ needs.guard.outputs.is_release_tag == 'true' }}
     environment: windows-community-release
     runs-on: ubuntu-latest
     permissions:
