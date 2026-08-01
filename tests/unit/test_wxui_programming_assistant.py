@@ -9,6 +9,8 @@ test_wxui_memquery.py). CI must have wxPython available for this file
 to run (it already does, per tox.ini's [testenv:unit] sitepackages).
 """
 
+import gc
+import os
 import sys
 import tempfile
 import unittest
@@ -69,6 +71,94 @@ def _ensure_wx_app():
         raise unittest.SkipTest(
             'no display available for wx GUI tests: %s' % e)
     return _APP
+
+
+def tearDownModule():
+    """Explicitly tear down every wx object this file's tests created,
+    once, after all of them have run -- called automatically by
+    unittest (and pytest's unittest integration) once per module, on
+    the same thread that ran every test in it.
+
+    Every individual test's own tearDown() already calls Destroy() on
+    its Frame/Wizard and then wx.Yield() to flush the pending-delete
+    event that Destroy() only *schedules* (wx.Window.Destroy() defers
+    the actual C++-level deletion to the next idle/event-loop pass,
+    per that method's own docstring above). That reliably frees each
+    test's *native* wx objects. It does not free the *Python* objects
+    that wrapped them: every wx.Bind(EVT_X, self.method) call this
+    file's tests exercise creates a reference cycle (the object's
+    event-handler table holds a bound method of itself), which
+    ordinary refcounting can never break -- only Python's cyclic
+    garbage collector can, and by default that only runs after enough
+    new allocations cross a generational threshold, not deterministically
+    at any point during a short test run. Confirmed by direct
+    instrumentation: an explicit gc.collect() here, after all 56 of
+    this file's tests have run, collects on the order of 25,000 objects
+    that plain refcounting left behind, with zero left uncollectable
+    (gc.garbage stays empty) -- proving they were real, breakable
+    cycles, not managed by any finalizer that could go wrong.
+
+    Without collecting them here, all of that lingering (but otherwise
+    inert) cyclic garbage -- including the module-level wx.App
+    singleton (_APP) itself, which nothing else keeps alive once this
+    reference is dropped -- survives untouched until the *process*
+    exits and CPython's own interpreter-finalization GC pass collects
+    it instead. By then the GIL has already been released for
+    shutdown, and wx's native teardown (window/App destructors, and
+    anything they still reference -- a queued wx.CallLater callback,
+    a pending EVT_WINDOW_DESTROY handler, etc.) can still try to call
+    back into Python, which crashes with "Fatal Python error:
+    PyThreadState_Get: ... the GIL is released" instead of running
+    normally. Confirmed by direct reproduction: every test in this
+    file passes individually and as a whole ("N passed" prints
+    normally); the crash only appears afterward, in a *subprocess*
+    invocation, during that subprocess's own interpreter shutdown --
+    invisible unless something checks the subprocess's exit code,
+    which is exactly what test_programming_assistant_headless_
+    regression.py and test_programming_assistant_csv_isolation_
+    regression.py do.
+
+    wx.Yield() first drains any events -- including deferred-destroy
+    events and CallLater callbacks -- still queued from the very last
+    test's own tearDown(), synchronously, on this same thread, before
+    anything is collected or destroyed. gc.collect() runs twice:
+    breaking one cycle can make its own referents newly collectible
+    (e.g. a bound method's __self__ becoming unreachable only once the
+    cycle holding it is gone), and a second pass catches those too.
+    """
+    wx.Yield()
+    gc.collect()
+    gc.collect()
+
+    global _APP
+    if _APP is not None:
+        _APP.Destroy()
+        _APP = None
+
+    _write_teardown_diagnostics()
+
+
+def _write_teardown_diagnostics():
+    """Optional visibility into tearDownModule()'s gc.collect() calls
+    above, written to a file (opt-in via CHIRP_TEARDOWN_DIAG_FILE), not
+    stdout/stderr, because pytest's default fd-level capturing would
+    otherwise swallow output from a *passing* teardown regardless of
+    which stream it's written to, and the crash this was diagnosed
+    against happens in a subprocess, after that subprocess's own
+    pytest run has already finished and released whatever it captured
+    -- a file is the only thing that survives to be inspected
+    afterward, from outside that process.
+    """
+    diag_path = os.environ.get('CHIRP_TEARDOWN_DIAG_FILE')
+    if not diag_path:
+        return
+    collected = gc.collect()
+    garbage_types = [type(o).__name__ for o in gc.garbage]
+    with open(diag_path, 'a') as f:
+        f.write(
+            'tearDownModule pid=%d gc.collect()=%d gc.garbage=%d '
+            'garbage_types=%r\n'
+            % (os.getpid(), collected, len(gc.garbage), garbage_types))
 
 
 class _FakeEditorSet:
