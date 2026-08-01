@@ -186,9 +186,16 @@ class ProgrammingAssistantCsvIsolationRegressionTest(unittest.TestCase):
         # Confirms CSVRadio(None) truly touches no filesystem state:
         # running the affected tests must not create any new file at
         # the repo root (not test.csv, not anything else).
-        before = set(os.listdir(_REPO_ROOT))
+        #
+        # '.pytest_cache' is excluded: it's pytest's own standard cache
+        # directory, created automatically by *any* pytest invocation
+        # that doesn't already have one -- unrelated to CSVRadio/test.csv
+        # isolation, which is what this test actually checks. A prior
+        # test run (or, on a genuinely fresh checkout, this run itself)
+        # creates it the first time pytest runs in this repo at all.
+        before = set(os.listdir(_REPO_ROOT)) | {'.pytest_cache'}
         result = self._run(*_AFFECTED_TEST_FILES)
-        after = set(os.listdir(_REPO_ROOT))
+        after = set(os.listdir(_REPO_ROOT)) | {'.pytest_cache'}
         self.assertEqual(0, result.returncode, result.stdout)
         self.assertEqual(
             before, after,

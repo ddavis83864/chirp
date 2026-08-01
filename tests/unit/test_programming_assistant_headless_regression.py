@@ -113,6 +113,21 @@ class ProgrammingAssistantHeadlessRegressionTest(unittest.TestCase):
                           '%s did not run headlessly' % nodeid)
 
     def test_gui_tests_skip_with_clear_reason_not_error(self):
+        # _env_without_display() simulates "no display" the way real
+        # headless Linux CI actually lacks one: by removing the X11/
+        # Wayland environment variables wx.App() consults on that
+        # platform. Windows has no equivalent env-var-gated display
+        # check -- wx.App() succeeds there regardless, using whatever
+        # desktop session the runner already has -- so this specific
+        # technique for reaching _ensure_wx_app()'s SystemExit-to-skip
+        # path only exercises anything on Linux. The underlying skip
+        # behavior itself is still covered there; this is a test-
+        # methodology limitation, not an untested code path.
+        if sys.platform != 'linux':
+            self.skipTest(
+                'this test simulates "no display" via X11-specific '
+                'environment variables, which only affects wx.App() '
+                'on Linux')
         result = self._run(
             ['-m', 'pytest', '-ra',
              'tests/unit/test_wxui_programming_assistant.py'
@@ -149,10 +164,23 @@ class ProgrammingAssistantHeadlessRegressionTest(unittest.TestCase):
         # file triggers that import first depends on the order), which
         # is unrelated to whether this fix's own outcome is order
         # -independent.
-        counts_re = r'(\d+) passed, (\d+) skipped'
+        # pytest omits ", N skipped" entirely when the skip count is
+        # zero (e.g. on Windows, where test_wxui_linux_launcher.py's
+        # own sys.modules['wx'] isolation doesn't produce any skips the
+        # way Linux's headless-CI display detection does) -- the
+        # skipped group is optional, and treated as 0 when absent,
+        # rather than requiring the literal ", N skipped" text.
+        counts_re = r'(\d+) passed(?:, (\d+) skipped)?'
+
+        def _counts(result):
+            match = re.search(counts_re, result.stdout)
+            self.assertIsNotNone(
+                match, 'no pass/skip summary found in:\n%s' % result.stdout)
+            passed, skipped = match.groups()
+            return passed, skipped or '0'
+
         self.assertEqual(
-            re.search(counts_re, forward.stdout).groups(),
-            re.search(counts_re, reverse.stdout).groups(),
+            _counts(forward), _counts(reverse),
             'collection order changed the pass/skip counts:\n%s\n---\n%s'
             % (forward.stdout, reverse.stdout))
 
