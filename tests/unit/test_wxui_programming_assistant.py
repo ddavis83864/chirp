@@ -71,6 +71,47 @@ def _ensure_wx_app():
     return _APP
 
 
+def tearDownModule():
+    """Explicitly tear down the module-level wx.App, once, after every
+    test in this file has run -- called automatically by unittest (and
+    pytest's unittest integration) once per module, on the same thread
+    that ran every test in it.
+
+    Without this, _APP (once created by _ensure_wx_app()) stays alive,
+    referenced only by this module-level global, until the *process*
+    exits and CPython's own interpreter-finalization GC pass collects
+    it instead. By then the GIL has already been released for
+    shutdown, and wx's native App/window teardown can still try to
+    call back into Python -- e.g. a wx.CallLater callback queued by
+    SearchBox._unfocus (chirp/wxui/memquery.py) that never got a
+    chance to run, or a pending EVT_WINDOW_DESTROY handler -- which
+    crashes with "Fatal Python error: PyThreadState_Get: ... the GIL
+    is released" instead of raising a normal Python exception.
+    Confirmed by direct reproduction: every test in this file passes
+    individually and as a whole ("N passed" is printed); the crash
+    only appears afterward, in a *subprocess* invocation, during that
+    subprocess's own interpreter shutdown -- so it is invisible unless
+    something checks the subprocess's exit code, which is exactly what
+    test_programming_assistant_headless_regression.py and test_
+    programming_assistant_csv_isolation_regression.py do.
+
+    wx.Yield() first drains any events -- including deferred-destroy
+    events and CallLater callbacks -- still queued from the last
+    test's tearDown(), synchronously, on this same thread, before the
+    App goes away. This is not a sleep or a race-dependent wait: it is
+    processing exactly the pending event queue that already exists at
+    this point, the same way tearDown() already does after every
+    individual test's own Destroy() calls, one level higher up (once
+    per file instead of once per test).
+    """
+    global _APP
+    if _APP is None:
+        return
+    wx.Yield()
+    _APP.Destroy()
+    _APP = None
+
+
 class _FakeEditorSet:
     def __init__(self, radio, editor):
         self.radio = radio

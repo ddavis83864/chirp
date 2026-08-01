@@ -230,3 +230,44 @@ class ProgrammingAssistantHeadlessRegressionTest(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stdout)
         self.assertNotIn('skipped', result.stdout)
         self.assertRegex(result.stdout, r'56 passed')
+
+    def test_wx_app_singleton_destroyed_before_process_exit(self):
+        # Regression for a second, independent defect from the same
+        # Windows CI run this file's other tests were added for:
+        # test_wxui_programming_assistant.py's module-level wx.App
+        # singleton (_APP) used to be left alive, referenced only by
+        # that module global, until the *process* itself exited and
+        # CPython's own interpreter-finalization GC pass collected it
+        # instead of ordinary refcounting. By then the GIL had already
+        # been released for shutdown, and wx's native App/window
+        # teardown could still try to call back into Python (e.g. a
+        # queued wx.CallLater callback), crashing with "Fatal Python
+        # error: PyThreadState_Get: ... the GIL is released" --
+        # confirmed on real Windows CI, never reproducible on Linux.
+        #
+        # This validates the actual lifecycle contract -- the App is
+        # explicitly torn down by tearDownModule(), not merely that no
+        # crash message appears -- by checking _APP's value directly
+        # in the same subprocess right after its own test run
+        # completes, in-process, before that process exits and any
+        # interpreter-shutdown-timing difference between platforms
+        # could matter.
+        if not os.environ.get('DISPLAY'):
+            self.skipTest('no DISPLAY in this process to verify against')
+        env = dict(os.environ, CHIRP_TESTENV='1', PYTHONPATH=_REPO_ROOT)
+        result = self._run(
+            ['-c',
+             'import sys\n'
+             'import pytest\n'
+             'rc = pytest.main(["-q",'
+             ' "tests/unit/test_wxui_programming_assistant.py"])\n'
+             'import tests.unit.test_wxui_programming_assistant as m\n'
+             'sys.stdout.write("MODULE_APP_AFTER_RUN=%r\\n" % (m._APP,))\n'
+             'sys.exit(rc)'],
+            env)
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertIn(
+            'MODULE_APP_AFTER_RUN=None', result.stdout,
+            'wx.App singleton was not torn down by tearDownModule() -- '
+            'still referenced after the test run completed:\n%s'
+            % result.stdout)
