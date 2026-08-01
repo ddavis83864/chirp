@@ -1,7 +1,7 @@
 # Installing CHIRP for Windows (Community Edition)
 
 Download the current release from the
-[Windows Community Edition v1.12.0 release page](https://github.com/ddavis83864/chirp/releases/tag/windows-community-v1.12.0).
+[Windows Community Edition v1.13.1 release page](https://github.com/ddavis83864/chirp/releases/tag/windows-community-v1.13.1).
 See [packaging/windows/README.md](../packaging/windows/README.md) for how
 the Windows packaging pipeline that produces it works, or the
 [Windows section of the main README](../README.md#windows) for a shorter
@@ -11,7 +11,7 @@ The CHIRP Windows Community Edition is **not signed with an Authenticode
 certificate**. It is built automatically, from source, on a
 GitHub-hosted Windows runner, from the exact CHIRP source commit
 identified on the release page -- the same application source used for
-the Linux and macOS v1.12.0 releases. Unsigned status means no
+the Linux and macOS v1.13.1 releases. Unsigned status means no
 code-signing certificate has verified the publisher identity behind this
 build; it does not mean the package failed any validation. Every build
 goes through PyInstaller-bundle validation, a driver-registry check

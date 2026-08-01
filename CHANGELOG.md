@@ -14,6 +14,20 @@ downloadable `CHIRP-*-x86_64.AppImage` asset, built automatically by
 
 ## [Unreleased]
 
+## [1.13.1] - 2026-08-01
+
+### Fixed
+
+- No application changes. Windows CI exposed test-only defects (a
+  `sys.modules['wx']` isolation leak, and an interpreter-finalization
+  crash caused by uncollected wx event-handler reference cycles) that
+  blocked a coordinated Windows release under v1.13.0; this release
+  re-publishes Linux, macOS, and Windows together from the same,
+  corrected source once those were fixed. The Linux AppImage itself is
+  unchanged from v1.13.0.
+
+## [1.13.0] - 2026-08-01
+
 ### Added
 
 - Programming Assistant (Experimental), disabled by default -- enable it

@@ -20,10 +20,10 @@ Mac**.
 
 - If you see a line labeled **Chip** (e.g. "Apple M1", "Apple M2", "Apple
   M3", "Apple M4"), download the **arm64** build:
-  `CHIRP-1.12.0-macOS-arm64-unsigned.dmg`
+  `CHIRP-1.13.1-macOS-arm64-unsigned.dmg`
 - If you see a line labeled **Processor** (e.g. "Intel Core i5", "Intel
   Core i7"), download the **x86_64** build:
-  `CHIRP-1.12.0-macOS-x86_64-unsigned.dmg`
+  `CHIRP-1.13.1-macOS-x86_64-unsigned.dmg`
 
 Installing the wrong architecture's DMG will simply fail to open the app
 (or Finder will refuse it) -- it is not harmful, just won't work.
@@ -77,16 +77,16 @@ just this one app.
 
 ## 4. Verify your download (recommended)
 
-The release page includes a `CHIRP-1.12.0-macOS-Community-SHA256SUMS.txt`
+The release page includes a `CHIRP-1.13.1-macOS-Community-SHA256SUMS.txt`
 file with SHA-256 checksums for every artifact. To verify the DMG you
 downloaded:
 
 ```bash
-shasum -a 256 CHIRP-1.12.0-macOS-arm64-unsigned.dmg
+shasum -a 256 CHIRP-1.13.1-macOS-arm64-unsigned.dmg
 ```
 
 (substitute `x86_64` for the Intel build). Compare the printed hash against
-the matching line in `CHIRP-1.12.0-macOS-Community-SHA256SUMS.txt`. They
+the matching line in `CHIRP-1.13.1-macOS-Community-SHA256SUMS.txt`. They
 must match exactly.
 
 A matching checksum confirms the file you downloaded is byte-for-byte
