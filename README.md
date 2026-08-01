@@ -6,12 +6,19 @@
 
 <p align="center">
   <a href="#linux"><img alt="Linux: AppImage download available" src="https://img.shields.io/badge/Linux-AppImage-FCC624?logo=linux&logoColor=black"></a>
-  <a href="#windows"><img alt="Windows: supported, run from source" src="https://img.shields.io/badge/Windows-Supported%20from%20source-0078D6?logo=windows&logoColor=white"></a>
+  <a href="#windows"><img alt="Windows: unsigned Community Edition download available, portable ZIP and installer" src="https://img.shields.io/badge/Windows-Unsigned%20Community%20Edition-0078D6?logo=windows&logoColor=white"></a>
   <a href="#macos"><img alt="macOS: unsigned Community Edition download available for Apple Silicon and Intel" src="https://img.shields.io/badge/macOS-Unsigned%20Community%20Edition-000000?logo=apple&logoColor=white"></a>
 </p>
 
-This is the official git repository for the
-__[CHIRP](https://www.chirpmyradio.com)__ project.
+This is a fork of the official
+__[CHIRP](https://www.chirpmyradio.com)__ project
+([kk7ds/chirp](https://github.com/kk7ds/chirp)). Cross-platform Linux/macOS/
+Windows community packages and the fork-specific features below are built
+and maintained here, in
+__[ddavis83864/chirp](https://github.com/ddavis83864/chirp)__ — they are
+not part of, endorsed by, or supported through the upstream project. Please
+report packaging or fork-specific feature issues
+[here](https://github.com/ddavis83864/chirp/issues), not upstream.
 
 When submitting PRs, please see [this file](.github/pull_request_template.md)
 for rules and guidelines.
@@ -27,18 +34,24 @@ duplicate detection, and configurable color coding on top of upstream CHIRP
 | Platform | Download | Architecture | Package | Notes |
 |---|---|---|---|---|
 | **Linux** | [AppImage releases](https://github.com/ddavis83864/chirp/releases?q=appimage-v&expanded=true) (current: `appimage-v1.12.0`) | x86_64 | Single-file `.AppImage` | No installation needed — `chmod +x` and run. [Instructions ↓](#linux) |
-| **Windows** | No public release yet — [run from source](#windows) | Any Windows 10/11 host with Python 3.11 | N/A (`run-chirp.ps1`) | A build pipeline exists (portable ZIP + installer) but hasn't been released; see [packaging/windows/README.md](packaging/windows/README.md). [Instructions ↓](#windows) |
+| **Windows** | [Community Edition v1.12.0](https://github.com/ddavis83864/chirp/releases/tag/windows-community-v1.12.0) | x86_64 | Portable `.zip` or `.exe` installer | **Unsigned** — SmartScreen warning expected on first run. [Instructions ↓](#windows) |
 | **macOS (Apple Silicon)** | [Community Edition v1.12.0](https://github.com/ddavis83864/chirp/releases/tag/macos-community-v1.12.0) | arm64 | `.dmg` or `.app.zip` | **Unsigned** — one-time Gatekeeper bypass required. [Instructions ↓](#macos) |
 | **macOS (Intel)** | [Community Edition v1.12.0](https://github.com/ddavis83864/chirp/releases/tag/macos-community-v1.12.0) | x86_64 | `.dmg` or `.app.zip` | **Unsigned** — one-time Gatekeeper bypass required. [Instructions ↓](#macos) |
 
-Linux and macOS releases live in separate tag namespaces
-(`appimage-v<version>` and `macos-community-v<version>`), so this table
-links each platform straight to its own releases rather than to a single
-"latest" link that could point you at the wrong platform's build. The
-current macOS Community Edition release is also marked as a GitHub
-pre-release, reflecting that this packaging channel is new — every
-artifact still goes through full structural and architecture validation
-before publishing (see the provenance manifest attached to the release).
+Linux, macOS, and Windows releases each live in their own tag namespace
+(`appimage-v<version>`, `macos-community-v<version>`,
+`windows-community-v<version>`), so this table links each platform
+straight to its own release rather than to a single "latest" link that
+could point you at the wrong platform's build. All three v1.12.0 Community
+Edition builds — Linux, macOS, and Windows — were independently verified
+to be built from the exact same source commit
+(`9c38424f5`); see each release's attached provenance file for details.
+The macOS and Windows Community Edition releases are marked as GitHub
+pre-releases, reflecting that these packaging channels are newer than the
+Linux AppImage — every artifact still goes through full structural,
+resource, and (for Windows) driver-registry and installer-lifecycle
+validation before publishing (see the provenance manifest attached to each
+release).
 
 ## Linux
 
@@ -90,38 +103,51 @@ config isolation, and build-your-own instructions are under
 
 ## Windows
 
-This fork does not currently **publish** a Windows installer or portable
-ZIP — no `windows-community-v*` release has been tagged yet. A Windows
-packaging pipeline (PyInstaller one-directory bundle, portable ZIP, and
-an Inno Setup installer, built and validated on a `windows-2022` GitHub
-Actions runner) now exists in this repository — see
-[packaging/windows/README.md](packaging/windows/README.md) for how it
-works and its current validation status — but until a release is
-actually tagged and published, CHIRP runs on Windows **from a source
-checkout**, using the included launcher script.
+CHIRP for Windows is distributed from this fork as a free, unsigned
+**Community Edition** — a PyInstaller one-directory bundle, offered as
+either a portable ZIP or an Inno Setup installer. It is *not* signed with
+an Authenticode certificate. See
+[docs/windows-community-installation.md](docs/windows-community-installation.md)
+for the full walkthrough and
+[packaging/windows/README.md](packaging/windows/README.md) for how it's
+built and validated.
 
-**Get CHIRP:**
+**Download:**
+[CHIRP 1.12.0 for Windows — Community Edition](https://github.com/ddavis83864/chirp/releases/tag/windows-community-v1.12.0)
+
+**Pick portable or installed:**
+
+- **Portable** (`CHIRP-windows-v1.12.0-x86_64-portable.zip`) — extract
+  anywhere and run `CHIRP.exe` directly. No installation, no
+  administrator rights.
+- **Installer** (`CHIRP-windows-v1.12.0-x86_64-setup.exe`) — installs
+  per-user (no administrator rights required) to
+  `%LOCALAPPDATA%\Programs\CHIRP`, with a Start Menu shortcut and an
+  optional Desktop shortcut.
+
+Both contain the exact same validated application bundle — pick whichever
+suits you.
+
+**First launch (SmartScreen):** because this build is unsigned, Windows
+SmartScreen may block it the first time you run `CHIRP.exe` or the
+installer — this is standard, expected behavior for any unsigned
+application, not specific to CHIRP. If you see "Windows protected your
+PC," click **More info**, then **Run anyway**. Don't disable Windows
+Defender or SmartScreen system-wide to work around this — neither is
+necessary, and both remove protection for your whole PC, not just this
+one app.
+
+**Verify your download (recommended):** the release page includes a
+`SHA256SUMS` file. In PowerShell:
 
 ```powershell
-git clone https://github.com/ddavis83864/chirp.git
-cd chirp
-.\run-chirp.ps1
+Get-FileHash CHIRP-windows-v1.12.0-x86_64-portable.zip -Algorithm SHA256
 ```
 
-Requires [Python 3.11](https://www.python.org/downloads/) on your `PATH`
-(or reachable via the `py` launcher) — this is the version wxPython 4.2.x
-ships prebuilt Windows wheels for. The first run creates a local `.venv`
-and installs everything needed; later runs just launch CHIRP. See
-[Running from source](#running-from-source) for exactly what it does.
-
-**First launch:** since you're running a PowerShell script from a source
-checkout rather than a downloaded, unsigned binary, Windows SmartScreen
-doesn't come into play here. If you downloaded the repo as a ZIP from
-GitHub instead of using `git clone`, Windows may mark the extracted
-`.ps1` file as coming from the internet and block it from running — if
-so, right-click `run-chirp.ps1` > Properties > check **Unblock** > OK, or
-run `Unblock-File .\run-chirp.ps1` in PowerShell first. (This is standard
-Windows behavior for any script obtained this way, not specific to CHIRP.)
+Compare the printed hash against the matching line in `SHA256SUMS`. A
+matching checksum confirms file integrity — that you have the exact bytes
+this project's build produced — not that the software is inherently safe;
+only download CHIRP from this fork's official GitHub releases page.
 
 **USB/serial drivers:** most radio programming cables use a USB-to-serial
 chip (FTDI, Prolific, or Silicon Labs CP210x are common). Windows Update
@@ -136,16 +162,15 @@ port in CHIRP's Radio > Download from radio / Upload to radio dialog.
 - *Radio not detected* — check Device Manager for the assigned COM port,
   and make sure no other program (another CHIRP window, a terminal
   program, etc.) already has it open.
-- *`run-chirp.ps1` fails to launch* — see the Unblock-File note above, and
-  confirm Python 3.11 is installed and on `PATH`.
-- *wxPython fails to install* — confirm you're on Python 3.11; wxPython
-  4.2.x has no prebuilt wheel for other Python versions on Windows.
+- *SmartScreen keeps reappearing* — see First launch above; this is
+  expected for every unsigned build, not just the first one you download.
+- *Uninstalling (installer only)* — Windows Settings > Apps > CHIRP >
+  Uninstall. This removes only the installed application files; your
+  saved radio images, CSV exports, and CHIRP settings are untouched.
 
-"Supported from source" isn't "no support" — a Windows packaging pipeline
-now exists (see [packaging/windows/README.md](packaging/windows/README.md)),
-it's just not released yet. Watch the
-[Releases page](https://github.com/ddavis83864/chirp/releases) for a
-`windows-community-v*` tag, or help test/review the pipeline itself.
+**Prefer to run from a source checkout instead?** See
+[Running from source](#running-from-source) below — useful for
+development, or if you'd rather not run a downloaded binary at all.
 
 ## macOS
 
@@ -497,13 +522,13 @@ X11 backend CHIRP forces by default on Linux.
   Community Edition and (future) Signed Edition builds are packaged and
   released.
 - [docs/windows-community-installation.md](docs/windows-community-installation.md) —
-  Windows Community Edition install guide (for when a release is
-  published).
+  full Windows Community Edition install guide (portable ZIP and
+  installer, SmartScreen guidance, checksum verification).
 - [packaging/windows/README.md](packaging/windows/README.md) — how the
   Windows Community Edition build (portable ZIP + installer) is packaged,
-  tested, and validated; current status (not yet released).
+  tested, and validated.
 - [docs/windows-manual-validation-checklist.md](docs/windows-manual-validation-checklist.md) —
-  manual, real-hardware validation checklist for a future Windows release.
+  manual, real-hardware validation checklist used for Windows releases.
 - [docs/programming_assistant.md](docs/programming_assistant.md) — the
   experimental Programming Assistant feature: data sources, privacy
   behavior, and known limitations.

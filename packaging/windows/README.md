@@ -139,13 +139,42 @@ windows-community-v<version>
 ```
 
 Pushing that tag (or manually dispatching the release job with matching
-inputs) runs the same build/package/validate pipeline as the manual
-`workflow_dispatch` path, but additionally validates the tag format,
-version, and source commit before any release-publishing logic is
-reached. **Publishing is intentionally not exercised by this initial
-implementation** -- see `docs/windows-packaging.md` / the PR description
-for what's been validated vs. what still requires a maintainer to
-actually push a release tag.
+inputs and `enable_release_upload: true`) runs the same
+build/package/validate pipeline as the manual `workflow_dispatch` path,
+but additionally validates the tag format, version, and source commit
+before publishing a GitHub release with the ZIP, installer,
+`SHA256SUMS`, `build-provenance.json`, and `THIRD_PARTY_LICENSES.txt`
+attached. This has been exercised for the `windows-community-v1.12.0`
+release -- see that
+[release page](https://github.com/ddavis83864/chirp/releases/tag/windows-community-v1.12.0)
+for the published artifacts and provenance.
+
+## Release history
+
+### windows-community-v1.12.0
+
+- Published 2026-08-01, from source commit
+  `9c38424f5e716c00e4444533a093ca1ba51258af` (the same commit as
+  `appimage-v1.12.0` and `macos-community-v1.12.0`).
+- Produced by
+  [Windows Release run 30674505018](https://github.com/ddavis83864/chirp/actions/runs/30674505018)
+  (`workflow_dispatch`, `enable_release_upload: true`), conclusion:
+  success. All three jobs (pre-flight guards, build/test/package,
+  publish) succeeded; the publish job independently re-verified every
+  checksum and the provenance manifest before creating the release.
+- Windows Defender scan: no detections. Driver-registry check: 552
+  drivers registered, confirmed both in the raw build and in the
+  silently-installed copy. Silent install/uninstall lifecycle test
+  passed, including confirming uninstall preserves user data.
+- Fixed prior to this run: the publish job was previously unreachable by
+  any trigger (a `workflow_dispatch`/`push`-input handling defect in the
+  guard job). Corrected by PR #28 (squash-merged into `master` as commit
+  `7a14754c6b2133ccc4e2d10404be6a4fe006669d`, all 6 required status
+  checks green), which is the commit this release was built from.
+- Confirmed unsigned by independent PE Security Directory inspection of
+  both `CHIRP.exe` and the setup executable, matching
+  `build-provenance.json`'s `code_signing.signed: false` and the
+  release notes' disclosure.
 
 ## Version validation
 

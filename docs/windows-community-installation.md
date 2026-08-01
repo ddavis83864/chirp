@@ -1,11 +1,11 @@
 # Installing CHIRP for Windows (Community Edition)
 
-**No `windows-community-v*` release has been published yet.** This guide
-documents how installation will work once one is — see
-[packaging/windows/README.md](../packaging/windows/README.md) for the
-current status of the Windows packaging pipeline. Until then, run CHIRP
-on Windows from a source checkout — see the
-[Windows section of the main README](../README.md#windows).
+Download the current release from the
+[Windows Community Edition v1.12.0 release page](https://github.com/ddavis83864/chirp/releases/tag/windows-community-v1.12.0).
+See [packaging/windows/README.md](../packaging/windows/README.md) for how
+the Windows packaging pipeline that produces it works, or the
+[Windows section of the main README](../README.md#windows) for a shorter
+summary.
 
 The CHIRP Windows Community Edition is **not signed with an Authenticode
 certificate**. It is built automatically, from source, on a
