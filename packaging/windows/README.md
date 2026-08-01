@@ -176,6 +176,44 @@ for the published artifacts and provenance.
   `build-provenance.json`'s `code_signing.signed: false` and the
   release notes' disclosure.
 
+### windows-community-v1.13.1
+
+- Coordinated corrective release: `v1.13.0` had published Linux
+  (`appimage-v1.13.0`) and macOS (`macos-community-v1.13.0`) releases,
+  but Windows CI exposed test defects that blocked a Windows `v1.13.0`
+  release entirely. PR #30 fixed a `sys.modules['wx']` isolation leak in
+  `test_wxui_memquery.py`, a Windows-only interpreter-finalization crash
+  caused by wx event-handler reference cycles surviving to process
+  shutdown (fixed with an explicit `gc.collect()` pass in
+  `tearDownModule()`), and three Windows-specific test-harness
+  assumptions the crash had been masking. Squash-merged into `master` as
+  commit `3ef86b7cb43b45ee22a1bb62c8bbdb66afe531eb`. Since Linux and
+  macOS `v1.13.0` were already published from an older commit, the
+  corrective release across all three platforms is `v1.13.1`, built from
+  that same merge commit -- see `appimage-v1.13.1` and
+  `macos-community-v1.13.1`.
+- Produced by
+  [Windows Release run 30722249938](https://github.com/ddavis83864/chirp/actions/runs/30722249938)
+  (`workflow_dispatch`, `enable_release_upload: true`), conclusion:
+  success. All three jobs (pre-flight guards, build/test/package,
+  publish) succeeded, including the now-passing `tests/unit` suite (the
+  same suite the `windows-unit` CI job added in PR #30 runs on every
+  PR).
+- Independently re-verified after publication: checksums, provenance
+  (`source_commit`/`packaging_sha` both
+  `3ef86b7cb43b45ee22a1bb62c8bbdb66afe531eb`, matching `appimage-v1.13.1`
+  and `macos-community-v1.13.1`), archive integrity, and unsigned status
+  (PE Security Directory inspection of both `CHIRP.exe` and the setup
+  executable).
+- Manual hardware validation
+  (`docs/windows-manual-validation-checklist.md`): performed 2026-08-01
+  on Windows 11 24H2 against a Baofeng UV-5R via a generic USB
+  programming cable. All checklist sections -- Environment, Portable
+  ZIP, Installer, Upgrade behavior, Uninstall behavior, Real hardware
+  (COM port assignment, read, write), Core workflows, and
+  Windows-specific behavior (Defender, SmartScreen, debug log, error
+  handling) -- passed with no defects found and no items skipped.
+
 ## Version validation
 
 The workflow refuses to proceed if:
