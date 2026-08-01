@@ -166,6 +166,57 @@ class ProgrammingAssistantHeadlessRegressionTest(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stdout)
         self.assertNotIn('ERROR collecting', result.stdout)
 
+    def test_memquery_collection_order_survives_non_linux_platform(self):
+        # Confirms test_wxui_memquery.py's own wx sys.modules isolation
+        # (mirroring test_wxui_linux_launcher.py / test_wxui_
+        # radiothread.py) holds even on the code path that only runs
+        # when sys.platform != 'linux' (chirp/wxui/memedit.py's
+        # SearchBox filter box, never constructed on Linux). Without
+        # that isolation, chirp.wxui.memquery.SearchBox -- a real class
+        # that subclasses wx.TextCtrl -- gets built against
+        # test_wxui_memquery.py's fake wx if that file is collected
+        # first: subclassing a MagicMock attribute doesn't raise, it
+        # silently produces a MagicMock standing in for the class, whose
+        # first call succeeds and every subsequent call raises
+        # StopIteration. This only ever showed up on Windows CI, which
+        # is the only environment where that branch runs -- so this
+        # test forces the same runtime condition (sys.platform != linux)
+        # here, via a plugin loaded through PYTEST_PLUGINS, so a
+        # regression is caught on any platform's ordinary test run, not
+        # only on a real Windows machine. Confirmed by direct
+        # reproduction that this fails (StopIteration in
+        # memquery.SearchBox) without test_wxui_memquery.py's isolation
+        # fix, and passes with it, in both collection orders.
+        #
+        # Requires a real display, like test_display_present_runs_gui_
+        # fully below: the code path under test only executes inside
+        # ChirpMemEdit's real wx.Frame construction, which needs one.
+        # This repository's own headless CI sets up no Xvfb anywhere
+        # (see this file's module docstring), so this test is skipped
+        # there -- it is a real-display development/CI-with-a-display
+        # regression check, not a substitute for exercising the actual
+        # Windows runner (which does have a usable desktop), and does
+        # not by itself prove Windows CI is green.
+        if not os.environ.get('DISPLAY'):
+            self.skipTest('no DISPLAY in this process to verify against')
+        env = dict(os.environ, CHIRP_TESTENV='1', PYTHONPATH=_REPO_ROOT)
+        env['PYTEST_PLUGINS'] = 'tests.unit._force_non_linux_platform_plugin'
+        forward = self._run(
+            ['-m', 'pytest', '-q',
+             'tests/unit/test_wxui_memquery.py',
+             'tests/unit/test_wxui_programming_assistant.py'], env)
+        reverse = self._run(
+            ['-m', 'pytest', '-q',
+             'tests/unit/test_wxui_programming_assistant.py',
+             'tests/unit/test_wxui_memquery.py'], env)
+        for result, label in ((forward, 'memquery-first'),
+                              (reverse, 'programming_assistant-first')):
+            self.assertEqual(0, result.returncode,
+                             '%s: %s' % (label, result.stdout))
+            self.assertNotIn('StopIteration', result.stdout, label)
+            self.assertNotIn('FAILED', result.stdout, label)
+            self.assertNotIn('ERROR collecting', result.stdout, label)
+
     def test_display_present_runs_gui_tests_fully(self):
         # The fix must not accidentally skip GUI tests when a real
         # display genuinely is available. Only meaningful (and only
