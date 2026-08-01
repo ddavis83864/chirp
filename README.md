@@ -33,19 +33,23 @@ duplicate detection, and configurable color coding on top of upstream CHIRP
 
 | Platform | Download | Architecture | Package | Notes |
 |---|---|---|---|---|
-| **Linux** | [AppImage releases](https://github.com/ddavis83864/chirp/releases?q=appimage-v&expanded=true) (current: `appimage-v1.12.0`) | x86_64 | Single-file `.AppImage` | No installation needed — `chmod +x` and run. [Instructions ↓](#linux) |
-| **Windows** | [Community Edition v1.12.0](https://github.com/ddavis83864/chirp/releases/tag/windows-community-v1.12.0) | x86_64 | Portable `.zip` or `.exe` installer | **Unsigned** — SmartScreen warning expected on first run. [Instructions ↓](#windows) |
-| **macOS (Apple Silicon)** | [Community Edition v1.12.0](https://github.com/ddavis83864/chirp/releases/tag/macos-community-v1.12.0) | arm64 | `.dmg` or `.app.zip` | **Unsigned** — one-time Gatekeeper bypass required. [Instructions ↓](#macos) |
-| **macOS (Intel)** | [Community Edition v1.12.0](https://github.com/ddavis83864/chirp/releases/tag/macos-community-v1.12.0) | x86_64 | `.dmg` or `.app.zip` | **Unsigned** — one-time Gatekeeper bypass required. [Instructions ↓](#macos) |
+| **Linux** | [AppImage releases](https://github.com/ddavis83864/chirp/releases?q=appimage-v&expanded=true) (current: `appimage-v1.13.1`) | x86_64 | Single-file `.AppImage` | No installation needed — `chmod +x` and run. [Instructions ↓](#linux) |
+| **Windows** | [Community Edition v1.13.1](https://github.com/ddavis83864/chirp/releases/tag/windows-community-v1.13.1) | x86_64 | Portable `.zip` or `.exe` installer | **Unsigned** — SmartScreen warning expected on first run. [Instructions ↓](#windows) |
+| **macOS (Apple Silicon)** | [Community Edition v1.13.1](https://github.com/ddavis83864/chirp/releases/tag/macos-community-v1.13.1) | arm64 | `.dmg` or `.app.zip` | **Unsigned** — one-time Gatekeeper bypass required. [Instructions ↓](#macos) |
+| **macOS (Intel)** | [Community Edition v1.13.1](https://github.com/ddavis83864/chirp/releases/tag/macos-community-v1.13.1) | x86_64 | `.dmg` or `.app.zip` | **Unsigned** — one-time Gatekeeper bypass required. [Instructions ↓](#macos) |
 
 Linux, macOS, and Windows releases each live in their own tag namespace
 (`appimage-v<version>`, `macos-community-v<version>`,
 `windows-community-v<version>`), so this table links each platform
 straight to its own release rather than to a single "latest" link that
-could point you at the wrong platform's build. All three v1.12.0 Community
+could point you at the wrong platform's build. All three v1.13.1 Community
 Edition builds — Linux, macOS, and Windows — were independently verified
 to be built from the exact same source commit
-(`9c38424f5`); see each release's attached provenance file for details.
+(`3ef86b7cb`); see each release's attached provenance file for details.
+v1.13.1 is a coordinated corrective release: v1.13.0 published for Linux
+and macOS, but Windows CI caught test defects that blocked a Windows
+release entirely (see [CHANGELOG.md](CHANGELOG.md)); with those fixed,
+v1.13.1 republishes all three platforms from the same, corrected source.
 The macOS and Windows Community Edition releases are marked as GitHub
 pre-releases, reflecting that these packaging channels are newer than the
 Linux AppImage — every artifact still goes through full structural,
@@ -57,13 +61,13 @@ release).
 
 **Download:** grab the latest `CHIRP-appimage-*-x86_64.AppImage` from the
 [AppImage releases](https://github.com/ddavis83864/chirp/releases?q=appimage-v&expanded=true)
-page — currently `appimage-v1.12.0`
-([CHIRP-appimage-v1.12.0-x86_64.AppImage](https://github.com/ddavis83864/chirp/releases/tag/appimage-v1.12.0)).
+page — currently `appimage-v1.13.1`
+([CHIRP-appimage-v1.13.1-x86_64.AppImage](https://github.com/ddavis83864/chirp/releases/tag/appimage-v1.13.1)).
 x86_64 only.
 
 ```bash
-chmod +x CHIRP-appimage-v1.12.0-x86_64.AppImage
-./CHIRP-appimage-v1.12.0-x86_64.AppImage
+chmod +x CHIRP-appimage-v1.13.1-x86_64.AppImage
+./CHIRP-appimage-v1.13.1-x86_64.AppImage
 ```
 
 **Desktop launcher (optional):** once CHIRP is running, Help > Install Linux
@@ -113,14 +117,14 @@ for the full walkthrough and
 built and validated.
 
 **Download:**
-[CHIRP 1.12.0 for Windows — Community Edition](https://github.com/ddavis83864/chirp/releases/tag/windows-community-v1.12.0)
+[CHIRP 1.13.1 for Windows — Community Edition](https://github.com/ddavis83864/chirp/releases/tag/windows-community-v1.13.1)
 
 **Pick portable or installed:**
 
-- **Portable** (`CHIRP-windows-v1.12.0-x86_64-portable.zip`) — extract
+- **Portable** (`CHIRP-windows-v1.13.1-x86_64-portable.zip`) — extract
   anywhere and run `CHIRP.exe` directly. No installation, no
   administrator rights.
-- **Installer** (`CHIRP-windows-v1.12.0-x86_64-setup.exe`) — installs
+- **Installer** (`CHIRP-windows-v1.13.1-x86_64-setup.exe`) — installs
   per-user (no administrator rights required) to
   `%LOCALAPPDATA%\Programs\CHIRP`, with a Start Menu shortcut and an
   optional Desktop shortcut.
@@ -141,7 +145,7 @@ one app.
 `SHA256SUMS` file. In PowerShell:
 
 ```powershell
-Get-FileHash CHIRP-windows-v1.12.0-x86_64-portable.zip -Algorithm SHA256
+Get-FileHash CHIRP-windows-v1.13.1-x86_64-portable.zip -Algorithm SHA256
 ```
 
 Compare the printed hash against the matching line in `SHA256SUMS`. A
@@ -182,14 +186,14 @@ for the full explanation and
 [docs/macos-packaging.md](docs/macos-packaging.md) for how it's built.
 
 **Download:**
-[CHIRP 1.12.0 for macOS — Community Edition](https://github.com/ddavis83864/chirp/releases/tag/macos-community-v1.12.0)
+[CHIRP 1.13.1 for macOS — Community Edition](https://github.com/ddavis83864/chirp/releases/tag/macos-community-v1.13.1)
 
 **Pick your architecture** — Apple menu (top-left) > **About This Mac**:
 
 - **Apple Silicon** (a line labeled "Chip", e.g. Apple M1/M2/M3/M4):
-  download `CHIRP-1.12.0-macOS-arm64-unsigned.dmg`
+  download `CHIRP-1.13.1-macOS-arm64-unsigned.dmg`
 - **Intel** (a line labeled "Processor", e.g. Intel Core i5/i7):
-  download `CHIRP-1.12.0-macOS-x86_64-unsigned.dmg`
+  download `CHIRP-1.13.1-macOS-x86_64-unsigned.dmg`
 
 A `.app.zip` of each architecture is also attached to the release as an
 alternative to the `.dmg`.
@@ -417,7 +421,7 @@ with access to this repo can run it without setting up a Python/wxPython
 build environment themselves.
 
 **Getting a build:** every push of an `appimage-vX.Y.Z` tag (e.g.
-`appimage-v1.12.0`) triggers the
+`appimage-v1.13.1`) triggers the
 [AppImage workflow](.github/workflows/appimage.yml), which builds the
 AppImage and attaches it to a matching
 [GitHub Release](https://github.com/ddavis83864/chirp/releases?q=appimage-v&expanded=true)
