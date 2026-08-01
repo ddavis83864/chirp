@@ -139,13 +139,15 @@ windows-community-v<version>
 ```
 
 Pushing that tag (or manually dispatching the release job with matching
-inputs) runs the same build/package/validate pipeline as the manual
-`workflow_dispatch` path, but additionally validates the tag format,
-version, and source commit before any release-publishing logic is
-reached. **Publishing is intentionally not exercised by this initial
-implementation** -- see `docs/windows-packaging.md` / the PR description
-for what's been validated vs. what still requires a maintainer to
-actually push a release tag.
+inputs and `enable_release_upload: true`) runs the same
+build/package/validate pipeline as the manual `workflow_dispatch` path,
+but additionally validates the tag format, version, and source commit
+before publishing a GitHub release with the ZIP, installer,
+`SHA256SUMS`, `build-provenance.json`, and `THIRD_PARTY_LICENSES.txt`
+attached. This has been exercised for the `windows-community-v1.12.0`
+release -- see that
+[release page](https://github.com/ddavis83864/chirp/releases/tag/windows-community-v1.12.0)
+for the published artifacts and provenance.
 
 ## Version validation
 
