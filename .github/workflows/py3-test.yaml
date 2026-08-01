@@ -96,9 +96,37 @@ jobs:
           python -m pip install --only-binary=:all: "wxPython>=4.2.1"
       - name: Run unit tests
         shell: pwsh
+        env:
+          # Get a native/Python stack trace out of any fatal interpreter
+          # error (e.g. a crash during shutdown) instead of only the
+          # bare "Fatal Python error: ..." summary faulthandler already
+          # prints by default -- this env var is inherited by any
+          # subprocess these tests spawn (subprocess.run(..., env=dict
+          # (os.environ, ...)) in test_programming_assistant_headless_
+          # regression.py / test_programming_assistant_csv_isolation_
+          # regression.py), so a crash inside one of those nested
+          # pytest invocations is diagnosable too, not just a crash in
+          # this outer process.
+          PYTHONFAULTHANDLER: '1'
+          # Temporary diagnostic (see tests/unit/test_wxui_programming_
+          # assistant.py's tearDownModule()): opts every nested pytest
+          # subprocess these tests spawn into writing gc.collect()
+          # findings to this file, since pytest's own output capturing
+          # would otherwise swallow that from any *passing* teardown.
+          CHIRP_TEARDOWN_DIAG_FILE: ${{ runner.temp }}\chirp-teardown-diag.log
         run: |
           python -m pytest tests\unit `
             --ignore=tests\unit\test_linux_desktop.py -q
+      - name: Show teardown diagnostics
+        if: always()
+        shell: pwsh
+        run: |
+          $diagFile = "${{ runner.temp }}\chirp-teardown-diag.log"
+          if (Test-Path $diagFile) {
+            Get-Content $diagFile
+          } else {
+            Write-Host "No teardown diagnostics file was written."
+          }
 
   matrix:
     name: Create support matrix
